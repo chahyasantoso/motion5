@@ -1480,55 +1480,64 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     }
   };
 
-  const bindTarget = (target: BoundTarget, value: unknown): void => {
+  const appliedPose = new WeakMap<BoundTarget, unknown>();
+
+  const applyTargetPose = (target: BoundTarget, value: unknown): void => {
     const member = target.member;
-    const ran = runOnly ?? engineOnly;
-    if (ran !== undefined && !ran.has(member.name)) {
-      // Presence follows the clock, so it is applied on every frame, run or not.
-      const shown = lastFrame?.visible[member.name] ?? true;
-      switch (member.kind) {
-        case "list":
-          if (target.host !== undefined) applyVisibility(target.host, shown);
-          for (const item of target.items) applyVisibility(item, shown);
-          break;
-        case "actor":
-          applyVisibility(target.node, shown);
-          syncMedia(target, shown);
-          break;
-        default:
-          return unreachable(member);
-      }
-      return;
-    }
-    const visible = lastFrame?.visible[member.name] ?? true;
     switch (member.kind) {
       case "list": {
-        if (target.host !== undefined) applyVisibility(target.host, visible);
         const count = target.items.length;
         target.items.forEach((item, index) => {
-          applyVisibility(item, visible);
-          if (!visible || value === undefined) return;
           const pose = listPose(value, index, count);
           if (pose !== undefined) applyPose(item, undefined, pose);
         });
         break;
       }
-      case "actor":
-        applyVisibility(target.node, visible);
-        syncMedia(target, visible);
-        if (!visible || value === undefined) return;
-        {
-          const pose = poseOf(value);
-          if (pose !== undefined) applyPose(target.node, member.content, pose);
-        }
+      case "actor": {
+        const pose = poseOf(value);
+        if (pose !== undefined) applyPose(target.node, member.content, pose);
         break;
+      }
       default:
         return unreachable(member);
     }
+    appliedPose.set(target, value);
   };
 
+  const syncPresenceAndMedia = (): void => {
+    for (const target of targets) {
+      const member = target.member;
+      const visible = lastFrame?.visible[member.name] ?? true;
+      switch (member.kind) {
+        case "list":
+          if (target.host !== undefined) applyVisibility(target.host, visible);
+          for (const item of target.items) applyVisibility(item, visible);
+          break;
+        case "actor":
+          applyVisibility(target.node, visible);
+          syncMedia(target, visible);
+          break;
+        default:
+          return unreachable(member);
+      }
+      const value = player.values[member.name];
+      if (visible && value !== undefined && !Object.is(appliedPose.get(target), value)) {
+        const ran = runOnly ?? engineOnly;
+        if (ran === undefined || ran.has(member.name)) applyTargetPose(target, value);
+      }
+    }
+  };
+
+  player.observe(() => lastFrame, syncPresenceAndMedia);
+
   for (const target of targets) {
-    player.subscribe(target.member.name, (value) => bindTarget(target, value));
+    player.subscribe(target.member.name, (value) => {
+      const visible = lastFrame?.visible[target.member.name] ?? true;
+      const ran = runOnly ?? engineOnly;
+      if (!visible || value === undefined) return;
+      if (ran !== undefined && !ran.has(target.member.name)) return;
+      applyTargetPose(target, value);
+    });
   }
 
   // Scroll-driven elements play on a scroll timeline, trigger-driven ones on the document timeline

@@ -2,6 +2,8 @@ import { loop } from "./loop";
 import type { Ease } from "../ease/ease";
 import type { Span } from "./span";
 import { withProgress, type Time } from "./time";
+import type { Timing } from "./timing";
+import { unreachable } from "../utility/unreachable";
 
 /** How a motion joins what is under it on one element: `layer` adds by each field's rule, `take` replaces. */
 export type Joins = "layer" | "take";
@@ -29,6 +31,8 @@ export interface Motion<T, C = unknown> {
   /** The repeat length in ms, or undefined when it does not loop. */
   readonly period: number | undefined;
   readonly joins: Joins;
+  /** Whether a `.loop()` repeats indefinitely without any enclosing finite `Span`. */
+  readonly loopsForever: boolean;
   /** Whether it keeps moving with no period, so its element is ambient. */
   readonly isAmbient: boolean;
   /** Plays over `window`: holds start before and end after, and runs `ease(progress)` inside when `ease` is given. */
@@ -41,7 +45,12 @@ export interface Motion<T, C = unknown> {
   ambient(): Motion<T, C>;
 }
 
+type MotionStep =
+  | { readonly kind: "in"; readonly window: InWindow; readonly ease: Ease | undefined }
+  | { readonly kind: "loop"; readonly cycle: Timing; readonly period: number };
+
 interface Traits {
+  readonly steps: readonly MotionStep[];
   readonly ease: Ease | undefined;
   readonly span: Span | undefined;
   readonly window: InWindow | undefined;
@@ -75,41 +84,75 @@ function isMotionWindow(value: unknown): value is MotionWindow {
 }
 
 function build<T, C>(fn: (time: Time, context?: C) => T, traits: Traits): Motion<T, C> {
-  const cycle = traits.period === undefined ? undefined : loop(traits.period);
-  const run = (time: Time, context?: C): T => {
-    if (traits.window === undefined)
-      return fn(cycle === undefined ? time : cycle.of(time), context);
-    if (traits.span !== undefined) {
-      const cycled = cycle === undefined ? time : cycle.of(time);
-      return fn(traits.window.of(cycled, traits.ease, context), context);
+  const { steps } = traits;
+  let hasLoop = false;
+  let hasSpan = false;
+  for (const step of steps) {
+    switch (step.kind) {
+      case "loop":
+        hasLoop = true;
+        break;
+      case "in":
+        if (isSpan(step.window)) hasSpan = true;
+        break;
+      default:
+        unreachable(step);
     }
-    const inside = traits.window.of(time, cycle === undefined ? traits.ease : undefined, context);
-    if (cycle === undefined) return fn(inside, context);
-    const cycled = cycle.of(inside);
-    return fn(
-      traits.ease === undefined ? cycled : withProgress(cycled, traits.ease(cycled.progress)),
-      context,
-    );
+  }
+  const loopsForever = hasLoop && !hasSpan;
+  const run = (time: Time, context?: C): T => {
+    let current = time;
+    for (let index = 0; index < steps.length; index += 1) {
+      const step = steps[index];
+      if (step === undefined) break;
+      switch (step.kind) {
+        case "in": {
+          const next = steps[index + 1];
+          if (!isSpan(step.window) && next?.kind === "loop") {
+            const inside = step.window.of(current, undefined, context);
+            const cycled = next.cycle.of(inside);
+            current =
+              step.ease === undefined ? cycled : withProgress(cycled, step.ease(cycled.progress));
+            index += 1;
+          } else {
+            current = step.window.of(current, step.ease, context);
+          }
+          break;
+        }
+        case "loop":
+          current = step.cycle.of(current);
+          break;
+        default:
+          unreachable(step);
+      }
+    }
+    return fn(current, context);
   };
   const built = Object.assign(run, {
     span: traits.span,
     window: traits.window,
     period: traits.period,
     joins: traits.joins,
+    loopsForever,
     isAmbient: traits.isAmbient,
     in(window: InWindow, ease?: Ease): Motion<T, C> {
       if (!isMotionWindow(window))
         throw new RangeError("motion.in: give a span made by `span` or `beat`.");
       return build(fn, {
         ...traits,
+        steps: [...steps, { kind: "in", window, ease }],
         span: isSpan(window) ? window : undefined,
         window,
         ease,
       });
     },
     loop(ms: number): Motion<T, C> {
-      loop(ms);
-      return build(fn, { ...traits, period: ms });
+      const cycle = loop(ms);
+      return build(fn, {
+        ...traits,
+        steps: [...steps, { kind: "loop", cycle, period: ms }],
+        period: ms,
+      });
     },
     take(): Motion<T, C> {
       return build(fn, { ...traits, joins: "take" });
@@ -127,6 +170,7 @@ function build<T, C>(fn: (time: Time, context?: C) => T, traits: Traits): Motion
 /** Gives `fn` the timing methods; called with no span or period it answers as `fn` does. */
 export function motion<T, C = unknown>(fn: (time: Time, context?: C) => T): Motion<T, C> {
   return build(fn, {
+    steps: [],
     span: undefined,
     window: undefined,
     ease: undefined,

@@ -11,6 +11,16 @@ State from events: a fold of the event log up to a time, and values that spring 
 - **`State`** `type State<S> = { (time: Time, events: Events): S; start: S; steps: (time: Time, events: Events) => readonly Step<S>[] }`: What the scene is in at a time, given its events: a signal of that, with `start` and the `steps`.
 - **`StateOptions`** `type StateOptions = { target?: string | readonly string[] }`: Settings of a `state`: `target`, the event target, or targets, whose events reach the rule.
 - **`Step`** `type Step<S> = { at: number; value: S }`: The moment a state changed, and what it became.
+- **`createStore`** `(): RuntimeStore`: Allocates a fresh store for an independent player or scene run.
+- **`restore`** `(store: RuntimeStore, snap: RuntimeSnapshot): void`: Restores `store` to the state captured in `snap`.
+- **`snapshot`** `(store: RuntimeStore): RuntimeSnapshot`: Captures every cell populated in `store` as an immutable snapshot.
+- **`storeCell`** `<T>(): StoreCell<T>`: Declares an isolated cell backed per RuntimeStore without closure mutation.
+- **`storeFor`** `(): RuntimeStore`: Returns the active RuntimeStore for this evaluation scope.
+- **`withProbeStore`** `<T>(fn: () => T): T`: Runs an off-time probe in a transient copy-on-write store without mutating caller cursors.
+- **`withStore`** `<T>(store: RuntimeStore, fn: () => T): T`: Runs `fn` with `store` bound as the active RuntimeStore.
+- **`RuntimeSnapshot`** `type RuntimeSnapshot = { kind: "runtime-snapshot" }`: Immutable point-in-time capture of a RuntimeStore.
+- **`RuntimeStore`** `type RuntimeStore = { kind: "runtime-store" }`: Per-player mutable store backing stateful core primitives.
+- **`StoreCell`** `type StoreCell<T> = { get: (store?: RuntimeStore) => T | undefined; set: (value: T, store?: RuntimeStore) => void }`: Stateful cell descriptor isolated by active RuntimeStore.
 - **`INPUT_EVENTS`** `const INPUT_EVENTS: Readonly<{ readonly scroll: "scroll"; readonly pointerX: "pointer-x"; readonly pointerY: "pointer-y"; }>`: Sample event names folded by `scroll` and `pointer`: `"scroll"`, `"pointer-x"` and `"pointer-y"`.
 - **`pointer`** `const pointer: PointerState`: Viewport pointer state, built on `state`; `pointer.x` and `pointer.y` run 0 to 1, starting at 0.5.
 - **`scroll`** `const scroll: ScrollState`: Page scroll state, built on `state`; `scroll.y` reads `"scroll"` sample events in px.

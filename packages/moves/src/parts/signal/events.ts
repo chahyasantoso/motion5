@@ -1,4 +1,13 @@
-import { elapsedOf, springTo, state, unreachable, type Events, type Time } from "@gerak/core";
+import {
+  elapsedOf,
+  springTo,
+  state,
+  stillMoving,
+  unreachable,
+  versionOf,
+  type Events,
+  type Time,
+} from "@gerak/core";
 
 /** Settings of a `follow`: `start`, `on` (goal by event name, or `"value"` for the event's own),
  * `target`, `stiffness` (default 170), `damping` (26) and `rest` (0.001). */
@@ -77,6 +86,17 @@ function shape(
   }
 }
 
+function firstAfter(events: Events, minAt: number): number {
+  let low = 0;
+  let high = events.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if ((events[mid]?.at ?? 0) <= minAt) low = mid + 1;
+    else high = mid;
+  }
+  return low;
+}
+
 /** A damped answer to each past event by `kind` (`recoil`, `wobble`, `flash` or `shake`); 0 before the
  * first and once all have died. */
 export function react(options: ReactOptions): (time: Time, events: Events) => number {
@@ -84,19 +104,29 @@ export function react(options: ReactOptions): (time: Time, events: Events) => nu
   const frequency = options.frequency ?? 4;
   if (!(decay > 0)) throw new RangeError("react: decay must be above 0.");
   const quiet = Math.log(1000) / decay;
+  const quietMs = quiet * 1000;
   return (time, events) => {
     const now = elapsedOf(time.clock);
     if (now === undefined) return 0;
+    const ordered = versionOf(events) !== undefined;
+    const start = ordered ? firstAfter(events, now - quietMs) : 0;
     let total = 0;
     let index = 0;
-    for (const event of events) {
+    let moving = false;
+    for (let i = start; i < events.length; i += 1) {
+      const event = events[i];
+      if (event === undefined) break;
+      if (ordered && event.at > now) break;
       if (!options.on.includes(event.name)) continue;
       if (options.target !== undefined && event.target !== options.target) continue;
       const seconds = (now - event.at) / 1000;
-      if (seconds >= 0 && seconds < quiet)
+      if (seconds >= 0 && seconds < quiet) {
         total += options.amplitude * shape(options.kind, seconds, decay, frequency, index);
+        moving = true;
+      }
       index += 1;
     }
+    if (moving) stillMoving();
     return total;
   };
 }

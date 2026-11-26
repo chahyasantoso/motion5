@@ -1,5 +1,6 @@
 import { clamp } from "../utility/clamp";
-import { state, type State } from "./state";
+import { baselineOf } from "../events/event-log";
+import { buildState, type State } from "./state";
 
 /** Sample event names folded by `scroll` and `pointer`: `"scroll"`, `"pointer-x"` and `"pointer-y"`. */
 export const INPUT_EVENTS = Object.freeze({
@@ -27,16 +28,27 @@ function sampleState(
   eventName: string,
   bounds?: readonly [min: number, max: number],
 ): State<number> {
-  return state(start, (current, event) => {
-    if (
-      event.name !== eventName ||
-      typeof event.value !== "number" ||
-      !Number.isFinite(event.value)
-    )
-      return current;
-    const next = bounds === undefined ? event.value : clamp(event.value, bounds[0], bounds[1]);
-    return next === 0 ? 0 : next;
-  });
+  const normalize = (value: number): number => {
+    const bounded = bounds === undefined ? value : clamp(value, bounds[0], bounds[1]);
+    return bounded === 0 ? 0 : bounded;
+  };
+  return buildState(
+    start,
+    (current, event) => {
+      if (
+        event.name !== eventName ||
+        typeof event.value !== "number" ||
+        !Number.isFinite(event.value)
+      )
+        return current;
+      return normalize(event.value);
+    },
+    {},
+    (events) => {
+      const value = baselineOf(events)?.get(eventName);
+      return value !== undefined && Number.isFinite(value) ? normalize(value) : start;
+    },
+  );
 }
 
 /** Page scroll state, built on `state`; `scroll.y` reads `"scroll"` sample events in px. */

@@ -18,7 +18,9 @@ export function nowOf(time: Time, who: string): number {
   const clock = time.clock;
   switch (clock.kind) {
     case "timed":
-      return time.progress * clock.length;
+      return time.progress >= 1 && clock.elapsed > clock.length
+        ? clock.elapsed
+        : time.progress * clock.length;
     case "live": {
       const now = elapsedOf(clock);
       if (now !== undefined) return now;

@@ -49,7 +49,6 @@ export { NO_EVENTS } from "./events/event-list";
 export { isMotionEvent, mergeEvents } from "./events/event-list";
 export { type EventPoint, type Events } from "./events/event-list";
 export { type MotionEvent } from "./events/event-list";
-export { eventLog, versionOf, type EventLog } from "./events/event-log";
 export { rawTime, stillMoving, watchClock, watchedTime, type ClockUse } from "./state/clock-watch";
 export { lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./time/lanes";
 export { CUSTOM_FIELD, POSE_2D_FIELDS, VALUE_FIELDS } from "./fields/pose";
@@ -115,6 +114,35 @@ export { arc, arc3d, type Arc3dOptions, type ArcBendOptions } from "./principles
 export { exaggerate, exaggerate3d, type ExaggerateOptions } from "./principles/exaggerate";
 export { secondary, secondary3d } from "./principles/secondary";
 export { state, type State, type StateOptions, type Step } from "./state/state";
+export {
+  createStore,
+  restore,
+  snapshot,
+  storeCell,
+  storeFor,
+  withProbeStore,
+  withStore,
+  type RuntimeSnapshot,
+  type RuntimeStore,
+  type StoreCell,
+} from "./state/store";
+export {
+  attachOnEvent,
+  baseIndexOf,
+  baselineOf,
+  compactEvents,
+  compactedBeforeOf,
+  derivedEvents,
+  eventLog,
+  eventSerialsOf,
+  generationOf,
+  sourceStreamOf,
+  versionOf,
+  type DerivedEvents,
+  type EventLog,
+  type EventLogOptions,
+  type RetentionPolicy,
+} from "./events/event-log";
 export { INPUT_EVENTS, pointer, scroll, type PointerState, type ScrollState } from "./state/inputs";
 export { springTo, type SpringToOptions } from "./state/spring-to";
 export { easeTo, type EaseToOptions, type UpDown } from "./state/ease-to";

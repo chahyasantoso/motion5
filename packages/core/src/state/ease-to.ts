@@ -3,9 +3,10 @@ import { mix } from "../blend/mix";
 import { span, type Span } from "../time/span";
 import { timeAt } from "../time/time-at";
 import { rawTime, stillMoving } from "./clock-watch";
+import { epochOf, storeCell } from "./store";
 import { elapsedOf } from "../time/time";
 import type { Signal } from "../time/shapes";
-import { changesOf, type Change } from "./changes";
+import { changeMetaOf, changesOf } from "./changes";
 import type { State } from "./state";
 
 /** A time in ms, or one for a change upwards and one for a change downwards. */
@@ -20,10 +21,12 @@ export interface EaseToOptions {
   readonly ease?: Ease;
 }
 
-/** The motion since the change before `index`, from `from` to `to` over `stretch`. */
+/** The motion since the change before `logicalIndex`, from `from` to `to` over `stretch`. */
 interface Run {
-  readonly list: readonly Change[];
-  index: number;
+  ownerEpoch: number;
+  readonly changesResetId: number | undefined;
+  readonly fallbackList: readonly unknown[];
+  logicalIndex: number;
   from: number;
   to: number;
   stretch: Span;
@@ -50,18 +53,45 @@ export function easeTo<S>(
       if (!(side >= 0 && Number.isFinite(side)))
         throw new RangeError(`easeTo: ${name} must be a finite number of ms, 0 or more.`);
   const changes = changesOf(source, pick);
-  let run: Run | undefined;
+  const runSlot = storeCell<Run>();
   return (watched, events) => {
     const time = rawTime(watched);
     const { start, list } = changes(time, events);
     if (elapsedOf(time.clock) === undefined) return list[list.length - 1]?.to ?? start;
-    const kept: Run =
-      run !== undefined && run.list === list
-        ? run
-        : { list, index: 0, from: start, to: start, stretch: span(0, 1) };
-    run = kept;
-    for (; kept.index < list.length; kept.index += 1) {
-      const change = list[kept.index];
+    const meta = changeMetaOf(list);
+    const listBase = meta?.base ?? 0;
+    const epoch = epochOf();
+    const existing = runSlot.get();
+
+    const resets =
+      existing === undefined ||
+      (meta !== undefined
+        ? meta.resetId !== existing.changesResetId
+        : existing.fallbackList !== list);
+
+    let kept: Run;
+    if (resets || existing === undefined) {
+      kept = {
+        ownerEpoch: epoch,
+        changesResetId: meta?.resetId,
+        fallbackList: list,
+        logicalIndex: 0,
+        from: start,
+        to: start,
+        stretch: span(0, 1),
+      };
+      runSlot.set(kept);
+    } else if (existing.ownerEpoch !== epoch) {
+      kept = { ...existing, ownerEpoch: epoch, fallbackList: list };
+      runSlot.set(kept);
+    } else {
+      kept = existing;
+    }
+
+    const total = listBase + list.length;
+    if (kept.logicalIndex < listBase) kept.logicalIndex = listBase;
+    for (; kept.logicalIndex < total; kept.logicalIndex += 1) {
+      const change = list[kept.logicalIndex - listBase];
       if (change === undefined) break;
       const rising = change.to > kept.to;
       kept.from = mix(kept.from, kept.to, kept.stretch.of(timeAt(time, change.at), curve).progress);

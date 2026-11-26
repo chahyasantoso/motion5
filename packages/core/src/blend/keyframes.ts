@@ -24,9 +24,20 @@ export function keyframes<T>(
     from = key.at;
   }
   return (time) => {
+    const resolved =
+      time.clock.kind === "untimed"
+        ? {
+            progress: Math.max(0, Math.min(1, time.progress)),
+            clock: {
+              kind: "timed" as const,
+              elapsed: Math.max(0, Math.min(1, time.progress)) * from,
+              length: from,
+            },
+          }
+        : time;
     let value = start;
     for (const { span: part, key } of segments)
-      value = blend(value, key.to, part.of(time, key.ease).progress);
+      value = blend(value, key.to, part.of(resolved, key.ease).progress);
     return value;
   };
 }

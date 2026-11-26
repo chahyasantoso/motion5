@@ -1,8 +1,9 @@
 import { spring } from "../ease/spring";
 import { rawTime, stillMoving } from "./clock-watch";
+import { epochOf, storeCell } from "./store";
 import { elapsedOf } from "../time/time";
 import type { Signal } from "../time/shapes";
-import { changesOf, type Change } from "./changes";
+import { changeMetaOf, changesOf } from "./changes";
 import type { State } from "./state";
 
 /** Settings of a `springTo`: `stiffness` (default 170), `damping` (26) and `rest` (0.001). */
@@ -15,10 +16,12 @@ export interface SpringToOptions {
   readonly rest?: number;
 }
 
-/** The spring just after the change before `index` set its goal at `since` ms. */
+/** The spring just after the change before `logicalIndex` set its goal at `since` ms. */
 interface Run {
-  readonly list: readonly Change[];
-  index: number;
+  ownerEpoch: number;
+  readonly changesResetId: number | undefined;
+  readonly fallbackList: readonly unknown[];
+  logicalIndex: number;
   goal: number;
   value: number;
   speed: number;
@@ -42,19 +45,47 @@ export function springTo<S>(
   if (!(rest > 0 && Number.isFinite(rest)))
     throw new RangeError("springTo: rest must be a finite number above 0.");
   const changes = changesOf(source, pick);
-  let run: Run | undefined;
+  const runSlot = storeCell<Run>();
   return (watched, events) => {
     const time = rawTime(watched);
     const now = elapsedOf(time.clock);
     const { start, list } = changes(time, events);
     if (now === undefined) return list[list.length - 1]?.to ?? start;
-    const kept: Run =
-      run !== undefined && run.list === list
-        ? run
-        : { list, index: 0, goal: start, value: start, speed: 0, since: 0 };
-    run = kept;
-    for (; kept.index < list.length; kept.index += 1) {
-      const change = list[kept.index];
+    const meta = changeMetaOf(list);
+    const listBase = meta?.base ?? 0;
+    const epoch = epochOf();
+    const existing = runSlot.get();
+
+    const resets =
+      existing === undefined ||
+      (meta !== undefined
+        ? meta.resetId !== existing.changesResetId
+        : existing.fallbackList !== list);
+
+    let kept: Run;
+    if (resets || existing === undefined) {
+      kept = {
+        ownerEpoch: epoch,
+        changesResetId: meta?.resetId,
+        fallbackList: list,
+        logicalIndex: 0,
+        goal: start,
+        value: start,
+        speed: 0,
+        since: 0,
+      };
+      runSlot.set(kept);
+    } else if (existing.ownerEpoch !== epoch) {
+      kept = { ...existing, ownerEpoch: epoch, fallbackList: list };
+      runSlot.set(kept);
+    } else {
+      kept = existing;
+    }
+
+    const total = listBase + list.length;
+    if (kept.logicalIndex < listBase) kept.logicalIndex = listBase;
+    for (; kept.logicalIndex < total; kept.logicalIndex += 1) {
+      const change = list[kept.logicalIndex - listBase];
       if (change === undefined) break;
       const moved = spring(kept.value - kept.goal, kept.speed, (change.at - kept.since) / 1000, {
         stiffness,

@@ -1,6 +1,7 @@
 import { arch } from "../envelope/envelopes";
 import { POSE_2D_NUMBERS, VALUE_FIELDS, type Pose2d } from "../fields/pose";
 import { NUMBERS, TURNS, type Mutable3d, type Pose3d } from "../fields/pose3d";
+import { withProbeStore } from "../state/store";
 import type { Signal } from "../time/shapes";
 import { withProgress } from "../time/time";
 
@@ -46,29 +47,30 @@ export function anticipation(
 ): (signal: Signal<Pose2d>) => Signal<Pose2d> {
   check(options, "anticipation");
   const { share, amount } = options;
-  return (signal) => (time, events) => {
-    const at = (progress: number) => signal(withProgress(time, progress), events);
-    const first = at(0);
-    const last = at(1);
-    const played = time.progress >= share ? at((time.progress - share) / (1 - share)) : undefined;
-    const poses = played === undefined ? [first, last] : [first, last, played];
-    const fields = ADDED_2D.filter((field) => poses.some((pose) => pose[field] !== undefined));
-    const names = customNames(poses);
-    const base = played ?? first;
-    const wind = played === undefined ? amount * arch(time.progress / share) : 0;
-    const value = (read: (pose: Pose2d) => number) =>
-      played === undefined ? read(first) + wind * (read(first) - read(last)) : read(played);
-    const out: { -readonly [K in Number2d]?: number } = {};
-    for (const field of fields)
-      out[field] = held(
-        field,
-        value((pose) => pose[field] ?? 0),
-      );
-    if (names.length === 0) return { ...base, ...out };
-    const custom: Record<string, number> = {};
-    for (const name of names) custom[name] = value((pose) => pose.custom?.[name] ?? 0);
-    return { ...base, ...out, custom };
-  };
+  return (signal) => (time, events) =>
+    withProbeStore(() => {
+      const at = (progress: number) => signal(withProgress(time, progress), events);
+      const first = at(0);
+      const last = at(1);
+      const played = time.progress >= share ? at((time.progress - share) / (1 - share)) : undefined;
+      const poses = played === undefined ? [first, last] : [first, last, played];
+      const fields = ADDED_2D.filter((field) => poses.some((pose) => pose[field] !== undefined));
+      const names = customNames(poses);
+      const base = played ?? first;
+      const wind = played === undefined ? amount * arch(time.progress / share) : 0;
+      const value = (read: (pose: Pose2d) => number) =>
+        played === undefined ? read(first) + wind * (read(first) - read(last)) : read(played);
+      const out: { -readonly [K in Number2d]?: number } = {};
+      for (const field of fields)
+        out[field] = held(
+          field,
+          value((pose) => pose[field] ?? 0),
+        );
+      if (names.length === 0) return { ...base, ...out };
+      const custom: Record<string, number> = {};
+      for (const name of names) custom[name] = value((pose) => pose.custom?.[name] ?? 0);
+      return { ...base, ...out, custom };
+    });
 }
 
 /** The 3D signal winds up the other way from its travel, then plays and ends where it ends. */
@@ -77,27 +79,28 @@ export function anticipation3d(
 ): (signal: Signal<Pose3d>) => Signal<Pose3d> {
   check(options, "anticipation3d");
   const { share, amount } = options;
-  return (signal) => (time, events) => {
-    const at = (progress: number) => signal(withProgress(time, progress), events);
-    const first = at(0);
-    const last = at(1);
-    const played = time.progress >= share ? at((time.progress - share) / (1 - share)) : undefined;
-    const poses = played === undefined ? [first, last] : [first, last, played];
-    const fields = ADDED_3D.filter((field) => poses.some((pose) => pose[field] !== undefined));
-    const names = customNames(poses);
-    const base = played ?? first;
-    const wind = played === undefined ? amount * arch(time.progress / share) : 0;
-    const value = (read: (pose: Pose3d) => number) =>
-      played === undefined ? read(first) + wind * (read(first) - read(last)) : read(played);
-    const out: Mutable3d = {};
-    for (const field of fields)
-      out[field] = held(
-        field,
-        value((pose) => pose[field] ?? 0),
-      );
-    if (names.length === 0) return { ...base, ...out };
-    const custom: Record<string, number> = {};
-    for (const name of names) custom[name] = value((pose) => pose.custom?.[name] ?? 0);
-    return { ...base, ...out, custom };
-  };
+  return (signal) => (time, events) =>
+    withProbeStore(() => {
+      const at = (progress: number) => signal(withProgress(time, progress), events);
+      const first = at(0);
+      const last = at(1);
+      const played = time.progress >= share ? at((time.progress - share) / (1 - share)) : undefined;
+      const poses = played === undefined ? [first, last] : [first, last, played];
+      const fields = ADDED_3D.filter((field) => poses.some((pose) => pose[field] !== undefined));
+      const names = customNames(poses);
+      const base = played ?? first;
+      const wind = played === undefined ? amount * arch(time.progress / share) : 0;
+      const value = (read: (pose: Pose3d) => number) =>
+        played === undefined ? read(first) + wind * (read(first) - read(last)) : read(played);
+      const out: Mutable3d = {};
+      for (const field of fields)
+        out[field] = held(
+          field,
+          value((pose) => pose[field] ?? 0),
+        );
+      if (names.length === 0) return { ...base, ...out };
+      const custom: Record<string, number> = {};
+      for (const name of names) custom[name] = value((pose) => pose.custom?.[name] ?? 0);
+      return { ...base, ...out, custom };
+    });
 }

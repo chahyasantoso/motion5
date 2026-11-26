@@ -10,7 +10,7 @@ Generated from doc comments by `npm run reference -- --write`; one page per sour
 - [geometry](./geometry.md), 61 exports: Geometry holds the vector, matrix and quaternion maths, the 3D camera lens, and the path tools: shape outlines, arcs, resampling, reversal, transforms, bounds and area.
 - [path](./path.md), 5 exports: Motion along a curve or through the air: a point and tangent along a path, its length, and a ballistic arc.
 - [measure](./measure.md), 5 exports: Measures read a signal back: how fast it moves, and the area under a stream of samples.
-- [events](./events.md), 9 exports: An event is something that happened at a moment, such as a hover, a press or a landing, carried beside the scene's time.
+- [events](./events.md), 21 exports: An event is something that happened at a moment, such as a hover, a press or a landing, carried beside the scene's time.
 - [utility](./utility.md), 3 exports: Small shared helpers: a seeded random, a clamp and an exhaustive-switch guard.
 - [principles](./principles.md), 25 exports: The motion principles as signal transforms: squash and stretch, anticipation, follow-through, overlap, arcs, exaggeration and secondary action, each built from its options then given a signal.
-- [state](./state.md), 22 exports: State from events: a fold of the event log up to a time, and values that spring or ease when the state changes.
+- [state](./state.md), 32 exports: State from events: a fold of the event log up to a time, and values that spring or ease when the state changes.
