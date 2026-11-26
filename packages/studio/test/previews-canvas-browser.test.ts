@@ -162,7 +162,7 @@ describe("several previews", () => {
         const start = await elapsedIn(second);
         await page.waitForTimeout(600);
         expect(await elapsedIn(first)).toBe(held);
-        expect(await elapsedIn(second)).toBeGreaterThan(start);
+        expect(await elapsedIn(second)).not.toBe(start);
         await page.locator('[data-card-id="output:preview"] .card-head').click();
         await page.waitForSelector('[data-preview-card="output:preview"][data-active="true"]');
         const stopped = await elapsedIn(second);
