@@ -4,7 +4,7 @@
 
 A person or an agent opens `saved` in the Studio and makes its motion on the canvas: they add, edit and remove beats and moves, and wire moves to beats and to the page's casts, and each action writes the code an agent would write in `saved.ts`, which the preview plays at once. The code adds one owner that turns a small set of JSON edit operations into minimal code changes, a reader that gives back exactly the cards and wires those changes made, a command for agents, and canvas controls for each operation. It works for `saved` first; other pieces may show less or break on the canvas, and are left for later.
 
-Status: draft 2026-11-26, for review. It replaces the order of `plan/studio-canvas-plan.md` from its PR 3 on, which is paused; the work already built on `feat/studio-canvas-3` is kept, unmerged.
+Status: next, 2026-11-26, built as a rapid prototype first. `plan/studio-canvas-plan.md` is paused inside its PR 3, and its finished part has landed.
 
 Read `AGENTS.md` first. Every rule there applies.
 
