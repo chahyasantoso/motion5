@@ -4,7 +4,7 @@
 
 A person directing agent-written motion opens `gerak studio open <piece>` and sees the piece as a canvas of connected cards: its look, its cast, its sources, inputs and state, timing, moves and outputs. They wire the whole piece or one of its scenes into a player card and play it there and watch the cards and wires that are active light up, tune knobs, edit hand-written motion code in a side panel, colours, type and text, wire in audio, captions and clips, and run render and check from the canvas, without opening the scene file or the page. The agent keeps writing those files, and the canvas redraws from them. The code adds a separate `@gerak/studio` package holding a graph model built from the compiled scene, its source and the page, a node canvas with a clean modern design system, a real-page player card driving one playhead, and a small set of code patches for the edits a canvas may make; one data subpath of `@gerak/stage` and a render settings file read by `gerak render` are its only changes outside that package.
 
-Status: planned 2026-11-25. PR 1 and PR 2 have landed, and `plan/studio-agent-plan.md` has landed after them. `plan/mount-driver-plan.md` runs before PR 3. Eight pull requests.
+Status: planned 2026-11-25. PR 1 and PR 2 have landed, then `plan/studio-agent-plan.md` and `plan/mount-driver-plan.md`; PR 3 is next. Eight pull requests.
 
 Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; it needs no harness-specific skill.
 
@@ -14,7 +14,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 - `@gerak/stage/provenance` gives `provenanceOf(scene)`: each member's scene or shot and its steps, and each beat's scene or shot. A member's scene is recorded only for a sub-scene given `scene({ name })`; cookie's five sub-scenes have no name, so its graph shows one scene card holding about 100 members.
 - A move that wraps a known move in a local helper (`backwards(slide(...))` in `saved`) reads as a `code` card; the inner move and its knobs are not shown.
 - Wires attach to fixed sides (out on the right, in on the left), so a card dragged past the card it feeds loops its wire back.
-- The timeline drives a timed mount's clock (play, pause, seek, speed, loop, solo). A page mounted with `clock: "live"` (cookie) has no clock to drive: the timeline maps the playhead to the scroll position and cannot play. `plan/mount-driver-plan.md` gives such a page a driver the Studio hands it.
+- The timeline drives the page's clock (play, pause, seek, speed, loop, solo): a timed mount's own, or the seekable driver the canvas hands a live page such as cookie (`plan/mount-driver-plan.md`), whose take is the preset picked in the preview's menu, and which adds Replay.
 - One preview card shows the whole piece; a sub-scene or shot cannot be previewed alone.
 - `check` and `render` output cards are drawn and wired but do nothing.
 

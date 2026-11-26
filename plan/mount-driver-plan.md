@@ -4,7 +4,7 @@
 
 A person directing a live page in the Studio, such as cookie, plays, pauses, seeks, loops and replays it the way they play a reel, and a recorded take wired into the player replays on top of their own clicks and hovers; an agent gets the same through `gerak studio seek` and `play`. The code lets `mount` take a `Driver` (the one `@gerak/player` already defines) in place of building its own, lets a host hand that driver to a page's own `mount` call without editing the piece, and gives the Studio one driver built from its playhead and the take wired into the player.
 
-Status: planned 2026-11-26. One pull request at the end. It runs after the Studio agent plan and before canvas PR 3, whose player it builds on.
+Status: built 2026-11-26 (ADR-207), in one pull request. Until take cards exist (canvas PR 3), the take is the preset picked in the preview's Events preset menu.
 
 Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; it needs no harness-specific skill.
 
