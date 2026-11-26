@@ -100,12 +100,12 @@ describe("shot", () => {
     ).not.toThrow();
   });
 
-  it("refuses one element in two shots", () => {
+  it("refuses one element bound directly and in a shot, while allowing sequential shots", () => {
     const shared = box("shared");
     const one = scene({ name: "one" }, shared.moves(slide.in(beat("go", 500))));
-    expect(() =>
-      scene(shot(one), shot(scene({ name: "two" }, box("other").moves(slide), shared))),
-    ).toThrow(/"shared"/);
+    const two = scene({ name: "two" }, box("other").moves(slide), shared);
+    expect(() => compiled(scene(shot(one), shot(two, { length: 500 })))).not.toThrow();
+    expect(() => scene(shared, shot(one))).toThrow(/"shared"/);
   });
 
   it("hands a shot's motions its events at its own ms", () => {

@@ -92,8 +92,9 @@ export {
   type RestAt,
   type RestReader,
 } from "./author/layout";
-export { boxInViewport, placementOf, type BoxPlacement } from "./render/placement";
+export { boxInViewport, placementOf, withPlacement, type BoxPlacement } from "./render/placement";
 export {
+  type InputNeed,
   type Limits,
   type ListPose,
   type ListPose3d,

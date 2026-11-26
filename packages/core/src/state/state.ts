@@ -1,4 +1,4 @@
-import { rawTime } from "./clock-watch";
+import { notifyInputUse, rawTime, type InputChannel } from "./clock-watch";
 import { epochOf, storeCell } from "./store";
 import { elapsedOf, type Time } from "../time/time";
 import type { Signal } from "../time/shapes";
@@ -26,6 +26,7 @@ export interface State<S> extends Signal<S> {
   steps(time: Time, events: Events): readonly Step<S>[];
 }
 
+/** Monotonic compaction metadata attached to a state step list. */
 export interface StepMeta {
   readonly resetId: number;
   readonly base: number;
@@ -93,6 +94,7 @@ export function buildState<S>(
   rule: (current: S, event: MotionEvent) => S,
   options: StateOptions = {},
   initialOf?: (events: Events) => S,
+  channel: InputChannel = "events",
 ): State<S> {
   const { target } = options;
   const accepts = (event: MotionEvent): boolean => {
@@ -121,6 +123,7 @@ export function buildState<S>(
   };
 
   const fold = (time: Time, events: Events): StateCell<S> => {
+    notifyInputUse(channel);
     const now = elapsedOf(rawTime(time).clock);
     const generation = generationOf(events);
     const stream = sourceStreamOf(events);

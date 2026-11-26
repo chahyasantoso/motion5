@@ -205,6 +205,7 @@ function trackRest(rest: RestReader, deps: Set<string>): RestReader {
       deps.add(name);
       return rest.object(name);
     },
+    objectKeys: () => rest.objectKeys(),
   };
 }
 

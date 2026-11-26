@@ -1,43 +1,24 @@
 import { unreachable } from "@gerak/core";
-import type { Box } from "../author/layout";
+import type { Box, BoxPlacement } from "../author/layout";
 
-/** How a measured box moves with page scroll: normal flow, viewport-fixed, or sticky inside a pin range. */
-export type BoxPlacement =
-  | { readonly kind: "flow" }
-  | { readonly kind: "fixed" }
-  | {
-      readonly kind: "sticky";
-      readonly minY: number;
-      readonly maxY: number;
-      readonly pinY: number;
-    };
+export type { BoxPlacement };
 
-const BOX_PLACEMENT = Symbol.for("@gerak/stage/box-placement");
 const FLOW: BoxPlacement = Object.freeze({ kind: "flow" });
 
-function isPlacement(value: unknown): value is BoxPlacement {
-  if (typeof value !== "object" || value === null) return false;
-  const kind: unknown = Reflect.get(value, "kind");
-  if (kind === "flow" || kind === "fixed") return true;
-  if (kind !== "sticky") return false;
-  return (
-    typeof Reflect.get(value, "minY") === "number" &&
-    typeof Reflect.get(value, "maxY") === "number" &&
-    typeof Reflect.get(value, "pinY") === "number"
-  );
-}
-
-/** How `box` is placed on the page: flow unless `withPlacement` gave it another. */
+/** How `box` is placed on the page: flow unless `placement` was attached. */
 export function placementOf(box: Box): BoxPlacement {
-  const raw: unknown = Reflect.get(box, BOX_PLACEMENT);
-  return isPlacement(raw) ? raw : FLOW;
+  return box.placement ?? FLOW;
 }
 
-/** Attaches page scroll placement metadata onto `box` as a non-enumerable property. */
+/** Returns a frozen `box` with direct enumerable `placement` metadata. */
 export function withPlacement(box: Box, placement: BoxPlacement): Box {
-  const placed = { x: box.x, y: box.y, width: box.width, height: box.height };
-  Object.defineProperty(placed, BOX_PLACEMENT, { value: Object.freeze({ ...placement }) });
-  return Object.freeze(placed);
+  return Object.freeze({
+    x: box.x,
+    y: box.y,
+    width: box.width,
+    height: box.height,
+    placement: Object.freeze({ ...placement }),
+  });
 }
 
 /** The box's center and size in viewport coordinates at `scrollY` px. */

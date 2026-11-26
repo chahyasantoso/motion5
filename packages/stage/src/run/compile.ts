@@ -8,16 +8,9 @@ import {
   type Time,
   unreachable,
 } from "@gerak/core";
-import {
-  castBuilder,
-  type Content,
-  type Expect,
-  type Members,
-  type ScrollWindow,
-  type Stretch,
-} from "../author/cast";
+import type { Content, Expect, ScrollWindow, Stretch } from "../author/cast";
 import type { RestReader } from "../author/layout";
-import type { Limits, SceneContext, ShotSummary, StageDefinition } from "../author/stage";
+import type { InputNeed, Limits, SceneContext, ShotSummary } from "../author/stage";
 import type { StageError } from "./errors";
 import { matchOutlines } from "./outlines";
 import { visibility, windowOf, type Window } from "./timeline";
@@ -27,6 +20,8 @@ export type Member = {
   readonly name: string;
   readonly expect: Expect;
   readonly watch: boolean;
+  /** Input streams statically known to affect this member's pose or visibility. */
+  readonly inputs: InputNeed;
   /** Selector of the DOM nodes this member binds to: `[data-cast="<name>"]`; an object has none. */
   readonly node?: string | undefined;
   /** Ms the member shows; absent means always. */
@@ -41,6 +36,32 @@ export type Member = {
       readonly split?: "letters" | "words" | undefined;
     }
 );
+
+/** Unchecked member input handed by `compileScene` to the stage compiler. */
+export type MemberInput = {
+  readonly name: string;
+  readonly expect: Expect;
+  readonly watch: boolean;
+  readonly inputs: InputNeed;
+  readonly on?: readonly Stretch[] | undefined;
+  readonly onScroll?: readonly ScrollWindow[] | undefined;
+} & (
+  | { readonly kind: "object"; readonly parts?: boolean | undefined }
+  | { readonly kind: "actor"; readonly content: Content; readonly media?: true | undefined }
+  | { readonly kind: "list"; readonly split?: "letters" | "words" | undefined }
+);
+
+/** Unchecked compiled-stage input built by `scene`. */
+export interface StageInput {
+  readonly beats: Readonly<Record<string, readonly [number, number]>>;
+  readonly durationMs?: number | undefined;
+  readonly members: readonly MemberInput[];
+  readonly cues?: Events | undefined;
+  readonly limits?: Readonly<Record<string, Limits>> | undefined;
+  readonly settleMs?: number | undefined;
+  readonly shots?: readonly ShotSummary[] | undefined;
+  readonly scene: (context: SceneContext) => unknown;
+}
 
 /** A checked piece, the one contract renderers and tools read. */
 export interface Stage {
@@ -251,22 +272,26 @@ export function castSelector(name: string): string {
   return `[data-cast="${name.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"]`;
 }
 
-function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonly Member[] {
+function compileMembers(
+  specs: readonly MemberInput[],
+  beats: Beats,
+  errors: StageError[],
+): readonly Member[] {
   const members: Member[] = [];
-  for (const [name, spec] of Object.entries(cast)) {
+  for (const spec of specs) {
+    const { name } = spec;
     if (name.includes(".")) errors.push({ kind: "reserved_dot", name });
-    const on =
-      spec.meta.on === undefined ? undefined : windowsOf(name, spec.meta.on, beats, errors);
+    const on = spec.on === undefined ? undefined : windowsOf(name, spec.on, beats, errors);
     const onScroll =
-      spec.meta.onScroll !== undefined && spec.meta.onScroll.length > 0
-        ? Object.freeze([...spec.meta.onScroll])
+      spec.onScroll !== undefined && spec.onScroll.length > 0
+        ? Object.freeze([...spec.onScroll])
         : undefined;
-    const expect = spec.meta.expect ?? "settle";
     const node = spec.kind === "object" ? undefined : castSelector(name);
     const base = {
       name,
-      expect,
-      watch: spec.meta.watch ?? false,
+      expect: spec.expect,
+      watch: spec.watch,
+      inputs: Object.freeze({ ...spec.inputs }),
       ...(node === undefined ? {} : { node }),
       ...(on === undefined ? {} : { on }),
       ...(onScroll === undefined ? {} : { onScroll }),
@@ -346,27 +371,14 @@ function signatureOf(durationMs: number, members: readonly Member[]): string {
   return JSON.stringify([durationMs, serializedMembers]);
 }
 
-/** Checks what types cannot in a piece and compiles it into a `Stage`, or lists every reason it cannot. */
-export function compileStage<B extends string, M extends Members<B>>(
-  definition: StageDefinition<B, M>,
-): CompileResult {
+/** Validates and compiles checked members, beats, limits, and scene callback into a `Stage`. */
+export function compileDirectStage(input: StageInput): CompileResult {
   const errors: StageError[] = [];
-  const beats = compileBeats(definition.beats, definition.durationMs, errors);
-  let members: readonly Member[] = [];
-  if (beats !== undefined) {
-    try {
-      members = compileCast(definition.cast(castBuilder<B>()), beats, errors);
-    } catch (thrown) {
-      errors.push({
-        kind: "invalid",
-        field: "cast",
-        reason: thrown instanceof Error ? thrown.message : String(thrown),
-      });
-    }
-  }
-  const limits = compileLimits(definition.limits ?? {}, errors);
+  const beats = compileBeats(input.beats, input.durationMs, errors);
+  const members = beats === undefined ? [] : compileMembers(input.members, beats, errors);
+  const limits = compileLimits(input.limits ?? {}, errors);
   if (errors.length > 0 || beats === undefined) return { ok: false, errors: Object.freeze(errors) };
-  const { cues, settleMs, shots, scene } = definition;
+  const { cues, settleMs, shots, scene } = input;
   const stage: Stage = Object.freeze({
     kind: "stage",
     durationMs: beats.durationMs,
@@ -383,7 +395,7 @@ export function compileStage<B extends string, M extends Members<B>>(
   return { ok: true, stage };
 }
 
-/** Whether `value` reads as a compiled stage: `kind` only, so a stage from a second copy of the package passes. */
+/** Whether `value` reads as a compiled stage: `kind` only, so a second copy of the package passes. */
 export function isStage(value: unknown): value is Stage {
   return isPlainRecord(value) && value["kind"] === "stage";
 }

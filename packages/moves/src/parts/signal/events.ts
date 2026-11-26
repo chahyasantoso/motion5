@@ -1,5 +1,6 @@
 import {
   elapsedOf,
+  notifyInputUse,
   springTo,
   state,
   stillMoving,
@@ -106,6 +107,7 @@ export function react(options: ReactOptions): (time: Time, events: Events) => nu
   const quiet = Math.log(1000) / decay;
   const quietMs = quiet * 1000;
   return (time, events) => {
+    notifyInputUse("events");
     const now = elapsedOf(time.clock);
     if (now === undefined) return 0;
     const ordered = versionOf(events) !== undefined;

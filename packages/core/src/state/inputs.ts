@@ -1,5 +1,6 @@
 import { clamp } from "../utility/clamp";
 import { baselineOf } from "../events/event-log";
+import type { InputChannel } from "./clock-watch";
 import { buildState, type State } from "./state";
 
 /** Sample event names folded by `scroll` and `pointer`: `"scroll"`, `"pointer-x"` and `"pointer-y"`. */
@@ -26,6 +27,7 @@ export interface PointerState {
 function sampleState(
   start: number,
   eventName: string,
+  channel: InputChannel,
   bounds?: readonly [min: number, max: number],
 ): State<number> {
   const normalize = (value: number): number => {
@@ -48,16 +50,17 @@ function sampleState(
       const value = baselineOf(events)?.get(eventName);
       return value !== undefined && Number.isFinite(value) ? normalize(value) : start;
     },
+    channel,
   );
 }
 
 /** Page scroll state, built on `state`; `scroll.y` reads `"scroll"` sample events in px. */
 export const scroll: ScrollState = Object.freeze({
-  y: sampleState(0, INPUT_EVENTS.scroll),
+  y: sampleState(0, INPUT_EVENTS.scroll, "scroll"),
 });
 
 /** Viewport pointer state, built on `state`; `pointer.x` and `pointer.y` run 0 to 1, starting at 0.5. */
 export const pointer: PointerState = Object.freeze({
-  x: sampleState(0.5, INPUT_EVENTS.pointerX, [0, 1]),
-  y: sampleState(0.5, INPUT_EVENTS.pointerY, [0, 1]),
+  x: sampleState(0.5, INPUT_EVENTS.pointerX, "pointer", [0, 1]),
+  y: sampleState(0.5, INPUT_EVENTS.pointerY, "pointer", [0, 1]),
 });

@@ -41,7 +41,11 @@ export function restOfBounds(bounds: Box): Box {
   return { ...bounds, x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
 }
 
-function recording(boxes: Readonly<Record<string, Box>>, read: Set<string>): RestReader {
+function recording(
+  boxes: Readonly<Record<string, Box>>,
+  rest: RestReader,
+  read: Set<string>,
+): RestReader {
   const keys = Object.freeze(Object.keys(boxes));
   return Object.freeze({
     get(name: string): Box {
@@ -53,7 +57,8 @@ function recording(boxes: Readonly<Record<string, Box>>, read: Set<string>): Res
       return Object.hasOwn(boxes, name);
     },
     keys: (): readonly string[] => keys,
-    object: () => undefined,
+    object: (name: string) => rest.object(name),
+    objectKeys: () => rest.objectKeys(),
   });
 }
 
@@ -102,7 +107,7 @@ export function drawStrokes(
       let drawn: readonly Cubic2d[] | undefined;
       let error: unknown;
       try {
-        drawn = typeof path === "function" ? path(recording(boxes, read)) : path;
+        drawn = typeof path === "function" ? path(recording(boxes, rest, read)) : path;
       } catch (thrown) {
         error = thrown;
       }
@@ -128,5 +133,11 @@ export function drawStrokes(
     const behind = names.filter((name) => !loop.includes(name));
     return { ok: false, error: { kind: "stroke_loop", loop, behind } };
   }
-  return { ok: true, strokes: { cubics, rest: restReader(boxes), failures, selfReads } };
+  const objects = Object.fromEntries(
+    rest.objectKeys().flatMap((key) => {
+      const bounds = rest.object(key);
+      return bounds === undefined ? [] : [[key, bounds] as const];
+    }),
+  );
+  return { ok: true, strokes: { cubics, rest: restReader(boxes, objects), failures, selfReads } };
 }

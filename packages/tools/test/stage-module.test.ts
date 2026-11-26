@@ -3,13 +3,13 @@ import { toCubics, type Time } from "@gerak/core";
 import { formatStageError, type RestReader } from "@gerak/stage";
 import { sampleScene, type SceneModule } from "@gerak/tools/scene";
 import {
+  NO_INPUTS,
   cleanDefinition,
-  compileStage,
-  defineStage,
-  rawStage,
+  compileDirectStage,
+  directStage,
   readModule,
   unusedDefinition,
-  type CastBuilder,
+  type MemberInput,
 } from "./stage-definitions";
 import type { MeasureCache } from "../src/page/measure-cache";
 import { reviewSceneModule } from "../src/scene/review";
@@ -39,14 +39,41 @@ const underWord = (rest: RestReader) => {
   return level(dot.x - dot.width / 2, dot.x + dot.width / 2, dot.y + dot.height / 2);
 };
 
-const markedBy =
-  (path: (rest: RestReader) => ReturnType<typeof level>) =>
-  (m: CastBuilder<"intro" | "go" | "out">) => ({
-    stage: m.box().static(),
-    dot: m.box().on("go"),
-    word: m.letters(),
-    mark: m.stroke(path).static(),
-  });
+const markedBy = (path: (rest: RestReader) => ReturnType<typeof level>): readonly MemberInput[] => [
+  {
+    name: "stage",
+    expect: "static",
+    watch: false,
+    inputs: NO_INPUTS,
+    kind: "actor",
+    content: { kind: "box" },
+  },
+  {
+    name: "dot",
+    expect: "settle",
+    watch: false,
+    inputs: NO_INPUTS,
+    on: [{ kind: "beats", from: "go", to: "go" }],
+    kind: "actor",
+    content: { kind: "box" },
+  },
+  {
+    name: "word",
+    expect: "settle",
+    watch: false,
+    inputs: NO_INPUTS,
+    kind: "list",
+    split: "letters",
+  },
+  {
+    name: "mark",
+    expect: "static",
+    watch: false,
+    inputs: NO_INPUTS,
+    kind: "actor",
+    content: { kind: "stroke", path },
+  },
+];
 
 describe("a stage module in the scene tools", () => {
   it("is read with its length from beats, its beat spans and its compiled cast names", () => {
@@ -75,7 +102,7 @@ describe("a stage module in the scene tools", () => {
   });
 
   it("samples a module whose path is a function of where things rest", () => {
-    const read = moduleOf(defineStage({ ...cleanDefinition, cast: markedBy(underWord) }));
+    const read = moduleOf(directStage({ ...cleanDefinition, members: markedBy(underWord) }));
     const mark = read.stage?.members.find(({ name }) => name === "mark");
     const content = mark?.kind === "actor" ? mark.content : undefined;
     expect(content?.kind).toBe("stroke");
@@ -85,9 +112,9 @@ describe("a stage module in the scene tools", () => {
   });
 
   it("refuses a duration past its beats", () => {
-    const apart = readModule(defineStage({ ...cleanDefinition, durationMs: 1000 }));
+    const apart = readModule(directStage({ ...cleanDefinition, durationMs: 1000 }));
     expect("reason" in apart && apart.reason).toMatch(/1400.*1000/);
-    const agree = readModule(defineStage({ ...cleanDefinition, durationMs: 2000 }));
+    const agree = readModule(directStage({ ...cleanDefinition, durationMs: 2000 }));
     expect("reason" in agree).toBe(false);
   });
 
@@ -101,17 +128,48 @@ describe("a stage module in the scene tools", () => {
 
 describe("gerak review of a member still ringing", () => {
   const ringing = (on: readonly ("intro" | "go" | "out")[]) =>
-    defineStage({
+    directStage({
       beats: { intro: [0, 400], go: [400, 1400], out: [1400, 2000] },
-      cast: (m) => ({
-        stage: m.box().static(),
-        dot: m.box().on(...on),
-        word: m.letters(),
-        mark: m.box().static(),
-      }),
+      members: [
+        {
+          name: "stage",
+          expect: "static",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+        {
+          name: "dot",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          on: on.map((beat) => ({ kind: "beats" as const, from: beat, to: beat })),
+          kind: "actor",
+          content: { kind: "box" },
+        },
+        {
+          name: "word",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "list",
+          split: "letters",
+        },
+        {
+          name: "mark",
+          expect: "static",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
       scene: ({ time, beats }) => ({
         dot: { x: Math.sin(time.progress * 200) },
-        word: (index) => ({ x: index * 20 + 50 * beats.intro.of(time).progress }),
+        word: (index: number) => ({
+          x: index * 20 + 50 * (beats["intro"]?.of(time).progress ?? 0),
+        }),
       }),
     });
   const ringingLines = (on: readonly ("intro" | "go" | "out")[]) =>
@@ -125,9 +183,9 @@ describe("gerak review of a member still ringing", () => {
 
 describe("one reader of a stage module", () => {
   it("refuses a bad stage module with the reason @gerak/stage gives", () => {
-    const bad = rawStage({ ...cleanDefinition, durationMs: -1 });
-    const own = compileStage(bad);
-    const tools = readModule(bad);
+    const bad = { ...cleanDefinition, durationMs: -1 };
+    const own = compileDirectStage(bad);
+    const tools = readModule(directStage(bad));
     expect(
       !own.ok && "reason" in tools && tools.reason === own.errors.map(formatStageError).join("\n"),
     ).toBe(true);
@@ -143,9 +201,9 @@ describe("gerak review on a stage module", () => {
     const handed: RestReader[] = [];
     const box = { x: 50, y: 20, width: 40, height: 10 };
     const fine = findings(
-      defineStage({
+      directStage({
         ...cleanDefinition,
-        cast: markedBy((rest) => {
+        members: markedBy((rest) => {
           handed.push(rest);
           return underWord(rest);
         }),
@@ -160,11 +218,13 @@ describe("gerak review on a stage module", () => {
       },
     );
     expect(fine).toEqual([]);
-    expect(handed.map((rest) => rest.get("dot"))).toEqual([box]);
+    expect(handed.map((rest) => rest.get("dot"))).toEqual([
+      { ...box, placement: { kind: "flow" } },
+    ]);
     const own = findings(
-      defineStage({
+      directStage({
         ...cleanDefinition,
-        cast: markedBy((rest) => {
+        members: markedBy((rest) => {
           const mark = rest.get("mark");
           return level(mark.x, mark.x + 1 + mark.width, 0);
         }),
@@ -172,9 +232,9 @@ describe("gerak review on a stage module", () => {
     );
     expect(own).toEqual(['path "mark" reads its own rest box']);
     const broken = findings(
-      defineStage({
+      directStage({
         ...cleanDefinition,
-        cast: markedBy(() => {
+        members: markedBy(() => {
           throw new Error("no dot");
         }),
       }),
@@ -185,41 +245,120 @@ describe("gerak review on a stage module", () => {
   it("draws a path reading another stroke after it, reports two reading each other, and lets a path divide by a size nothing measured", () => {
     const widths: number[] = [];
     const other = findings(
-      defineStage({
+      directStage({
         ...cleanDefinition,
-        cast: (m) => ({
-          stage: m.box().static(),
-          dot: m.box().on("go"),
-          word: m.letters(),
-          mark: m
-            .stroke((rest) => {
-              widths.push(rest.get("line").width);
-              return level(0, rest.get("line").width + 1, 0);
-            })
-            .static(),
-          line: m.stroke(level(0, 10, 0)).static(),
-        }),
+        members: [
+          {
+            name: "stage",
+            expect: "static",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: { kind: "box" },
+          },
+          {
+            name: "dot",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            on: [{ kind: "beats", from: "go", to: "go" }],
+            kind: "actor",
+            content: { kind: "box" },
+          },
+          {
+            name: "word",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "list",
+            split: "letters",
+          },
+          {
+            name: "mark",
+            expect: "static",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: {
+              kind: "stroke",
+              path: (rest: RestReader) => {
+                widths.push(rest.get("line").width);
+                return level(0, rest.get("line").width + 1, 0);
+              },
+            },
+          },
+          {
+            name: "line",
+            expect: "static",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: { kind: "stroke", path: level(0, 10, 0) },
+          },
+        ],
       }),
     );
     expect(other).toEqual([]);
     expect(widths.at(-1)).toBe(10);
     const loop = findings(
-      defineStage({
+      directStage({
         ...cleanDefinition,
-        cast: (m) => ({
-          stage: m.box().static(),
-          dot: m.box().on("go"),
-          word: m.letters(),
-          a: m.stroke((rest) => level(0, rest.get("b").width + 1, 0)).static(),
-          b: m.stroke((rest) => level(0, rest.get("a").width + 1, 0)).static(),
-        }),
+        members: [
+          {
+            name: "stage",
+            expect: "static",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: { kind: "box" },
+          },
+          {
+            name: "dot",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            on: [{ kind: "beats", from: "go", to: "go" }],
+            kind: "actor",
+            content: { kind: "box" },
+          },
+          {
+            name: "word",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "list",
+            split: "letters",
+          },
+          {
+            name: "a",
+            expect: "static",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: {
+              kind: "stroke",
+              path: (rest: RestReader) => level(0, rest.get("b").width + 1, 0),
+            },
+          },
+          {
+            name: "b",
+            expect: "static",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: {
+              kind: "stroke",
+              path: (rest: RestReader) => level(0, rest.get("a").width + 1, 0),
+            },
+          },
+        ],
       }),
     );
     expect(loop).toEqual(['paths "a" and "b" read each other']);
     const scaled = findings(
-      defineStage({
+      directStage({
         ...cleanDefinition,
-        cast: markedBy((rest) => level(0, 10 / rest.get("dot").width, 0)),
+        members: markedBy((rest) => level(0, 10 / rest.get("dot").width, 0)),
       }),
     );
     expect(scaled).toEqual([]);
@@ -229,17 +368,32 @@ describe("gerak review on a stage module", () => {
     const beats = { all: [0, 1000] } as const;
     const seen: number[] = [];
     const fine = findings(
-      defineStage({
+      directStage({
         beats,
-        cast: (m) => ({
-          dot: m.box(),
-          clock: m
-            .readout((time: Time) => {
-              seen.push(time.progress);
-              return String(time.progress);
-            })
-            .static(),
-        }),
+        members: [
+          {
+            name: "dot",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: { kind: "box" },
+          },
+          {
+            name: "clock",
+            expect: "static",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: {
+              kind: "readout",
+              format: (time: Time) => {
+                seen.push(time.progress);
+                return String(time.progress);
+              },
+            },
+          },
+        ],
         scene: ({ time }) => ({ dot: { x: time.progress } }),
       }),
     );
@@ -247,14 +401,32 @@ describe("gerak review on a stage module", () => {
     expect(seen.slice(0, 63)).toEqual(
       Array.from({ length: 63 }, (_, index) => (index * 16) / 1000),
     );
+    const badFormat: (time: Time) => string = () => {
+      const value: unknown = 7;
+      return Reflect.apply((x: unknown) => x, undefined, [value]) as string;
+    };
     const bad = findings(
-      rawStage({
+      directStage({
         beats,
-        cast: (m: CastBuilder) => ({
-          dot: m.box(),
-          clock: Reflect.apply(m.readout, m, [() => 7]).static(),
-        }),
-        scene: ({ time }: { readonly time: Time }) => ({ dot: { x: time.progress } }),
+        members: [
+          {
+            name: "dot",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: { kind: "box" },
+          },
+          {
+            name: "clock",
+            expect: "static",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: { kind: "readout", format: badFormat },
+          },
+        ],
+        scene: ({ time }) => ({ dot: { x: time.progress } }),
       }),
     );
     expect(bad.filter((line) => /text/.test(line))).toEqual([
@@ -263,7 +435,7 @@ describe("gerak review on a stage module", () => {
   });
 
   it("finds a member the scene never moves that is not static", () => {
-    expect(findings(unusedDefinition)).toEqual([
+    expect(findings(directStage(unusedDefinition))).toEqual([
       'cast member "spare" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
     ]);
   });
@@ -272,29 +444,66 @@ describe("gerak review on a stage module", () => {
     const beats = { early: [0, 300], late: [700, 1000] } as const;
     const hop = (time: Time) => ({ x: time.progress < 0.5 ? 0 : 400 + time.progress });
     const hidden = findings(
-      defineStage({
+      directStage({
         beats,
-        cast: (m) => ({ dot: m.box().on("early", "late") }),
+        members: [
+          {
+            name: "dot",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            on: [
+              { kind: "beats", from: "early", to: "early" },
+              { kind: "beats", from: "late", to: "late" },
+            ],
+            kind: "actor",
+            content: { kind: "box" },
+          },
+        ],
         scene: ({ time }) => ({ dot: hop(time) }),
       }),
     );
     expect(hidden.some((line) => /jumps/.test(line))).toBe(false);
     const shown = findings(
-      defineStage({
+      directStage({
         beats,
-        cast: (m) => ({ dot: m.box() }),
+        members: [
+          {
+            name: "dot",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: { kind: "box" },
+          },
+        ],
         scene: ({ time }) => ({ dot: hop(time) }),
       }),
     );
     expect(shown.some((line) => /dot\.x jumps/.test(line))).toBe(true);
     const nestedModule = readModule(
-      defineStage({
+      directStage({
         beats,
-        cast: (m) => ({
-          outer: m.box().on("late"),
-          dust: m.many(),
-          solo: m.box(),
-        }),
+        members: [
+          {
+            name: "outer",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            on: [{ kind: "beats", from: "late", to: "late" }],
+            kind: "actor",
+            content: { kind: "box" },
+          },
+          { name: "dust", expect: "settle", watch: false, inputs: NO_INPUTS, kind: "list" },
+          {
+            name: "solo",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: { kind: "box" },
+          },
+        ],
         scene: ({ time }) => ({
           outer: { x: time.progress },
           dust: () => hop(time),
@@ -319,9 +528,18 @@ describe("gerak review on a stage module", () => {
     const beats = { all: [0, 500] } as const;
     expect(
       findings(
-        defineStage({
+        directStage({
           beats,
-          cast: (m) => ({ play: m.box().watch() }),
+          members: [
+            {
+              name: "play",
+              expect: "settle",
+              watch: true,
+              inputs: NO_INPUTS,
+              kind: "actor",
+              content: { kind: "box" },
+            },
+          ],
           scene: () => ({}),
         }),
       ),
@@ -337,9 +555,22 @@ describe("gerak review on a stage module", () => {
 
   it("finds a change in the gap between two stretches, and none after one ending the story", () => {
     const beats = { a: [0, 300], gap: [300, 600], b: [600, 1000] } as const;
-    const twice = defineStage({
+    const twice = directStage({
       beats,
-      cast: (m) => ({ dot: m.box().on("a", "b") }),
+      members: [
+        {
+          name: "dot",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          on: [
+            { kind: "beats", from: "a", to: "a" },
+            { kind: "beats", from: "b", to: "b" },
+          ],
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
       scene: ({ time }) => ({
         dot: { x: Math.round(time.progress * 1000) % 300 < 150 ? 0 : 1 },
       }),

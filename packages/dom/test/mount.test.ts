@@ -240,7 +240,13 @@ describe("mount", () => {
 
     expect(root.createdCount).toBe(0);
     expect(title.textContent).toBe("Existing Site Title");
-    expect(mounted.rest["card"]).toEqual({ x: 80, y: 80, width: 120, height: 60 });
+    expect(mounted.rest["card"]).toEqual({
+      x: 80,
+      y: 80,
+      width: 120,
+      height: 60,
+      placement: { kind: "flow" },
+    });
     expect(items[0]?.style.transform).toBe("");
     expect(items[1]?.style.transform).toBe("translate3d(15px, 0px, 0px)");
 
@@ -576,14 +582,38 @@ describe("mount", () => {
       { root, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
 
-    expect(mounted.rest["hero"]).toEqual({ x: 500, y: 300, width: 1000, height: 600 });
-    expect(mounted.rest["story"]).toEqual({ x: 500, y: 1300, width: 1000, height: 1400 });
+    expect(mounted.rest["hero"]).toEqual({
+      x: 500,
+      y: 300,
+      width: 1000,
+      height: 600,
+      placement: { kind: "flow" },
+    });
+    expect(mounted.rest["story"]).toEqual({
+      x: 500,
+      y: 1300,
+      width: 1000,
+      height: 1400,
+      placement: { kind: "flow" },
+    });
 
     heroNode.offsetHeight = 800;
     storyNode.offsetTop = 800;
     mounted.remeasure();
-    expect(mounted.rest["hero"]).toEqual({ x: 500, y: 400, width: 1000, height: 800 });
-    expect(mounted.rest["story"]).toEqual({ x: 500, y: 1500, width: 1000, height: 1400 });
+    expect(mounted.rest["hero"]).toEqual({
+      x: 500,
+      y: 400,
+      width: 1000,
+      height: 800,
+      placement: { kind: "flow" },
+    });
+    expect(mounted.rest["story"]).toEqual({
+      x: 500,
+      y: 1500,
+      width: 1000,
+      height: 1400,
+      placement: { kind: "flow" },
+    });
 
     mounted.dispose();
     expect(heroNode.style.transform).toBe("");

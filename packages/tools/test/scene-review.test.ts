@@ -17,7 +17,7 @@ import {
 import { beat, bind, box, object, scene, scrollPoint, stagger } from "@gerak/stage";
 import { afterEach, describe, expect, it } from "vitest";
 import type { MeasureCache } from "../src/page/measure-cache";
-import { defineStage, rawStage, readModule, type CastBuilder } from "./stage-definitions";
+import { NO_INPUTS, directStage, readModule, type MemberInput } from "./stage-definitions";
 import {
   isSceneFile,
   parseSceneReviewArgs,
@@ -197,32 +197,61 @@ describe("gerak review on a value's shape", () => {
     { id: "a", x0: 0, y0: 0, x1: 5, y1: 0, x2: 10, y2: 0, x3: 20, y3: 0 },
     { id: "b", x0: 20, y0: 0, x1: 25, y1: 5, x2: 30, y2: 5, x3: 40, y3: 0 },
   ];
-  const stage = (
-    cast: (m: CastBuilder<"show">) => Record<string, ReturnType<CastBuilder<"show">["box"]>>,
-  ) =>
-    defineStage({
+  const stage = (mouth: MemberInput) =>
+    directStage({
       beats: { show: [0, 2000] },
-      cast,
+      members: [mouth],
       scene: ({ time }) => ({ mouth: { shape: Math.min(1, time.progress * 4) } }),
     });
 
   it("finds a member given shape that has no shapes, once", () => {
-    const { findings } = review(stage((m) => ({ mouth: m.stroke(line) })));
+    const { findings } = review(
+      stage({
+        name: "mouth",
+        expect: "settle",
+        watch: false,
+        inputs: NO_INPUTS,
+        kind: "actor",
+        content: { kind: "stroke", path: line },
+      }),
+    );
     expect(findings).toEqual(['cast member "mouth" is given shape, but has no shapes.']);
   });
 
   it("finds nothing when the member has shapes", () => {
     const target = line.map((c) => ({ ...c, y0: c.y0 + 4, y3: c.y3 + 4 }));
-    expect(motionFindings(review(stage((m) => ({ mouth: m.morph(line, [target]) }))))).toEqual([]);
+    expect(
+      motionFindings(
+        review(
+          stage({
+            name: "mouth",
+            expect: "settle",
+            watch: false,
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: { kind: "morph", shapes: [line, target] },
+          }),
+        ),
+      ),
+    ).toEqual([]);
   });
 });
 
 describe("gerak review on time itself", () => {
   const ms = (time: Time): number => elapsedOf(time.clock) ?? 0;
   const drifting = (ambient: boolean) =>
-    defineStage({
+    directStage({
       beats: { all: [0, 1000] },
-      cast: (m) => ({ snow: ambient ? m.box().ambient() : m.box().settle() }),
+      members: [
+        {
+          name: "snow",
+          expect: ambient ? "ambient" : "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
       scene: ({ time }) => ({ snow: { y: ms(time) / 10 } }),
     });
 
@@ -233,9 +262,18 @@ describe("gerak review on time itself", () => {
 
   it("reports a value that differs when sought from when played to", () => {
     let peak = 0;
-    const remembering = defineStage({
+    const remembering = directStage({
       beats: { all: [0, 1000] },
-      cast: (m) => ({ snow: m.box().ambient() }),
+      members: [
+        {
+          name: "snow",
+          expect: "ambient",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
       scene: ({ time }) => {
         peak = Math.max(peak, ms(time));
         return { snow: { y: peak / 10 } };
@@ -350,9 +388,17 @@ describe("gerak review expectations and shape mismatches", () => {
       frame: { readonly width: number; readonly height: number },
       rest: MeasureCache["rest"] = {},
     ): MeasureCache => ({ page: "orb.html", digest: "", frame, rest, lines: {}, parents: {} });
-    const cleanAmbient = defineStage({
+    const orbMember: MemberInput = {
+      name: "orb",
+      expect: "ambient",
+      watch: false,
+      inputs: NO_INPUTS,
+      kind: "actor",
+      content: { kind: "box" },
+    };
+    const cleanAmbient = directStage({
       beats: { loop: [0, 1000] },
-      cast: (m) => ({ orb: m.box().ambient() }),
+      members: [orbMember],
       scene: ({ time }) => ({
         orb: { x: 200 + 50 * Math.sin(time.progress * Math.PI * 2), y: 150 },
       }),
@@ -361,9 +407,9 @@ describe("gerak review expectations and shape mismatches", () => {
       [],
     );
 
-    const outOfBounds = defineStage({
+    const outOfBounds = directStage({
       beats: { loop: [0, 1000] },
-      cast: (m) => ({ orb: m.box().ambient() }),
+      members: [orbMember],
       scene: ({ time }) => ({ orb: { x: 350 * time.progress } }),
     });
     const orbRest: MeasureCache["rest"] = {
@@ -377,9 +423,9 @@ describe("gerak review expectations and shape mismatches", () => {
       false,
     );
 
-    const jumpingAmbient = defineStage({
+    const jumpingAmbient = directStage({
       beats: { loop: [0, 1000] },
-      cast: (m) => ({ orb: m.box().ambient() }),
+      members: [orbMember],
       limits: { orb: { jump: 10 } },
       scene: ({ time }) => ({ orb: { x: time.progress < 0.5 ? 100 : 300 } }),
     });
@@ -387,11 +433,21 @@ describe("gerak review expectations and shape mismatches", () => {
   });
 
   it("reports a list item that throws as a finding, and no never-moved noise beside it", () => {
-    const broken = defineStage({
+    const broken = directStage({
       beats: { show: [0, 400] },
-      cast: (m) => ({ row: m.many(), dot: m.box() }),
+      members: [
+        { name: "row", expect: "settle", watch: false, inputs: NO_INPUTS, kind: "list" },
+        {
+          name: "dot",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
       scene: () => ({
-        row: (i) => {
+        row: (i: number) => {
           if (i === 1) throw new Error("boom");
           return { x: i };
         },
@@ -412,9 +468,18 @@ describe("gerak review expectations and shape mismatches", () => {
   });
 
   it("judges an ambient member's bounds only where its box and frame are measured", () => {
-    const unmeasured = defineStage({
+    const unmeasured = directStage({
       beats: { show: [0, 400] },
-      cast: (m) => ({ flake: m.box().ambient() }),
+      members: [
+        {
+          name: "flake",
+          expect: "ambient",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
       scene: ({ time }) => ({ flake: { x: -10 + 5 * Math.sin(time.progress * 6) } }),
     });
     expect(review(unmeasured).findings.filter((line) => /bounds/.test(line))).toEqual([]);
@@ -432,9 +497,9 @@ describe("gerak review expectations and shape mismatches", () => {
   });
 
   it("emits findings for frame shape_mismatch errors instead of throwing", () => {
-    const mismatch = rawStage({
+    const mismatch = directStage({
       beats: { show: [0, 400] },
-      cast: (m: CastBuilder<"show">) => ({ dots: m.many() }),
+      members: [{ name: "dots", expect: "settle", watch: false, inputs: NO_INPUTS, kind: "list" }],
       scene: () => ({ dots: [{ x: 0 }] }),
     });
     expect(review(mismatch).findings).toContain(

@@ -90,18 +90,19 @@ describe("an element's edges", () => {
 });
 
 describe("single-scene element ownership", () => {
-  it("refuses an element shared across two different scenes, naming both", () => {
+  it("refuses an element shared across two sub-scenes of one scene, naming both", () => {
     const sharedBox = box("sharedBox");
-    scene({ name: "firstScene" }, sharedBox);
+    const first = scene({ name: "firstScene" }, sharedBox);
+    const second = scene({ name: "secondScene" }, sharedBox);
 
-    expect(() => scene({ name: "secondScene" }, sharedBox)).toThrow(
+    expect(() => scene({ name: "page" }, first, second)).toThrow(
       /sharedBox.*firstScene.*secondScene/,
     );
 
     // Whitespace scene names fall back to sequential default scene labels.
     const blankTarget = box("blankTarget");
-    scene({ name: "   " }, blankTarget);
-    expect(() => scene(blankTarget)).toThrow(/scene \d+/);
+    const blank = scene({ name: "   " }, blankTarget);
+    expect(() => scene(blank, blankTarget)).toThrow(/scene \d+/);
   });
 
   it("allows scenes to share beats, states, signals, and read-only edge references", () => {
@@ -122,9 +123,10 @@ describe("single-scene element ownership", () => {
     const merged = compiled(scene({ name: "page" }, s3, s4));
     expect(merged.members.map((m) => m.name)).toEqual(["c", "shared", "d"]);
 
-    // Binding `shared` in two scenes still enforces single-scene ownership.
-    scene({ name: "ownerA" }, shared);
-    expect(() => scene({ name: "ownerB" }, shared)).toThrow(/shared.*ownerA.*ownerB/);
+    // Binding `shared` in two sub-scenes of one scene still enforces single-scene ownership.
+    const ownerA = scene({ name: "ownerA" }, shared);
+    const ownerB = scene({ name: "ownerB" }, shared);
+    expect(() => scene({ name: "ownerPage" }, ownerA, ownerB)).toThrow(/shared.*ownerA.*ownerB/);
   });
 
   it("re-exports boxInViewport and placementOf and resolves sticky pinStart and pinEnd edges", () => {

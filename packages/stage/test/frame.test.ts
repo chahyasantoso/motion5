@@ -12,33 +12,39 @@ import {
   type RestAt,
   type Stage,
 } from "../src";
-import { compileStage } from "../src/run/compile";
-import { defineStage, type StageDefinition } from "../src/author/stage";
-import type { Members } from "../src/author/cast";
+import { compileDirectStage, type StageInput } from "../src/run/compile";
 
 const at = (ms: number, length = 1000): Time =>
   timeAt({ progress: 0, clock: { kind: "timed", elapsed: 0, length } }, ms);
 
-function compiled<B extends string, M extends Members<B>>(
-  definition: StageDefinition<B, M>,
-): Stage {
-  const result = compileStage(definition);
+const NO_INPUTS = { scroll: false, pointer: false, events: false } as const;
+
+function compiled(input: StageInput): Stage {
+  const result = compileDirectStage(input);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
 
 describe("frame", () => {
   it("returns the scene's targets untouched and lists pose items by index", () => {
-    const stage = compiled(
-      defineStage({
-        beats: { a: [0, 1000] },
-        cast: (m) => ({ dots: m.many(), word: m.letters() }),
-        scene: ({ time }) => ({
-          dots: (i) => ({ x: i * 10 + time.progress }),
-          word: (i, n) => ({ opacity: i / n }),
-        }),
+    const stage = compiled({
+      beats: { a: [0, 1000] },
+      members: [
+        { name: "dots", expect: "settle", watch: false, inputs: NO_INPUTS, kind: "list" },
+        {
+          name: "word",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "list",
+          split: "letters",
+        },
+      ],
+      scene: ({ time }) => ({
+        dots: (i: number) => ({ x: i * 10 + time.progress }),
+        word: (i: number, n: number) => ({ opacity: i / n }),
       }),
-    );
+    });
     const out = frame(stage, { time: at(500) });
     expect(listPose(out.targets["dots"], 2, 3)).toEqual({ x: 20.5 });
     expect(listPose(out.targets["word"], 1, 3)).toEqual({ opacity: 1 / 3 });
@@ -47,13 +53,29 @@ describe("frame", () => {
   });
 
   it("checks shapes in one place: arrays, non-poses, lists not given as functions, unknown names", () => {
-    const stage = compiled(
-      defineStage({
-        beats: { a: [0, 100] },
-        cast: (m) => ({ box: m.box(), dots: m.many(), card: m.box() }),
-        scene: () => ({}),
-      }),
-    );
+    const stage = compiled({
+      beats: { a: [0, 100] },
+      members: [
+        {
+          name: "box",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+        { name: "dots", expect: "settle", watch: false, inputs: NO_INPUTS, kind: "list" },
+        {
+          name: "card",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
+      scene: () => ({}),
+    });
     const errors = check(stage, { box: [], dots: [{}, {}], card: 3, ghost: {} });
     expect(errors.map(formatStageError)[1]).toBe(
       'scene: "dots" is a list: give it `(index, count) => pose`, got an array.',
@@ -70,18 +92,47 @@ describe("frame", () => {
   });
 
   it("shows members by their stretches, start included and end excluded, the last beat holding", () => {
-    const stage = compiled(
-      defineStage({
-        beats: { a: [0, 100], b: [200, 300], c: [300, 1000] },
-        cast: (m) => ({
-          always: m.box(),
-          early: m.box().on("a"),
-          gap: m.box().on("b"),
-          tail: m.box().on("c"),
-        }),
-        scene: () => ({}),
-      }),
-    );
+    const stage = compiled({
+      beats: { a: [0, 100], b: [200, 300], c: [300, 1000] },
+      members: [
+        {
+          name: "always",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+        {
+          name: "early",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          on: [{ kind: "beats", from: "a", to: "a" }],
+          kind: "actor",
+          content: { kind: "box" },
+        },
+        {
+          name: "gap",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          on: [{ kind: "beats", from: "b", to: "b" }],
+          kind: "actor",
+          content: { kind: "box" },
+        },
+        {
+          name: "tail",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          on: [{ kind: "beats", from: "c", to: "c" }],
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
+      scene: () => ({}),
+    });
     const shown = (ms: number) =>
       Object.entries(stage.visibleAt(ms))
         .filter(([, on]) => on)
@@ -96,17 +147,42 @@ describe("frame", () => {
   });
 
   it("agrees with a direct reading of the stretches at every ms", () => {
-    const stage = compiled(
-      defineStage({
-        beats: { a: [0, 120], b: [80, 400], c: [390, 600] },
-        cast: (m) => ({
-          one: m.box().on("a", "c"),
-          two: m.box().on(["a", "b"]),
-          three: m.box().on("b"),
-        }),
-        scene: () => ({}),
-      }),
-    );
+    const stage = compiled({
+      beats: { a: [0, 120], b: [80, 400], c: [390, 600] },
+      members: [
+        {
+          name: "one",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          on: [
+            { kind: "beats", from: "a", to: "a" },
+            { kind: "beats", from: "c", to: "c" },
+          ],
+          kind: "actor",
+          content: { kind: "box" },
+        },
+        {
+          name: "two",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          on: [{ kind: "beats", from: "a", to: "b" }],
+          kind: "actor",
+          content: { kind: "box" },
+        },
+        {
+          name: "three",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          on: [{ kind: "beats", from: "b", to: "b" }],
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
+      scene: () => ({}),
+    });
     const within = (ranges: readonly (readonly [number, number])[], ms: number) =>
       ranges.some(([from, to]) => ms >= from && (ms < to || to >= 600));
     for (let ms = -5; ms <= 700; ms += 1) {
@@ -125,14 +201,22 @@ describe("frame", () => {
   });
 
   it("names the latest-started beat whose window holds a ms, as visibility reads it", () => {
-    const stage = compiled(
-      defineStage({
-        beats: { a: [0, 600], b: [300, 400], c: [600, 800] },
-        durationMs: 1000,
-        cast: (m) => ({ shot: m.box().on("c") }),
-        scene: () => ({}),
-      }),
-    );
+    const stage = compiled({
+      beats: { a: [0, 600], b: [300, 400], c: [600, 800] },
+      durationMs: 1000,
+      members: [
+        {
+          name: "shot",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          on: [{ kind: "beats", from: "c", to: "c" }],
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
+      scene: () => ({}),
+    });
     const named = (ms: number) => beatAt(stage.beats, stage.durationMs, ms);
     expect([100, 350, 400, 600, 799, 800, 900].map(named)).toEqual([
       "a",
@@ -145,23 +229,28 @@ describe("frame", () => {
     ]);
     expect(stage.visibleAt(800)).toEqual({ shot: false });
     expect(named(1000)).toBeUndefined();
-    const held = compiled(
-      defineStage({ beats: { a: [0, 500] }, cast: () => ({}), scene: () => ({}) }),
-    );
+    const held = compiled({ beats: { a: [0, 500] }, members: [], scene: () => ({}) });
     expect(beatAt(held.beats, held.durationMs, 500)).toBe("a");
     expect(beatAt(held.beats, held.durationMs, 9000)).toBe("a");
   });
 
   it("reads measured rest boxes and carries a member across re-measures", () => {
-    const stage = compiled(
-      defineStage({
-        beats: { a: [0, 1000] },
-        cast: (m) => ({ card: m.box() }),
-        scene: ({ carry, rest }) => ({
-          card: { ...carry("card", { ms: 200 }), opacity: rest.get("card").width },
-        }),
+    const stage = compiled({
+      beats: { a: [0, 1000] },
+      members: [
+        {
+          name: "card",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
+      scene: ({ carry, rest }) => ({
+        card: { ...carry("card", { ms: 200 }), opacity: rest.get("card").width },
       }),
-    );
+    });
     const row = restReader({ card: { x: 100, y: 100, width: 200, height: 100 } });
     const wide = restReader({ card: { x: 300, y: 200, width: 400, height: 200 } });
     const measures: readonly RestAt[] = [
@@ -181,26 +270,31 @@ describe("frame", () => {
   });
 
   it("reads only the targets the scene gave, never a prototype's", () => {
-    const stage = compiled(
-      defineStage({
-        beats: { a: [0, 100] },
-        cast: (m) => ({ toString: m.box() }),
-        scene: () => ({}),
-      }),
-    );
+    const stage = compiled({
+      beats: { a: [0, 100] },
+      members: [
+        {
+          name: "toString",
+          expect: "settle",
+          watch: false,
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
+      scene: () => ({}),
+    });
     expect(check(stage, {})).toEqual([]);
     expect(restReader({}).has("toString")).toBe(false);
     expect(restReader({}).get("toString")).toEqual(ZERO_BOX);
   });
 
   it("refuses a scene that returns no object", () => {
-    const stage = compiled(
-      defineStage({
-        beats: { a: [0, 100] },
-        cast: () => ({}),
-        scene: () => Reflect.get({ three: 3 }, "three"),
-      }),
-    );
+    const stage = compiled({
+      beats: { a: [0, 100] },
+      members: [],
+      scene: () => Reflect.get({ three: 3 }, "three"),
+    });
     expect(() => frame(stage, { time: at(0) })).toThrow(TypeError);
     expect(NO_REST.get("x")).toEqual(ZERO_BOX);
   });

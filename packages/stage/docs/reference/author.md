@@ -35,15 +35,15 @@ What a piece is written with: `scene`, its elements, beats and motions. Reach fo
 - **`Outline`** `type Outline = { readonly kind: "path"; readonly path: Path; } | { readonly kind: "morph"; readonly base: readonly Cubic2d[]; readonly targets: readonly (readonly Cubic2d[])[]; }`: What a shape draws: a path, or a base outline with the outlines it blends to.
 - **`ShapeSource`** `type ShapeSource = Path | MorphSource`: What `shape` draws: a path, or a morph.
 - **`TextOptions`** `type TextOptions = { split?: "letters" | "words" | undefined; watch?: boolean | undefined }`: Options of `text`: how to split it into parts.
-- **`bind`** `(fields: BoundFields): Motion<Pose2d, MotionContext>`: A motion setting each field from its signal at the scene's time.
-- **`bindEach`** `(fields: BoundEachSharedFields): Motion<SharedPose, MotionContext> (+2 overloads)`: A motion setting each field of each part of a 2D or 3D list from that part's signal at the scene's time.
+- **`bind`** `(fields: BoundFields): Motion<Pose2d, MotionContext>`: A motion setting each field from its signal at the motion's time.
+- **`bindEach`** `(fields: BoundEachSharedFields): Motion<SharedPose, MotionContext> (+2 overloads)`: A motion setting each field of each part of a 2D or 3D list from its memoized signal at the motion's time.
 - **`carry`** `(options: CarryOptions): Motion<Pose2d, MotionContext>`: A motion giving the element's move from its old rest box to its new one after a re-measure. A part of a list uses its box named `<element>.<index>`.
 - **`compileScene`** `(scene: Scene, options?: CompileSceneOptions): CompileResult`: The stage a scene plays as, or every reason it cannot.
 - **`isScene`** `(value: unknown): value is Scene`: Whether `value` is a piece made by `scene`.
 - **`scene`** `(options: SceneOptions, ...items: readonly SceneItem[]): Scene (+1 overloads)`: A piece from its options and items: each element's binding, an element with no motion, or a scene taken in on the same clock. An element is bound once per scene.
 - **`shot`** `(scene: Scene, options?: ShotOptions): Shot`: A shot of `scene`: inside it, time and events start at 0 when the shot starts.
 - **`slot3d`** `(slot: Element, view: ObjectView, context: MotionContext, options?: Slot3dOptions): Slot3d | undefined`: Projects a page `slot` element through `view` into 3D world space for the active `context`.
-- **`stagger`** `<P extends Pose2d | Pose3d>(inner: Motion<P, MotionContext>, options: StaggerOptions): Motion<P, MotionContext> (+1 overloads)`: Plays `inner` on each list part (2D or 3D) in its own lane; with no parts it plays as is. A function builds each part from `(index, count)`.
+- **`stagger`** `(inner: TravelMotion, options: StaggerOptions): TravelMotion (+3 overloads)`: Plays `inner` on each list part (2D or 3D) in its own lane; with no parts it plays as is. A function builds each part from `(index, count)`.
 - **`stayWith`** `(element: Element): Motion<Pose2d, MotionContext>`: A motion giving the change in `element`'s pose since the start of its own clock span; it reads `element`.
 - **`travel`** `(options: TravelOptions): TravelMotion`: Moves an element from its current pose into `options.to`'s measured box over its beat; with no window it sits there on every clock (live, timed, and untimed).
 - **`Slot3d`** `type Slot3d = { center: Point3d; scale: number; width: number; height: number; view: ViewSize3d }`: Projected viewport slot in 3D world space: world-unit center, width, height, view, and fit scale.
@@ -80,7 +80,7 @@ What a piece is written with: `scene`, its elements, beats and motions. Reach fo
 - **`NO_REST`** `const NO_REST: RestReader`: A reader with no boxes, as headless runs have.
 - **`ZERO_BOX`** `const ZERO_BOX: Box`: Zero box answered for a name never measured.
 - **`restReader`** `(rest?: Rest, objects?: ObjectRest): RestReader`: A `RestReader` over `rest` and optional 3D `objects`.
-- **`Box`** `type Box = { x: number; y: number; width: number; height: number }`: Where a member rests once laid out: its centre and size in frame px.
+- **`Box`** `type Box = { x: number; y: number; width: number; height: number; placement?: BoxPlacement | undefined }`: Where a member rests once laid out: its centre and size in frame px.
 - **`Carry`** `type Carry = (member: string, options: CarryOptions) => Pose2d`: Moves `member` from its old rest box to its new one after a re-measure, over `options.ms`.
 - **`CarryMode`** `type CarryMode = "scale" | "clip" | "keep"`: How a carried member takes the size of its target box.
 - **`CarryOptions`** `type CarryOptions = { ms: number; ease?: Ease | undefined; mode?: CarryMode | undefined; target?: ((events: Events, rest: RestReader) => Box) | undefined }`: Options of `carry`: transition length, easing, sizing, and an optional target box.
@@ -88,7 +88,9 @@ What a piece is written with: `scene`, its elements, beats and motions. Reach fo
 - **`ObjectRest`** `type ObjectRest = { readonly [x: string]: ObjectBounds3d; }`: Measured rest sizes of 3D object members by name.
 - **`Rest`** `type Rest = { readonly [x: string]: Box; }`: Rest boxes by member name.
 - **`RestAt`** `type RestAt = { at: number; rest: RestReader }`: What a mount measured at `at` ms on its clock.
-- **`RestReader`** `type RestReader = { get: (name: string) => Box; has: (name: string) => boolean; keys: () => readonly string[]; object: (name: string) => ObjectBounds3d | undefined }`: Reads rest boxes and 3D object sizes; an unmeasured box answers a zero box.
+- **`RestReader`** `type RestReader = { get: (name: string) => Box; has: (name: string) => boolean; keys: () => readonly string[]; object: (name: string) => ObjectBounds3d | undefined; objectKeys: () => readonly string[] }`: Reads rest boxes and 3D object sizes; an unmeasured box answers a zero box.
+- **`BoxPlacement`** `type BoxPlacement = { readonly kind: "flow"; } | { readonly kind: "fixed"; } | { readonly kind: "sticky"; readonly minY: number; readonly maxY: number; readonly pinY: number; }`: How a measured box moves with page scroll: normal flow, viewport-fixed, or sticky inside a pin range.
+- **`InputNeed`** `type InputNeed = { scroll: boolean; pointer: boolean; events: boolean }`: Which dynamic input streams an element or frame depends on.
 - **`Limits`** `type Limits = { jump?: number | undefined; turn?: number | undefined; ratio?: number | undefined }`: Review limits of one target, overriding the command's defaults.
 - **`ListPose`** `type ListPose = (index: number, count: number) => Pose2d`: A list's pose in the scene: the pose of item `index` of `count`.
 - **`ListPose3d`** `type ListPose3d = (index: number, count: number) => Pose3d`: A 3D list's pose in the scene: the 3D pose of item `index` of `count`.

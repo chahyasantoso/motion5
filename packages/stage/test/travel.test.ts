@@ -411,10 +411,9 @@ describe("travel", () => {
     const merged = compiled(scene(s1, s2, s3));
     expect(merged.members.filter((m) => m.name === "sharedSlot")).toHaveLength(1);
 
-    // Binding `sharedSlot` in another scene still throws, naming both owners.
-    expect(() => scene({ name: "fourthScene" }, sharedSlot)).toThrow(
-      /sharedSlot.*thirdScene.*fourthScene/,
-    );
+    // Binding `sharedSlot` in two sub-scenes of one scene still throws, naming both owners.
+    const s4 = scene({ name: "fourthScene" }, sharedSlot);
+    expect(() => scene({ name: "parent" }, s3, s4)).toThrow(/sharedSlot.*thirdScene.*fourthScene/);
 
     // Atomic rollback: two colliding elements in one `.moves(...)` leaves `freshSlot` unowned.
     const freshSlot = box("freshSlot");

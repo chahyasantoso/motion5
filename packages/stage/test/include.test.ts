@@ -58,10 +58,11 @@ describe("scene: sub-scenes", () => {
     expect(() => scene(hero)).toThrow(/scene "hero" sets `length`/);
   });
 
-  it("refuses a scene included twice", () => {
+  it("refuses a scene included twice in the same parent, while allowing reuse across scenes", () => {
     const hero = scene({ name: "hero" }, box("title"));
-    scene({ name: "page" }, hero);
-    expect(() => scene(hero)).toThrow(/already included in "page"/);
+    expect(() => scene({ name: "page" }, hero, hero)).toThrow(/already included in "page"/);
+    expect(() => scene({ name: "pageA" }, hero)).not.toThrow();
+    expect(() => scene({ name: "pageB" }, hero)).not.toThrow();
   });
 
   it("refuses a beat that means two windows across scenes", () => {
@@ -126,9 +127,12 @@ describe("scene: sub-scenes", () => {
     ).toBeCloseTo(60);
   });
 
-  it("refuses two scenes that both bind one element", () => {
+  it("refuses two sub-scenes in one scene that both bind the same element", () => {
     const owned = box("owned");
-    scene({ name: "firstOwner" }, owned);
-    expect(() => scene({ name: "secondOwner" }, owned)).toThrow(/owned.*firstOwner.*secondOwner/);
+    const firstOwner = scene({ name: "firstOwner" }, owned);
+    const secondOwner = scene({ name: "secondOwner" }, owned);
+    expect(() => scene({ name: "parent" }, firstOwner, secondOwner)).toThrow(
+      /owned.*firstOwner.*secondOwner/,
+    );
   });
 });
