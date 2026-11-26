@@ -98,15 +98,19 @@ describe("a live page driven by the canvas", () => {
   it("plays, seeks, replays a take and reloads at the top", async () => {
     await open("cookie", async (page) => {
       const frame = await mounted(page);
-      const length = Number(await page.locator("[data-ruler]").getAttribute("aria-valuemax"));
-      expect(length).toBeGreaterThan(0);
+      const ruler = async (): Promise<number> =>
+        Number(await page.locator("[data-ruler]").getAttribute("aria-valuemax"));
+      // The timeline grows with the page as it loads, past the 3000 ms this test seeks to.
+      await until(async () => (await ruler()) > 3000, "the timeline to cover the page", 300);
       expect(await frame.evaluate(`window[${MOUNTS}][0].driver.now().clock.kind`)).toBe("timed");
       await page.getByLabel("Replay").waitFor();
 
-      const played = await send("cookie", { kind: "play", speed: 4 });
+      const played = await send("cookie", { kind: "play", speed: 1 });
       expect(played.kind).toBe("done");
-      await until(async () => (await statusOf("cookie")).scrollY > 200, "the page to scroll");
-      expect((await statusOf("cookie")).atMs).toBeGreaterThan(0);
+      await until(async () => {
+        const now = await statusOf("cookie");
+        return now.scrollY > 200 && now.atMs > 0;
+      }, "the page to play and scroll");
 
       await send("cookie", { kind: "seek", target: { kind: "ms", ms: 3000 } });
       const far = await statusOf("cookie");
