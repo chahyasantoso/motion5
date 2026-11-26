@@ -1,6 +1,7 @@
 import type { Events } from "@gerak/core";
 import type { Problem } from "./api";
-import { registerOwner } from "./driver-hook";
+import { handedDriver, registerOwner } from "./driver-hook";
+import type { Bounds, PageFacts, Span } from "./span";
 import { mountOf, problemOfError, problemOfEvent, sceneOf, type MountView } from "./mount-view";
 
 /** What the timeline shows of the page clock. */
@@ -17,6 +18,13 @@ export interface PlayheadState {
   readonly loop: boolean;
   /** The id of the shot soloed, if any. */
   readonly solo: string | undefined;
+}
+
+/** The part of the piece a preview plays: its id, its cast names and how to find its span on a page. */
+export interface Part {
+  readonly id: string;
+  readonly names: readonly string[];
+  readonly span: (facts: PageFacts | undefined) => Span | undefined;
 }
 
 interface Remembered {
@@ -51,6 +59,9 @@ export class Playhead {
   private pending: Remembered | undefined;
   private restart: Remembered | undefined;
   private soloSpan: { readonly from: number; readonly to: number } | undefined;
+  private part: Part | undefined;
+  private partKey: string | undefined;
+  private partSolo = false;
   private resume = false;
   private held = false;
   private stopAt: number | undefined;
@@ -170,6 +181,7 @@ export class Playhead {
     this.doc = win.document;
     this.pending = this.restart ?? this.remembered;
     this.restart = undefined;
+    this.partKey = undefined;
     this.onProblem(undefined);
     const hot = (event: Event): void => {
       const mount = mountOf(win);
@@ -242,6 +254,7 @@ export class Playhead {
       this.pending = undefined;
       this.restore(mount, before);
     }
+    this.refreshPart(mount);
     const clock = mount.clock;
     if (this.held && clock.playing()) clock.pause();
     const length = mount.durationMs ?? this.sceneLength;
@@ -306,6 +319,7 @@ export class Playhead {
 
   /** Solos and loops the shot `id`, and keeps it when it already is the one. */
   soloOn(id: string, from: number, to: number): void {
+    this.partSolo = false;
     const mount = this.mount();
     this.soloSpan = { from, to };
     this.set({ solo: id });
@@ -316,11 +330,72 @@ export class Playhead {
   }
 
   clearSolo(): void {
+    this.partSolo = false;
     if (this.soloSpan === undefined && this.state.solo === undefined) return;
     this.soloSpan = undefined;
     this.set({ solo: undefined });
     const mount = this.mount();
     if (mount !== undefined) this.applyRange(mount);
+  }
+
+  /** Confines this playhead to `part` and loops it, or plays the whole piece when it is `undefined`; a solo of another part ends. */
+  setPart(part: Part | undefined): void {
+    const same = this.part?.id === part?.id;
+    this.part = part;
+    this.partKey = undefined;
+    if (!same) this.clearSolo();
+    const mount = this.mount();
+    if (mount?.clock !== undefined) this.refreshPart(mount);
+  }
+
+  private factsOf(mount: MountView, names: readonly string[]): PageFacts | undefined {
+    const win = this.win;
+    if (win === undefined) return undefined;
+    const handed = handedDriver(win);
+    const maxScroll = Math.max(0, win.document.documentElement.scrollHeight - win.innerHeight);
+    const bounds: Bounds[] = [];
+    for (const name of names)
+      for (const each of win.document.querySelectorAll(`[data-cast="${CSS.escape(name)}"]`)) {
+        const box = each.getBoundingClientRect();
+        bounds.push({ top: box.top + win.scrollY, bottom: box.bottom + win.scrollY });
+      }
+    return {
+      driven: mount.driven,
+      take: this.events.length > 0,
+      length: handed?.length ?? mount.durationMs ?? this.state.length,
+      maxScroll,
+      viewport: win.innerHeight,
+      bounds,
+    };
+  }
+
+  private refreshPart(mount: MountView): void {
+    const part = this.part;
+    if (part === undefined) return;
+    const win = this.win;
+    const key = [
+      mount.driven,
+      mount.durationMs,
+      handedDriver(win)?.length,
+      win?.document.documentElement.scrollHeight,
+      this.events.length,
+    ].join("|");
+    if (key === this.partKey) return;
+    this.partKey = key;
+    if (this.state.solo !== undefined && !this.partSolo) return;
+    const span = part.span(this.factsOf(mount, part.names));
+    if (span === undefined) {
+      if (this.partSolo) this.clearSolo();
+      return;
+    }
+    const held = this.soloSpan;
+    if (this.partSolo && held?.from === span.from && held.to === span.to) return;
+    this.soloSpan = span;
+    this.partSolo = true;
+    this.set({ solo: part.id });
+    this.applyRange(mount);
+    const ms = mount.clock?.elapsed() ?? 0;
+    if (ms < span.from || ms > span.to) this.seek(span.from);
   }
 
   /** Plays the clock, optionally from `from` and pausing at `to`; `false` when the page has no timed clock. */

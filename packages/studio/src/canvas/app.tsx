@@ -39,6 +39,7 @@ import { contextOf, type ContextView } from "./prompt-context";
 import { SelectionToolbar } from "./selection-toolbar";
 import type { PinRequest } from "./pin-view";
 import { Playheads } from "./playheads";
+import { castNamesOf, spanOf } from "./span";
 import { usePins } from "./use-pins";
 import { usePresets } from "./use-presets";
 import { DEFAULT_PRESET } from "./presets";
@@ -217,6 +218,22 @@ function Canvas(props: {
   useEffect(() => {
     playheads.setTake(presets.events);
   }, [playheads, presets.events]);
+
+  useEffect(() => {
+    const root = rootOf(data.graph)?.id;
+    for (const entry of previews) {
+      const source = resolvedSource(data.graph, entry.source);
+      playheads.of(entry.id).setPart(
+        source === root
+          ? undefined
+          : {
+              id: source,
+              names: castNamesOf(data.graph, source),
+              span: (facts) => spanOf(data.graph, source, facts),
+            },
+      );
+    }
+  }, [playheads, previews, data.graph]);
 
   useEffect(() => {
     const stops = [MAIN_PREVIEW, ...extraIds].map((id) =>

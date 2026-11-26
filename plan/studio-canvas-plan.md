@@ -109,7 +109,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 ### 9. The preview card is the player
 
 - The preview card hosts the real `<name>.html` in an `<iframe>` (with `?gerakStudio=1`), so `<name>-main.ts`, 3D binders, sticky sections and media queries run. It reads the mount from `window[Symbol.for("@gerak/dom/mounts")]`.
-- A preview card plays what is wired into it (Decision 10): the scene card's own `stage` port gives the whole piece; a scene or shot row's port gives that part in context. In context means the same page and the same whole scene, with the player confined to the part's span: its ms range on a timed piece, the scroll range its beats cover on a scroll page. Play loops that span.
+- A preview card plays what is wired into it (Decision 10): the scene card's own `stage` port gives the whole piece; a scene or shot row's port gives that part in context. In context means the same page and the same whole scene, with the player confined to the part's span: its ms range on a timed piece, the scroll range over which its cast is in view on a scroll page. Play loops that span.
 - Several preview cards may be open, each wired to its own part. One plays live at a time, the one last used; the others hold their last frame until clicked. The bottom timeline follows the live one.
 - Size presets: Desktop `1440x900`, Mobile `390x844`, Fill, custom, and the reel frames `1080x1920`, `1920x1080`, `1080x1080` letterboxed, with a `Safe zones` overlay from the one profile table in `packages/tools/src/page/safe-zone.ts`.
 - The card resizes by its corner within limits: at least 320 px wide, at most the visible canvas, keeping the preset's aspect ratio. Fill follows the card's size.
