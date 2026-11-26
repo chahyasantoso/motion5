@@ -2,7 +2,7 @@
 
 ## Goal
 
-A person directing a live page in the Studio, such as cookie, plays, pauses, seeks, loops and replays it the way they play a reel, and a recorded events preset replays on top of their own clicks and hovers; an agent gets the same through `gerak studio seek` and `play`. The code lets `mount` take a `Driver` (the one `@gerak/player` already defines) in place of building its own, lets a host hand that driver to a page's own `mount` call without editing the piece, and gives the Studio one driver built from its playhead and the chosen preset.
+A person directing a live page in the Studio, such as cookie, plays, pauses, seeks, loops and replays it the way they play a reel, and a recorded take wired into the player replays on top of their own clicks and hovers; an agent gets the same through `gerak studio seek` and `play`. The code lets `mount` take a `Driver` (the one `@gerak/player` already defines) in place of building its own, lets a host hand that driver to a page's own `mount` call without editing the piece, and gives the Studio one driver built from its playhead and the take wired into the player.
 
 Status: planned 2026-11-26. One pull request at the end. It runs after the Studio agent plan and before canvas PR 3, whose player it builds on.
 
@@ -35,10 +35,10 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 
 ### 3. The Studio's driver
 
-- `packages/studio/src/canvas/studio-driver.ts` makes the driver the Studio hands a live page: time from the canvas `Playhead`, events from the picked preset with its scroll samples removed.
-- A preset's scroll samples are not handed as events: the driver scrolls the page to them as time passes, and the mount records the real scroll. Sticky sections are the browser's layout of the real scroll, so a scroll handed only as an event would draw a frame the page never shows.
-- With no preset picked, Play sweeps the page's scroll from top to bottom at the card's speed, through the same path.
-- The timeline's length on a driven page is the longest of the scene's length, the preset's last event plus the mount's settle time, and the sweep.
+- `packages/studio/src/canvas/studio-driver.ts` makes the driver the Studio hands a live page: time from the preview card's `Playhead`, events from the take wired into that card (`plan/studio-canvas-plan.md`, Decision 5) with its scroll samples removed. The driver is not a card: its time is always the card's player, and only its events vary.
+- A take's scroll samples are not handed as events: the driver scrolls the page to them as time passes, and the mount records the real scroll. Sticky sections are the browser's layout of the real scroll, so a scroll handed only as an event would draw a frame the page never shows.
+- With no take wired, Play sweeps the page's scroll from top to bottom at the card's speed, through the same path.
+- The timeline's length on a driven page is the longest of the scene's length, the take's last event plus the mount's settle time, and the sweep.
 - Replay reloads the page at the top, which clears the recorded log.
 - The Studio serves the hook through its page transform under `?gerakStudio=1`: an inline script ahead of the page's own reads the driver from the parent canvas. The hidden worker frame of the agent bus gets its own driver from its own playhead.
 
@@ -50,13 +50,13 @@ One pull request, built in three slices in order.
 | --- | --- | --- |
 | 1: `mount` on a handed driver | 1 | a fixture page mounted on a handed driver seeks back and forward, a watched click logged at 400 ms stays across a seek to 200 ms and back, and a handed event and a real one both reach the scene |
 | 2: The host hook | 2 | a page whose main calls `mount(scene, { clock: "live" })` runs on the hook's driver when one is set and on the live clock when none is, and a timed page ignores it |
-| 3: The Studio driver | 3 | in the canvas, cookie plays, pauses, seeks back and loops from the timeline and from `gerak studio seek` and `play`; with `take-1` picked its clicks replay while a real hover on the call to action still lands; Replay reloads at scroll 0; reel and saved play as before |
+| 3: The Studio driver | 3 | in the canvas, cookie plays, pauses, seeks back and loops from the timeline and from `gerak studio seek` and `play`; with `take-1` wired in its clicks replay while a real hover on the call to action still lands; Replay reloads at scroll 0; reel and saved play as before |
 
 ## Tests first, per slice
 
 - 1: on a handed driver, the scene's events at `t` are the recorded log and the driver's events at or before `t`, merged in time order; a seek back keeps the log; the mount requests no animation frame of its own; `"live"` and `"timed"` mounts pass their existing tests unchanged.
 - 2: with the hook set, a `"live"` mount's time is the hook driver's; without it, wall time; a `"timed"` mount never calls the hook.
-- 3: the Studio driver's time equals the playhead's at every step; a preset's scroll samples scroll the frame and never reach the scene as handed events; with no preset, Play at speed 1 reaches the page's bottom at the sweep's length; a seek on cookie through the bus answers `done` and moves the page's poses.
+- 3: the Studio driver's time equals the playhead's at every step; a take's scroll samples scroll the frame and never reach the scene as handed events; with no take, Play at speed 1 reaches the page's bottom at the sweep's length; a seek on cookie through the bus answers `done` and moves the page's poses.
 
 ## Proof and measure
 
