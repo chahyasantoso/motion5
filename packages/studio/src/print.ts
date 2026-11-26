@@ -9,6 +9,10 @@ function ms(card: Card): string {
 function extra(card: Card): string {
   const parts: string[] = [];
   if (card.site !== undefined) parts.push(`${card.site.file}:${card.site.line}`);
+  if (card.wrappers !== undefined)
+    parts.push(`via ${card.wrappers.map((each) => each.name).join(", ")}`);
+  if (card.knobs !== undefined && card.knobs.length > 0)
+    parts.push(card.knobs.map((knob) => `${knob.name} ${String(knob.value)}`).join(", "));
   if (card.cast !== undefined && !card.cast.page) parts.push("no page element");
   if (card.note !== undefined) parts.push(card.note);
   return parts.length === 0 ? "" : `  (${parts.join(", ")})`;

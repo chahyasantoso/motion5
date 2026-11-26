@@ -12,7 +12,8 @@ of the look and the cast; the Studio draws them as one graph of cards and wires.
 - `readSources(sceneFile)`: what the files say, read with the TypeScript compiler and an HTML scan, never run. It finds
   the cue JSON the scene imports and the `cues` option or shot `until` each feeds, the audio or captions file under
   `audio/` of the same name, `<video>` and `<audio>` sources of cast elements, loose files under `audio/` and `media/`,
-  and each `.moves(...)` argument of a statically named element.
+  each `.moves(...)` argument of a statically named element, and each `const x = scene(...)` with no written
+  `name` with the members and beats bound inside it.
 
 A card's id comes from code identity, so it survives edits: `scene:<name>`, `shot:<name>`, `beat:<name>`,
 `member:<name>`, `move:<member>.<step>`, `job:<cue file>`, `source:<path>`, `output:<kind>`.
@@ -20,6 +21,15 @@ A card's id comes from code identity, so it survives edits: `scene:<name>`, `sho
 - A move is a `motion` card when it calls a package function such as `rise` or `travel`, and a `code` card at its file
   and line when it is hand-written: a local or relative function, `motion(...)`, `bind`, `bindEach` or an inline
   function. `stagger` takes the kind of what it staggers.
+- A `scene(...)` assigned to a const with no written `name` takes the const's name: a member or beat whose
+  provenance gives no scene, or only the root, and that one such scene lists, sits under `scene:<const>` with the
+  root scene as parent. A written `name` wins; the entry's default export is never a sub-scene.
+- A call to a local function or const whose only argument is a package move reads as that move, with the function in
+  `wrappers` (its definition's site and doc). A wrapper in a wrapper, or around anything else, is a `code` card.
+- A package move's options object gives `knobs`: each property whose value is a number (negative too), string or
+  boolean literal, as `{ name, value }`.
+- A `code` card's `doc` is the first paragraph of the JSDoc of the function or const it points at. The card shows it,
+  its wrappers as chips titled with their doc, its knobs as rows and a code button titled `file:line`.
 - A cue file becomes a `beats` job when an audio file made it and a `cues` job when captions did.
 - Beats that scroll or a trigger drive get an `input` source.
 - A dynamic import or a spread of moves cannot be placed: it becomes a card marked "set in code", with no wires.

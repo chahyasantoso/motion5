@@ -41,11 +41,34 @@ export interface MediaSource {
   readonly path: string;
 }
 
+/** A literal option of a package move, such as `distance: 8`. */
+export interface Knob {
+  readonly name: string;
+  readonly value: number | string | boolean;
+}
+
+/** A local function or const that wraps a package move, such as `backwards(fade())`. */
+export interface Wrapper {
+  readonly name: string;
+  readonly site: CodeSite;
+  readonly doc?: string | undefined;
+}
+
 /** One `.moves(...)` argument read from code: a package move, or hand-written code. */
 export interface MoveSite {
   readonly kind: "motion" | "code";
   readonly label?: string | undefined;
   readonly site: CodeSite;
+  /** The first paragraph of the doc comment of what a code move points at. */
+  readonly doc?: string | undefined;
+  readonly knobs?: readonly Knob[] | undefined;
+  readonly wrappers?: readonly Wrapper[] | undefined;
+}
+
+/** The statically named members and beats a scene assigned to a const without a written name holds. */
+export interface SubScene {
+  readonly members: readonly string[];
+  readonly beats: readonly string[];
 }
 
 /** A binding step read from code, in step order: a move, or a `.modifies(...)` call. */
@@ -68,6 +91,8 @@ export interface PieceSources {
   readonly media: readonly MediaSource[];
   /** Each statically named member's binding steps; absent when its moves cannot be read in order. */
   readonly steps: Readonly<Record<string, readonly StaticStep[]>>;
+  /** Each `const x = scene(...)` with no written `name`, by the const's name. */
+  readonly scenes: Readonly<Record<string, SubScene>>;
   readonly unplaced: readonly Unplaced[];
 }
 
@@ -130,6 +155,50 @@ function optionsText(options: ts.ObjectLiteralExpression, key: string): ts.Expre
     )
       return property.initializer;
   return undefined;
+}
+
+function knobsOf(call: ts.CallExpression): readonly Knob[] {
+  const options = call.arguments[0];
+  if (options === undefined || !ts.isObjectLiteralExpression(options)) return [];
+  const out: Knob[] = [];
+  for (const property of options.properties) {
+    if (
+      !ts.isPropertyAssignment(property) ||
+      !(ts.isIdentifier(property.name) || ts.isStringLiteral(property.name))
+    )
+      continue;
+    const value = property.initializer;
+    const name = property.name.text;
+    if (ts.isNumericLiteral(value)) out.push({ name, value: Number(value.text) });
+    else if (
+      ts.isPrefixUnaryExpression(value) &&
+      value.operator === ts.SyntaxKind.MinusToken &&
+      ts.isNumericLiteral(value.operand)
+    )
+      out.push({ name, value: -Number(value.operand.text) });
+    else if (ts.isStringLiteralLike(value)) out.push({ name, value: value.text });
+    else if (value.kind === ts.SyntaxKind.TrueKeyword) out.push({ name, value: true });
+    else if (value.kind === ts.SyntaxKind.FalseKeyword) out.push({ name, value: false });
+  }
+  return out;
+}
+
+/** The first paragraph of the doc comment on a function declaration or a const's initializer. */
+function docOf(node: ts.Node): string | undefined {
+  let host: ts.Node | undefined;
+  if (ts.isFunctionDeclaration(node)) host = node;
+  else if (ts.isVariableDeclaration(node.parent) && node.parent.initializer === node) {
+    const statement = node.parent.parent.parent;
+    if (ts.isVariableStatement(statement)) host = statement;
+  }
+  if (host === undefined) return undefined;
+  const docs = ts.getJSDocCommentsAndTags(host).filter(ts.isJSDoc);
+  const text = ts.getTextOfJSDocComment(docs.at(-1)?.comment);
+  const first = text
+    ?.split(/\r?\n\s*\r?\n/)[0]
+    ?.replace(/\s*\r?\n\s*/g, " ")
+    .trim();
+  return first === undefined || first === "" ? undefined : first;
 }
 
 function relativeModule(from: string, spec: string): string | undefined {
@@ -298,10 +367,15 @@ export function readSources(sceneFile: string): PieceSources {
       WINDOW_CALLS.has(at.expression.name.text)
     )
       at = unwrap(at.expression.expression);
+    const docField = (node: ts.Node): { readonly doc?: string } => {
+      const doc = docOf(node);
+      return doc === undefined ? {} : { doc };
+    };
     const code = (node: ts.Node, name = label): MoveSite => ({
       kind: "code",
       ...(name === undefined ? {} : { label: name }),
       site: siteOf(file, node),
+      ...docField(node),
     });
     if (depth > 8) return code(at);
     if (ts.isIdentifier(at)) {
@@ -314,7 +388,12 @@ export function readSources(sceneFile: string): PieceSources {
         case "const":
           return classify(found.file, found.expr, name, depth + 1);
         case "function":
-          return { kind: "code", label: name, site: siteOf(found.file, found.decl) };
+          return {
+            kind: "code",
+            label: name,
+            site: siteOf(found.file, found.decl),
+            ...docField(found.decl),
+          };
         case "pick":
           return code(at, name);
         default:
@@ -338,26 +417,89 @@ export function readSources(sceneFile: string): PieceSources {
                 kind: "code",
                 label: label ?? made.expression.text,
                 site: siteOf(inner.file, inner.decl),
+                ...docField(inner.decl),
               };
             if (inner?.kind === "const")
               return {
                 kind: "code",
                 label: label ?? made.expression.text,
                 site: siteOf(inner.file, inner.expr),
+                ...docField(inner.expr),
               };
           }
         }
         if (CODE_MAKERS.has(callee))
           return code(at, label ?? (callee === "motion" ? undefined : callee));
-        return { kind: "motion", label: label ?? callee, site: siteOf(file, at) };
+        const knobs = knobsOf(at);
+        return {
+          kind: "motion",
+          label: label ?? callee,
+          site: siteOf(file, at),
+          ...(knobs.length === 0 ? {} : { knobs }),
+        };
       }
-      if (found?.kind === "function")
-        return { kind: "code", label: label ?? callee, site: siteOf(found.file, found.decl) };
-      if (found?.kind === "const")
-        return { kind: "code", label: label ?? callee, site: siteOf(found.file, found.expr) };
+      if (found?.kind === "function" || found?.kind === "const") {
+        const defined = found.kind === "function" ? found.decl : found.expr;
+        const wrapped = at.arguments.length === 1 ? at.arguments[0] : undefined;
+        const inner =
+          wrapped === undefined ? undefined : classify(file, wrapped, undefined, depth + 1);
+        if (inner?.kind === "motion" && inner.wrappers === undefined)
+          return {
+            ...inner,
+            label: label ?? inner.label,
+            wrappers: [{ name: callee, site: siteOf(found.file, defined), ...docField(defined) }],
+          };
+        return {
+          kind: "code",
+          label: label ?? callee,
+          site: siteOf(found.file, defined),
+          ...docField(defined),
+        };
+      }
       return code(at, label ?? callee);
     }
     return code(at);
+  };
+
+  const rootConst = new Set<string>();
+  for (const statement of modules.get(scenePath)?.source.statements ?? [])
+    if (ts.isExportAssignment(statement) && ts.isIdentifier(statement.expression))
+      rootConst.add(statement.expression.text);
+
+  /** The const a `scene(...)` call without a written `name` assigns to, when `node` sits inside it. */
+  const sceneConstOf = (node: ts.Node): string | undefined => {
+    for (let at = node.parent; at !== undefined; at = at.parent) {
+      if (!ts.isCallExpression(at) || !ts.isIdentifier(at.expression)) continue;
+      if (at.expression.text !== "scene") continue;
+      const owner = at.parent;
+      if (!ts.isVariableDeclaration(owner) || !ts.isIdentifier(owner.name)) return undefined;
+      if (owner.initializer !== at || rootConst.has(owner.name.text)) return undefined;
+      const first = at.arguments[0];
+      if (first !== undefined && ts.isObjectLiteralExpression(first))
+        if (optionsText(first, "name") !== undefined) return undefined;
+      return owner.name.text;
+    }
+    return undefined;
+  };
+  const memberOwners = new Map<string, Set<string>>();
+  const beatOwners = new Map<string, Set<string>>();
+  const own = (into: Map<string, Set<string>>, name: string, owner: string | undefined): void => {
+    if (owner === undefined) return;
+    const held = into.get(name) ?? new Set<string>();
+    held.add(owner);
+    into.set(name, held);
+  };
+  const beatNameOf = (file: ModuleFile, expr: ts.Expression, depth = 0): string | undefined => {
+    const at = unwrap(expr);
+    if (depth > 8) return undefined;
+    if (ts.isIdentifier(at)) {
+      const found = resolveName(file, at.text);
+      return found?.kind === "const" ? beatNameOf(found.file, found.expr, depth + 1) : undefined;
+    }
+    if (!ts.isCallExpression(at) || !ts.isIdentifier(at.expression)) return undefined;
+    const first = at.arguments[0];
+    if (at.expression.text !== "beat" || first === undefined) return undefined;
+    return ts.isStringLiteralLike(first) ? first.text : undefined;
   };
 
   const steps: Record<string, readonly StaticStep[]> = {};
@@ -412,6 +554,12 @@ export function readSources(sceneFile: string): PieceSources {
           unplaced.push({ site: siteOf(file, node), text: node.getText(file.source) });
         const callee = node.expression;
         if (ts.isIdentifier(callee) && callee.text === "scene") {
+          const head = node.arguments[0];
+          const owner = head === undefined ? undefined : sceneConstOf(head);
+          for (const arg of node.arguments) {
+            const named = ts.isObjectLiteralExpression(arg) ? undefined : elementName(file, arg);
+            if (named !== undefined) own(memberOwners, named, owner);
+          }
           const first = node.arguments[0];
           const cues =
             first !== undefined && ts.isObjectLiteralExpression(first)
@@ -441,6 +589,14 @@ export function readSources(sceneFile: string): PieceSources {
             }
           }
         }
+        if (
+          ts.isPropertyAccessExpression(callee) &&
+          callee.name.text === "in" &&
+          node.arguments[0] !== undefined
+        ) {
+          const named = beatNameOf(file, node.arguments[0]);
+          if (named !== undefined) own(beatOwners, named, sceneConstOf(node));
+        }
         const outer =
           ts.isPropertyAccessExpression(node.parent) &&
           BINDING_CALLS.has(node.parent.name.text) &&
@@ -462,6 +618,7 @@ export function readSources(sceneFile: string): PieceSources {
           }
           const member = elementName(file, at);
           if (member !== undefined) {
+            own(memberOwners, member, sceneConstOf(node));
             const read: StaticStep[] = [];
             let whole = true;
             for (const call of chain) {
@@ -486,6 +643,19 @@ export function readSources(sceneFile: string): PieceSources {
     visit(file.source);
   }
   for (const member of unreadable) delete steps[member];
+  const held = new Map<string, { members: string[]; beats: string[] }>();
+  const holdIn = (owners: Map<string, Set<string>>, key: "members" | "beats"): void => {
+    for (const [name, sets] of owners) {
+      const [only, ...more] = sets;
+      if (only === undefined || more.length > 0) continue;
+      const entry = held.get(only) ?? { members: [], beats: [] };
+      entry[key].push(name);
+      held.set(only, entry);
+    }
+  };
+  holdIn(memberOwners, "members");
+  holdIn(beatOwners, "beats");
+  const scenes = Object.fromEntries(held);
 
   const files = sourceFiles(pieceDir, rel);
   const cueFiles: CueFile[] = [];
@@ -531,6 +701,7 @@ export function readSources(sceneFile: string): PieceSources {
     cueFiles,
     media: html === undefined ? [] : mediaOf(html),
     steps,
+    scenes,
     unplaced,
   };
 }

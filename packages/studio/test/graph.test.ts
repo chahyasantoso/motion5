@@ -1,8 +1,8 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import { groupOf, pieceGraph, type StudioGraph } from "../src";
+import { groupOf, pieceGraph, readSources, type StudioGraph } from "../src";
 
 const pieces = fileURLToPath(new URL("../../../apps/pieces/", import.meta.url));
 const scratch = mkdtempSync(join(fileURLToPath(new URL("./", import.meta.url)), ".scratch-"));
@@ -128,5 +128,103 @@ describe("ids from code identity", () => {
     const card = reel.cards.find((each) => each.id.startsWith("code:src/reel.ts:"));
     expect(card?.note).toBe("set in code");
     expect(reel.wires.some((wire) => wire.from === card?.id || wire.to === card?.id)).toBe(false);
+  });
+});
+
+describe("sub-scenes named by their const", () => {
+  it("puts cookie's unnamed sub-scenes on their own cards under the root scene", async () => {
+    const cookie = await graph(pieces, "cookie");
+    const scenes = cookie.cards.filter((card) => card.kind === "scene");
+    expect(scenes.map((card) => card.id).sort()).toEqual(
+      [
+        "scene:cookie",
+        "scene:heroScene",
+        "scene:spotlightScene",
+        "scene:craftScene",
+        "scene:builderScene",
+        "scene:closingScene",
+      ].sort(),
+    );
+    for (const card of scenes.filter((each) => each.id !== "scene:cookie"))
+      expect(card.parent).toBe("scene:cookie");
+    expect(cookie.cards.find((card) => card.id === "member:heroHeadline")?.parent).toBe(
+      "scene:heroScene",
+    );
+  });
+
+  it("reads a written name over the const and skips the default export", () => {
+    const file = join(scratch, "named", "src", "named.ts");
+    mkdirSync(join(scratch, "named", "src"), { recursive: true });
+    writeFileSync(
+      file,
+      [
+        'import { box, scene } from "@gerak/stage";',
+        'import { fade } from "@gerak/moves";',
+        'const a = box("a");',
+        'const b = box("b");',
+        'const written = scene({ name: "written" }, a.moves(fade()));',
+        "const plain = scene(b.moves(fade()));",
+        'export default scene({ name: "root" }, written, plain);',
+      ].join("\n"),
+    );
+    const read = readSources(file);
+    expect(Object.keys(read.scenes)).toEqual(["plain"]);
+    expect(read.scenes["plain"]?.members).toEqual(["b"]);
+  });
+});
+
+describe("wrappers, knobs and docs", () => {
+  it("reads saved's backwards(...) calls as library moves tagged backwards", async () => {
+    const saved = await graph(pieces, "saved");
+    const out = saved.cards.find((card) => card.id === "move:mark.2");
+    expect(out).toMatchObject({ kind: "motion", name: "slide" });
+    expect(out?.wrappers?.map((wrapper) => wrapper.name)).toEqual(["backwards"]);
+    expect(out?.wrappers?.[0]?.doc).toBe("A motion playing `inner` backwards over its beat.");
+    expect(out?.knobs).toEqual([
+      { name: "distance", value: 8 },
+      { name: "from", value: "top" },
+    ]);
+    const fadeOut = saved.cards.find((card) => card.id === "move:word.3");
+    expect(fadeOut).toMatchObject({ kind: "motion", name: "fade" });
+    expect(fadeOut?.wrappers?.[0]?.name).toBe("backwards");
+    const wrapped = saved.cards.filter((card) => card.wrappers !== undefined);
+    expect(wrapped).toHaveLength(4);
+  });
+
+  it("keeps a wrapper in a wrapper, or around code, as a code card, with the doc of its code", () => {
+    const file = join(scratch, "wrap", "src", "wrap.ts");
+    mkdirSync(join(scratch, "wrap", "src"), { recursive: true });
+    writeFileSync(
+      file,
+      [
+        'import { box, motion, scene } from "@gerak/stage";',
+        'import { fade, slide } from "@gerak/moves";',
+        'const a = box("a");',
+        "const back = (inner: unknown) => inner;",
+        "const twice = (inner: unknown) => inner;",
+        "/** Eases the box in.",
+        " *",
+        " * More detail.",
+        " */",
+        "const custom = motion(() => ({}));",
+        "export default scene(",
+        "  a.moves(",
+        "    twice(back(fade())),",
+        "    back(custom),",
+        "    back(slide({ distance: -3, loud: true, skip: 1 + 2 })),",
+        "    custom,",
+        "  ),",
+        ");",
+      ].join("\n"),
+    );
+    const moves = (readSources(file).steps["a"] ?? []).flatMap((step) =>
+      step.kind === "move" ? [step.move] : [],
+    );
+    expect(moves.map((move) => move.kind)).toEqual(["code", "code", "motion", "code"]);
+    expect(moves[2]?.knobs).toEqual([
+      { name: "distance", value: -3 },
+      { name: "loud", value: true },
+    ]);
+    expect(moves[3]?.doc).toBe("Eases the box in.");
   });
 });

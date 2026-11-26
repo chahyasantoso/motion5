@@ -31,9 +31,9 @@ export function GroupIcon(props: { readonly group: CardGroup }): React.JSX.Eleme
   }
 }
 
-/** A small glyph for a button: play, pause, loop, replay, maximise, restore, sun or moon. */
+/** A small glyph for a button: play, pause, loop, replay, maximise, restore, theme or code. */
 export function Glyph(props: {
-  readonly name: "play" | "pause" | "loop" | "replay" | "maximise" | "restore" | "theme";
+  readonly name: "play" | "pause" | "loop" | "replay" | "maximise" | "restore" | "theme" | "code";
 }): React.JSX.Element {
   switch (props.name) {
     case "play":
@@ -70,6 +70,12 @@ export function Glyph(props: {
       return (
         <svg className="icon" viewBox="0 0 16 16" aria-hidden="true">
           <path d="M6 3v3H3 M13 6h-3V3 M10 13v-3h3 M3 10h3v3" />
+        </svg>
+      );
+    case "code":
+      return (
+        <svg className="icon" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M6 4L2 8l4 4 M10 4l4 4-4 4" />
         </svg>
       );
     case "theme":

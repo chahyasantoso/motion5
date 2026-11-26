@@ -4,6 +4,7 @@ import type { Card, CardGroup, PortType } from "../graph";
 import { useStudio } from "./context";
 import { Chip, Frame, Mono } from "./card-frame";
 import { useSoloId } from "./use-playhead";
+import { Glyph } from "./icons";
 import { PreviewCard } from "./preview-card";
 
 /** What a card node carries. */
@@ -44,6 +45,46 @@ function sitePath(card: Card): string | undefined {
   return card.site === undefined ? undefined : `${card.site.file}:${card.site.line}`;
 }
 
+function MoveBody(props: { readonly card: Card }): React.JSX.Element {
+  const { card } = props;
+  const site = sitePath(card);
+  const description = card.doc ?? card.note;
+  return (
+    <>
+      <div className="row">
+        {description === undefined ? null : <p className="dim">{description}</p>}
+        <span className="spacer" />
+        {site === undefined ? null : (
+          <button type="button" className="icon-button code-button" title={site} aria-label={site}>
+            <Glyph name="code" />
+          </button>
+        )}
+      </div>
+      {card.wrappers === undefined ? null : (
+        <div className="row wrappers">
+          {card.wrappers.map((wrapper) => (
+            <span key={wrapper.name} title={wrapper.doc ?? wrapper.name}>
+              <Chip text={wrapper.name} />
+            </span>
+          ))}
+        </div>
+      )}
+      {card.knobs === undefined ? null : (
+        <dl className="knobs">
+          {card.knobs.map((knob) => (
+            <div key={knob.name} className="row">
+              <dt className="dim">{knob.name}</dt>
+              <dd>
+                <Mono>{String(knob.value)}</Mono>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </>
+  );
+}
+
 function CardBody(props: { readonly card: Card; readonly group: CardGroup }): React.JSX.Element {
   const { card } = props;
   const studio = useStudio();
@@ -58,12 +99,7 @@ function CardBody(props: { readonly card: Card; readonly group: CardGroup }): Re
         <Chip text={card.note} tone="alert" />
       );
     case "move":
-      return (
-        <>
-          <p className="dim">{card.note ?? card.name}</p>
-          <Mono>{sitePath(card) ?? "no file"}</Mono>
-        </>
-      );
+      return <MoveBody card={card} />;
     case "source":
     case "tool":
       return (
