@@ -88,7 +88,7 @@ describe("act on the studio server", () => {
       "failed",
     );
     expect(running).toBe(true);
-    expect((await slow).kind).toBe("act");
+    expect(await slow).toMatchObject({ kind: "act" });
   }, 90000);
 
   it("names the presets event", () => {

@@ -5,6 +5,7 @@ import {
   withPage,
   writePreset,
   type PageAction,
+  type PageSession,
 } from "@gerak/tools/page";
 import type { StudioCommand, StudioReply } from "../protocol";
 import type { SharedBrowser } from "./browser";
@@ -16,6 +17,9 @@ const TAIL_MS = 200;
 
 /** How long one act may take before it answers failed, in ms. */
 const ACT_LIMIT_MS = 60000;
+
+/** How long an act waits in real time for the page to list a mount, in ms. */
+const MOUNT_WAIT_MS = 10000;
 
 /** What an act needs once its command is known to be valid. */
 export interface ActJob {
@@ -96,6 +100,19 @@ async function limited(work: Promise<StudioReply>, ms: number, what: string): Pr
   }
 }
 
+/** Polls in real time until the page lists a mount, or gives up after `MOUNT_WAIT_MS`, before any action runs. */
+async function mounted(page: PageSession["page"]): Promise<void> {
+  const until = Date.now() + MOUNT_WAIT_MS;
+  while (Date.now() < until) {
+    const found = await page.evaluate((): boolean => {
+      const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+      return Array.isArray(listed) && listed.length > 0;
+    });
+    if (found) return;
+    await new Promise<void>((done) => setTimeout(done, 100));
+  }
+}
+
 /** Runs the actions on the piece's page and answers the events its first mount logged, saving them when named. */
 export function runAct(browser: SharedBrowser, job: ActJob): Promise<StudioReply> {
   return limited(act(browser, job), ACT_LIMIT_MS, `Acting on ${job.page}`);
@@ -117,6 +134,7 @@ async function act(browser: SharedBrowser, job: ActJob): Promise<StudioReply> {
         browser: open,
       },
       async ({ page: shown, advanceTo }) => {
+        await mounted(shown);
         await advanceTo(last + TAIL_MS);
         return shown.evaluate((): unknown => {
           const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
