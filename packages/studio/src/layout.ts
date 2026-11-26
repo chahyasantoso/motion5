@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { StudioGraph } from "./graph";
+import { parsePreviews, resolvedSource, type PreviewEntry } from "./previews";
 
 /** Where a card sits on the canvas, and whether it is folded. */
 export interface CardPlace {
@@ -9,13 +10,11 @@ export interface CardPlace {
   readonly collapsed?: true | undefined;
 }
 
-/** The canvas sidecar: card places, the viewport and the preview's size; never motion. */
+/** The canvas sidecar: card places, the viewport and the previews; never motion. */
 export interface CanvasLayout {
   readonly cards: Readonly<Record<string, CardPlace>>;
   readonly viewport?: { readonly x: number; readonly y: number; readonly zoom: number } | undefined;
-  readonly preview?:
-    | { readonly preset: string; readonly safeZone?: string | undefined }
-    | undefined;
+  readonly previews?: readonly PreviewEntry[] | undefined;
 }
 
 /** The layout of a canvas that has none yet. */
@@ -56,26 +55,31 @@ export function parseLayout(value: unknown): CanvasLayout {
     isCoordinate(vx) && isCoordinate(vy) && isCoordinate(zoom) && zoom > 0
       ? { x: vx, y: vy, zoom }
       : undefined;
-  const shown = record(given["preview"]);
-  const preset = shown?.["preset"];
-  const safeZone = shown?.["safeZone"];
-  const preview =
-    typeof preset === "string"
-      ? { preset, ...(typeof safeZone === "string" ? { safeZone } : {}) }
-      : undefined;
+  const previews = parsePreviews(given);
   return {
     cards,
     ...(viewport === undefined ? {} : { viewport }),
-    ...(preview === undefined ? {} : { preview }),
+    ...(previews.length === 0 ? {} : { previews }),
   };
 }
 
-/** `layout` without the places of cards that `graph` does not list. */
+/** `layout` without the places of cards `graph` does not list, and with every preview source listed. */
 export function prunedLayout(layout: CanvasLayout, graph: StudioGraph): CanvasLayout {
-  const ids = new Set(graph.cards.map((card) => card.id));
+  const ids = new Set([
+    ...graph.cards.map((card) => card.id),
+    ...(layout.previews ?? []).map((entry) => entry.id),
+  ]);
   return {
     ...layout,
     cards: Object.fromEntries(Object.entries(layout.cards).filter(([id]) => ids.has(id))),
+    ...(layout.previews === undefined
+      ? {}
+      : {
+          previews: layout.previews.map((entry) => ({
+            ...entry,
+            source: resolvedSource(graph, entry.source),
+          })),
+        }),
   };
 }
 

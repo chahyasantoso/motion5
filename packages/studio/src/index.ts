@@ -12,6 +12,7 @@ export * from "./pins-cli";
 export * from "./presets-cli";
 export * from "./cli";
 export * from "./layout";
+export * from "./previews";
 export * from "./server/plugin";
 export * from "./server/start";
 export * from "./bus-cli";

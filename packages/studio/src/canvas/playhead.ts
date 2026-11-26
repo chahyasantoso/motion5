@@ -52,6 +52,7 @@ export class Playhead {
   private restart: Remembered | undefined;
   private soloSpan: { readonly from: number; readonly to: number } | undefined;
   private resume = false;
+  private held = false;
   private stopAt: number | undefined;
   private sceneLength = FALLBACK_LENGTH;
   private events: Events = [];
@@ -91,6 +92,12 @@ export class Playhead {
     if (same) return;
     this.state = merged;
     for (const listener of [...this.listeners]) listener();
+  }
+
+  /** Holds the clock paused on its frame while `on`, so an unused preview stays still. */
+  setHeld(on: boolean): void {
+    this.held = on;
+    if (on) this.mount()?.clock?.pause();
   }
 
   /** The scene length in ms, used while the page has no clock yet. */
@@ -236,6 +243,7 @@ export class Playhead {
       this.restore(mount, before);
     }
     const clock = mount.clock;
+    if (this.held && clock.playing()) clock.pause();
     const length = mount.durationMs ?? this.sceneLength;
     const ms = Math.min(length, Math.max(0, clock.elapsed() ?? 0));
     const playing = clock.playing();

@@ -23,7 +23,7 @@ describe("the layout sidecar", () => {
       }),
     ).toEqual({
       cards: { "shot:a": { x: 1, y: 2, collapsed: true } },
-      preview: { preset: "tiktok" },
+      previews: [{ id: "output:preview", source: "", preset: "tiktok" }],
     });
     expect(parseLayout("nope")).toEqual({ cards: {} });
   });

@@ -143,6 +143,11 @@ select:disabled {
   pointer-events: none;
 }
 
+.studio .react-flow__handle.connectable {
+  opacity: 1;
+  pointer-events: all;
+}
+
 .studio .react-flow__edge-path {
   stroke-width: 1.5;
   transition: opacity var(--duration);
@@ -166,6 +171,11 @@ select:disabled {
 
 .wire-stage .react-flow__edge-path {
   stroke: var(--port-stage);
+}
+
+.wire-source .react-flow__edge-path {
+  stroke: var(--port-stage);
+  stroke-dasharray: 6 4;
 }
 
 .wire-dim .react-flow__edge-path {

@@ -24,7 +24,7 @@ export function Frame(props: {
       data-group={group}
       data-kind={card.kind}
     >
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={Position.Left} isConnectable={card.kind === "preview"} />
       <header className="card-head card-drag">
         <GroupIcon group={group} />
         <span className="card-name" title={card.name}>
@@ -41,7 +41,11 @@ export function Frame(props: {
           ))}
         </footer>
       ) : null}
-      <Handle type="source" position={Position.Right} />
+      <Handle
+        type="source"
+        position={Position.Right}
+        isConnectable={card.kind === "scene" && card.parent === undefined}
+      />
     </div>
   );
 }

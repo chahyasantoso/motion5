@@ -312,7 +312,7 @@ describe("the canvas", () => {
       await until(
         async () =>
           JSON.stringify(await layoutOf("reel")).includes(
-            '"preview":{"preset":"1080x1920","safeZone":"tiktok"}',
+            '"preset":"1080x1920","safeZone":"tiktok"',
           ),
         "the preview choice to be saved",
       );

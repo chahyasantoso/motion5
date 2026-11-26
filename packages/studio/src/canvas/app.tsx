@@ -8,16 +8,24 @@ import {
   ReactFlowProvider,
   useNodesInitialized,
   useReactFlow,
+  type Connection,
   type Edge,
   type NodeChange,
 } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { groupOf, type PortType, type StudioGraph } from "../graph";
+import { groupOf, type Card, type PortType, type StudioGraph } from "../graph";
 import type { FocusTarget } from "../protocol";
 import type { Problem } from "./api";
-import { autoLayout, PREVIEW_SIZE } from "./auto-layout";
+import { autoLayout, PREVIEW_SIZE, type Place } from "./auto-layout";
 import { describeCapability, pinOnlyAgentPort } from "../agent-port-pin";
 import type { StudioAgentEvent } from "../agent-port";
+import {
+  isPreviewId,
+  MAIN_PREVIEW,
+  nextPreviewId,
+  resolvedSource,
+  type PreviewEntry,
+} from "../previews";
 import { rootOf, rowPort, rowsOf } from "./rows";
 import { Banner } from "./banner";
 import { Follow } from "./follow";
@@ -30,7 +38,7 @@ import { buildPin, restorePin } from "./pin-actions";
 import { contextOf, type ContextView } from "./prompt-context";
 import { SelectionToolbar } from "./selection-toolbar";
 import type { PinRequest } from "./pin-view";
-import { Playhead } from "./playhead";
+import { Playheads } from "./playheads";
 import { usePins } from "./use-pins";
 import { usePresets } from "./use-presets";
 import { DEFAULT_PRESET } from "./presets";
@@ -58,10 +66,18 @@ function portsOf(graph: StudioGraph): ReadonlyMap<string, readonly PortType[]> {
   return new Map([...found].map(([id, types]) => [id, [...types]]));
 }
 
-function edgesOf(graph: StudioGraph, selected: readonly string[]): Edge[] {
+function edgesOf(
+  graph: StudioGraph,
+  selected: readonly string[],
+  previews: readonly PreviewEntry[],
+): Edge[] {
   const home = homeOf(graph);
   const rows = new Map(rowsOf(graph).map((row) => [row.id, row]));
-  return graph.wires.flatMap((wire) => {
+  const shown = new Set(
+    graph.cards.filter((card) => card.kind === "preview").map((card) => card.id),
+  );
+  const given = graph.wires.flatMap((wire): Edge[] => {
+    if (wire.type === "stage" && shown.has(wire.to)) return [];
     const related =
       selected.length === 0 || selected.includes(wire.from) || selected.includes(wire.to);
     const row = rows.get(wire.from);
@@ -78,9 +94,60 @@ function edgesOf(graph: StudioGraph, selected: readonly string[]): Edge[] {
         className: `wire wire-${wire.type}${related ? "" : " wire-dim"}`,
         selectable: false,
         focusable: false,
+        deletable: false,
+        reconnectable: false,
       },
     ];
   });
+  const chosen = previews.map((entry): Edge => {
+    const from = resolvedSource(graph, entry.source);
+    const row = rows.get(from);
+    const related = selected.length === 0 || selected.includes(from) || selected.includes(entry.id);
+    return {
+      id: `source:${entry.id}`,
+      source: home(from),
+      target: entry.id,
+      ...(row === undefined ? {} : { sourceHandle: rowPort(row) }),
+      type: "floating",
+      className: `wire wire-source${related ? "" : " wire-dim"}`,
+      selectable: false,
+      focusable: false,
+      deletable: false,
+      reconnectable: false,
+    };
+  });
+  return [...given, ...chosen];
+}
+
+/** The scene or shot a connection dragged from a stage port names, or `undefined` for any other drag. */
+function stageSourceOf(
+  graph: StudioGraph,
+  connection: { readonly source: string; readonly sourceHandle?: string | null | undefined },
+): string | undefined {
+  const handle = connection.sourceHandle;
+  if (handle === null || handle === undefined)
+    return rootOf(graph)?.id === connection.source ? connection.source : undefined;
+  return rowsOf(graph).find((each) => rowPort(each) === handle)?.id;
+}
+
+function previewCard(id: string): Card {
+  return { id, kind: "preview", name: `Preview ${id.slice(id.indexOf(":") + 1)}` };
+}
+
+function withMain(given: readonly PreviewEntry[] | undefined): readonly PreviewEntry[] {
+  const listed = given ?? [];
+  const main = listed.find((entry) => entry.id === MAIN_PREVIEW) ?? {
+    id: MAIN_PREVIEW,
+    source: "",
+  };
+  return [main, ...listed.filter((entry) => entry.id !== MAIN_PREVIEW)];
+}
+
+function choiceOf(entry: PreviewEntry | undefined): PreviewChoice {
+  return {
+    preset: entry?.preset ?? DEFAULT_PRESET,
+    ...(entry?.safeZone === undefined ? {} : { safeZone: entry.safeZone }),
+  };
 }
 
 function sceneLength(graph: StudioGraph): number {
@@ -96,10 +163,10 @@ function Canvas(props: {
   readonly piece: string;
   readonly data: StudioData;
   readonly pageProblem: Problem | undefined;
-  readonly playhead: Playhead;
+  readonly playheads: Playheads;
   readonly follow: Follow;
 }): React.JSX.Element {
-  const { piece, data, playhead, follow } = props;
+  const { piece, data, playheads, follow } = props;
   const flow = useReactFlow<CardNode>();
   const initialised = useNodesInitialized();
   const framed = useRef(false);
@@ -113,11 +180,29 @@ function Canvas(props: {
     [picked, rowPicked],
   );
   const rows = useMemo(() => rowsOf(data.graph), [data.graph]);
-  const [preview, setPreviewState] = useState<PreviewChoice>(
-    data.layout.preview ?? { preset: DEFAULT_PRESET },
+  const [previews, setPreviews] = useState<readonly PreviewEntry[]>(() =>
+    withMain(data.layout.previews),
+  );
+  const [active, setActive] = useState(MAIN_PREVIEW);
+  const playhead = playheads.of(active);
+  const preview = useMemo(
+    () => choiceOf(previews.find((entry) => entry.id === active)),
+    [previews, active],
+  );
+  const extraKey = previews
+    .filter((entry) => entry.id !== MAIN_PREVIEW)
+    .map((entry) => entry.id)
+    .join("|");
+  const extraIds = useMemo(() => (extraKey === "" ? [] : extraKey.split("|")), [extraKey]);
+  const activate = useCallback(
+    (id: string): void => {
+      playheads.activate(id);
+      setActive(id);
+    },
+    [playheads],
   );
   const [focus, setFocus] = useState<FocusTarget>({ kind: "all" });
-  const [maximised, setMaximised] = useState(false);
+  const [maximised, setMaximised] = useState<string | undefined>(undefined);
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [pinMode, setPinMode] = useState(false);
   const pinStore = usePins(piece);
@@ -126,12 +211,24 @@ function Canvas(props: {
   const length = sceneLength(data.graph);
 
   useEffect(() => {
-    playhead.setSceneLength(length);
-  }, [playhead, length]);
+    playheads.setSceneLength(length);
+  }, [playheads, length]);
 
   useEffect(() => {
-    playhead.setTake(presets.events);
-  }, [playhead, presets.events]);
+    playheads.setTake(presets.events);
+  }, [playheads, presets.events]);
+
+  useEffect(() => {
+    const stops = [MAIN_PREVIEW, ...extraIds].map((id) =>
+      playheads.of(id).onInput(() => {
+        follow.human();
+        activate(id);
+      }),
+    );
+    return () => {
+      for (const stop of stops) stop();
+    };
+  }, [playheads, extraIds, activate, follow]);
 
   useEffect(() => {
     const auto = autoLayout(data.graph);
@@ -140,31 +237,45 @@ function Canvas(props: {
     const root = rootOf(data.graph);
     setNodes((before) => {
       const held = new Map(before.map((node) => [node.id, node]));
-      return data.graph.cards
-        .filter((card) => !inRows.has(card.id))
-        .map((card): CardNode => {
-          const old = held.get(card.id);
-          const place = old?.position ?? saver.places().get(card.id) ?? auto.get(card.id);
-          return {
-            id: card.id,
-            type: nodeTypeOf(groupOf(card.kind)),
-            position: place ?? { x: 0, y: 0 },
-            data: {
-              card,
-              ports: ports.get(card.id) ?? [],
-              ...(card === root ? { rows } : {}),
-            },
-            dragHandle: ".card-drag",
-            selected: old?.selected ?? false,
-            ...(card.kind === "preview" ? { style: { ...PREVIEW_SIZE } } : {}),
-          };
-        });
+      const main = auto.get(MAIN_PREVIEW) ?? saver.places().get(MAIN_PREVIEW);
+      const beside = (index: number): Place | undefined =>
+        main === undefined
+          ? undefined
+          : { x: main.x + (index + 1) * (PREVIEW_SIZE.width + 80), y: main.y };
+      const cards = [
+        ...data.graph.cards.filter((card) => !inRows.has(card.id)),
+        ...extraIds.map(previewCard),
+      ];
+      return cards.map((card): CardNode => {
+        const old = held.get(card.id);
+        const extra = extraIds.indexOf(card.id);
+        const place =
+          old?.position ??
+          saver.places().get(card.id) ??
+          (extra < 0 ? auto.get(card.id) : beside(extra));
+        return {
+          id: card.id,
+          type: nodeTypeOf(groupOf(card.kind)),
+          position: place ?? { x: 0, y: 0 },
+          data: {
+            card,
+            ports: extra < 0 ? (ports.get(card.id) ?? []) : ["stage"],
+            ...(card === root ? { rows } : {}),
+          },
+          dragHandle: ".card-drag",
+          selected: old?.selected ?? false,
+          deletable: false,
+          ...(card.kind === "preview" ? { style: { ...PREVIEW_SIZE } } : {}),
+        };
+      });
     });
-  }, [data.graph, saver, rows]);
+  }, [data.graph, saver, rows, extraIds]);
 
   const onSelectionChange = useCallback(
     ({ nodes: chosen }: { nodes: readonly { id: string }[] }) => {
       const ids = chosen.map((node) => node.id);
+      const picked = ids.find(isPreviewId);
+      if (picked !== undefined) activate(picked);
       if (ids.length > 0) setRowPicked(undefined);
       setSelected((before) =>
         before.length === ids.length && before.every((id, index) => id === ids[index])
@@ -172,11 +283,13 @@ function Canvas(props: {
           : ids,
       );
     },
-    [],
+    [activate],
   );
   useEffect(() => {
     const ready =
-      initialised && nodes.length > 0 && nodes.length === data.graph.cards.length - rows.length;
+      initialised &&
+      nodes.length > 0 &&
+      nodes.length === data.graph.cards.length - rows.length + extraIds.length;
     if (!ready || framed.current) return;
     framed.current = true;
     if (data.layout.viewport !== undefined) setFramedNow(true);
@@ -191,9 +304,20 @@ function Canvas(props: {
         void flow.fitView({ nodes: first, padding: 0.15, maxZoom: 1, duration: 0 });
         setFramedNow(true);
       }, 100);
-  }, [initialised, nodes.length, flow, data.graph.cards, data.layout.viewport, rows.length]);
+  }, [
+    initialised,
+    nodes.length,
+    flow,
+    data.graph.cards,
+    data.layout.viewport,
+    rows.length,
+    extraIds.length,
+  ]);
 
-  const edges = useMemo(() => edgesOf(data.graph, selected), [data.graph, selected]);
+  const edges = useMemo(
+    () => edgesOf(data.graph, selected, previews),
+    [data.graph, selected, previews],
+  );
   const onNodesChange = useCallback(
     (changes: NodeChange<CardNode>[]) => setNodes((before) => applyNodeChanges(changes, before)),
     [],
@@ -220,10 +344,45 @@ function Canvas(props: {
     return () => window.removeEventListener("keydown", onKey);
   }, [flow, remember]);
 
-  const setPreview = (next: PreviewChoice): void => {
-    setPreviewState(next);
-    saver.setPreview(next);
+  const updatePreviews = (next: readonly PreviewEntry[]): void => {
+    setPreviews(next);
+    saver.setPreviews(next);
     saver.save();
+  };
+  const setPreviewOf = (id: string, next: PreviewChoice): void =>
+    updatePreviews(
+      previews.map((entry) =>
+        entry.id === id
+          ? {
+              id,
+              source: entry.source,
+              preset: next.preset,
+              ...(next.safeZone === undefined ? {} : { safeZone: next.safeZone }),
+            }
+          : entry,
+      ),
+    );
+  const setPreview = (next: PreviewChoice): void => setPreviewOf(active, next);
+  const wire = (connection: Connection): void => {
+    const source = stageSourceOf(data.graph, connection);
+    if (source === undefined || !previews.some((entry) => entry.id === connection.target)) return;
+    updatePreviews(
+      previews.map((entry) => (entry.id === connection.target ? { ...entry, source } : entry)),
+    );
+  };
+  const addPreview = (): void => {
+    const id = nextPreviewId(previews);
+    const places = [MAIN_PREVIEW, ...extraIds].flatMap((each) => {
+      const place = nodes.find((node) => node.id === each)?.position;
+      return place === undefined ? [] : [place];
+    });
+    const first = nodes.find((node) => node.id === MAIN_PREVIEW)?.position;
+    if (first !== undefined)
+      saver.place(id, {
+        x: Math.max(...places.map((place) => place.x)) + PREVIEW_SIZE.width + 80,
+        y: first.y,
+      });
+    updatePreviews([...previews, { id, source: rootOf(data.graph)?.id ?? "" }]);
   };
   const problem = props.pageProblem ?? data.problem;
   const followState = useFollow(follow, playhead);
@@ -330,6 +489,12 @@ function Canvas(props: {
     page: data.page,
     length,
     playhead,
+    previews,
+    activePreview: active,
+    activate,
+    playheadOf: (id) => playheads.of(id),
+    previewOf: (id) => choiceOf(previews.find((entry) => entry.id === id)),
+    setPreviewOf,
     zones: data.zones,
     preview,
     setPreview,
@@ -368,7 +533,11 @@ function Canvas(props: {
             zoomOnScroll={false}
             panOnScroll={false}
             zoomOnDoubleClick={false}
-            nodesConnectable={false}
+            onConnect={wire}
+            isValidConnection={(connection) =>
+              isPreviewId(connection.target) && stageSourceOf(data.graph, connection) !== undefined
+            }
+            edgesReconnectable={false}
             edgesFocusable={false}
             deleteKeyCode={null}
             attributionPosition="bottom-center"
@@ -380,6 +549,7 @@ function Canvas(props: {
           <Toolbar
             piece={piece}
             onFrame={() => void flow.fitView({ padding: 0.1, duration: 0 })}
+            onAddPreview={addPreview}
             pinMode={pinMode}
             onPinMode={setPinMode}
           />
@@ -403,7 +573,11 @@ function Canvas(props: {
 export function App(props: { readonly piece: string }): React.JSX.Element {
   const data = useStudioData(props.piece);
   const [pageProblem, setPageProblem] = useState<Problem | undefined>(undefined);
-  const playhead = useMemo(() => new Playhead(setPageProblem), []);
+  const playheads = useMemo(() => {
+    const made = new Playheads(setPageProblem);
+    made.activate(MAIN_PREVIEW);
+    return made;
+  }, []);
   const follow = useMemo(() => new Follow(), []);
   if (data === undefined) return <p className="loading dim">Loading {props.piece}…</p>;
   return (
@@ -412,7 +586,7 @@ export function App(props: { readonly piece: string }): React.JSX.Element {
         piece={props.piece}
         data={data}
         pageProblem={pageProblem}
-        playhead={playhead}
+        playheads={playheads}
         follow={follow}
       />
     </ReactFlowProvider>

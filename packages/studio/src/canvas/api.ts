@@ -1,6 +1,7 @@
 import { isMotionEvent, type Events } from "@gerak/core";
 import type { StudioGraph } from "../graph";
 import type { CanvasLayout } from "../layout";
+import { parsePreviews } from "../previews";
 import { parsePins, type NewPin, type Pin } from "../pins";
 import type { Rect } from "../protocol";
 
@@ -100,17 +101,13 @@ function layoutOf(body: unknown): CanvasLayout {
   const vx = view?.["x"];
   const vy = view?.["y"];
   const zoom = view?.["zoom"];
-  const shown = record(given?.["preview"]);
-  const preset = shown?.["preset"];
-  const safeZone = shown?.["safeZone"];
+  const previews = parsePreviews(given ?? {});
   return {
     cards,
     ...(typeof vx === "number" && typeof vy === "number" && typeof zoom === "number"
       ? { viewport: { x: vx, y: vy, zoom } }
       : {}),
-    ...(typeof preset === "string"
-      ? { preview: { preset, ...(typeof safeZone === "string" ? { safeZone } : {}) } }
-      : {}),
+    ...(previews.length === 0 ? {} : { previews }),
   };
 }
 

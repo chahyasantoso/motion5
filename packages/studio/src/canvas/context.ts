@@ -5,6 +5,7 @@ import type { Pin } from "../pins";
 import type { PinRequest } from "./pin-view";
 import type { PresetState } from "./use-presets";
 import type { Playhead } from "./playhead";
+import type { PreviewEntry } from "../previews";
 
 /** What the preview remembers: its size preset and its safe-zone profile when the overlay is on. */
 export interface PreviewChoice {
@@ -19,12 +20,23 @@ export interface StudioValue {
   readonly page: string | null;
   /** The scene length in ms. */
   readonly length: number;
+  /** The playhead of the active preview. */
   readonly playhead: Playhead;
+  /** Every preview card, the graph's own first. */
+  readonly previews: readonly PreviewEntry[];
+  /** The id of the preview the timeline and the bus follow. */
+  readonly activePreview: string;
+  activate(id: string): void;
+  playheadOf(id: string): Playhead;
+  previewOf(id: string): PreviewChoice;
+  setPreviewOf(id: string, next: PreviewChoice): void;
   readonly zones: readonly ZoneMargins[];
+  /** The active preview's choice. */
   readonly preview: PreviewChoice;
   setPreview(next: PreviewChoice): void;
-  readonly maximised: boolean;
-  setMaximised(on: boolean): void;
+  /** The id of the maximised preview, if any. */
+  readonly maximised: string | undefined;
+  setMaximised(id: string | undefined): void;
   /** Where the maximised preview is drawn. */
   readonly host: HTMLElement | null;
   readonly problem: Problem | undefined;
