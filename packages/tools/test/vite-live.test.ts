@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -11,6 +11,7 @@ import {
   type MotionLiveRequest,
   type MotionLiveResponse,
 } from "../src/vite";
+import { removeTemp } from "../../../test/support/temp";
 
 const tempDirs: string[] = [];
 function makeTempDir(): string {
@@ -21,7 +22,7 @@ function makeTempDir(): string {
 
 afterEach(() => {
   for (const dir of tempDirs.splice(0)) {
-    rmSync(dir, { recursive: true, force: true });
+    removeTemp(dir);
   }
 });
 

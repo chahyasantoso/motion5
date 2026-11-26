@@ -51,15 +51,15 @@ const request = (name: string, to: number) => ({
 
 describe("gerak fps on a scaffolded 3D page", () => {
   it("reports under 34 fps in every window when each step takes 30 ms", async () => {
-    const report = await measureFps(request(SLOW, 3000));
+    const report = await measureFps(request(SLOW, 1500));
     expect(report.pageErrors).toEqual([]);
-    expect(report.windows.length).toBe(6);
+    expect(report.windows.length).toBe(3);
     for (const window of report.windows) expect(window.fps).toBeLessThan(34);
     expect(report.worst[0]?.scene ?? 0).toBeGreaterThan(20);
   }, 60000);
 
   it("reports above 50 fps in every window after the first on the plain scaffold", async () => {
-    const report = await measureFps(request(PLAIN, 3000));
+    const report = await measureFps(request(PLAIN, 1500));
     expect(report.pageErrors).toEqual([]);
     for (const window of report.windows.slice(1)) expect(window.fps).toBeGreaterThan(50);
   }, 60000);

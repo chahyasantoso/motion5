@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { initProject, pageFiles, shippedSkill, type InstalledPackage } from "@gerak/tools/scene";
+import { removeTemp } from "../../../test/support/temp";
 
 const INIT = fileURLToPath(new URL("../bin/motion-init.mjs", import.meta.url));
 const SKILL = ".claude/skills/make-motion/SKILL.md";
@@ -60,7 +61,7 @@ function snapshot(dir: string): string[] {
 }
 
 afterEach(() => {
-  for (const dir of scratch.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of scratch.splice(0)) removeTemp(dir);
 });
 
 describe("gerak init", () => {

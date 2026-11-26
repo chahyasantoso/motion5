@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -32,6 +32,7 @@ import * as growing from "./fixtures/review-growing-scene";
 import * as constant from "./fixtures/review-constant-scene";
 import * as stageClean from "./fixtures/stage-clean";
 import * as stageShots from "./fixtures/stage-shots";
+import { removeTemp } from "../../../test/support/temp";
 
 const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
@@ -334,7 +335,7 @@ describe("gerak review of shots", () => {
 describe("gerak review expectations and shape mismatches", () => {
   const dirs: string[] = [];
   afterEach(() => {
-    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+    for (const dir of dirs.splice(0)) removeTemp(dir);
   });
 
   it("enforces ambient limits and the measured frame's bounds while skipping settle rest check", () => {

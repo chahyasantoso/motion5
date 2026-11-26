@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { readFileSync, readdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { code, codeOnly, declaration, parseSource, seamResultReads } from "./helpers/source-region";
+import { removeTemp } from "../support/temp";
 
 // A source-text assertion is addressed by something the claim names, and this gate refuses the shape
 // that is not. Issue #314 found two cases in `live-value-updates.test.ts` sliced between one
@@ -291,7 +292,7 @@ describe("source-region anchors", () => {
       expect(projected).toContain("`literal ${actual()}`");
       expect(projected.indexOf("actual")).toBe(source.indexOf("actual"));
     } finally {
-      rmSync(directory, { recursive: true, force: true });
+      removeTemp(directory);
     }
   });
 

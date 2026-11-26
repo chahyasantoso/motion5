@@ -1,13 +1,14 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { writePreset } from "../src/page/presets";
 import { parseSceneReviewArgs } from "../src/scene/review";
+import { removeTemp } from "../../../test/support/temp";
 
 const made: string[] = [];
 afterEach(() => {
-  for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of made.splice(0)) removeTemp(dir);
 });
 
 function layout(file: string): { root: string; scene: string } {

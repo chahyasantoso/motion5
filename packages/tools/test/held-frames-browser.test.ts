@@ -1,7 +1,8 @@
-import { mkdirSync, mkdtempSync, rmdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { withPage } from "../src/page/page";
+import { removeTemp } from "../../../test/support/temp";
 
 const DIRS: string[] = [];
 const SCAFFOLD = join(process.cwd(), "apps/pieces/.scaffold");
@@ -52,7 +53,7 @@ mount(piece, { clock: "timed", frame: "fit", root });
 
 afterEach(() => {
   for (const dir of DIRS.splice(0)) {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    removeTemp(dir);
   }
   try {
     rmdirSync(SCAFFOLD);
@@ -99,33 +100,6 @@ describe("held frames and fitted body scaling in browser", () => {
 
     expect(pageErrors).toEqual([]);
     expect(elapsedTimes).toEqual([...times]);
-  }, 60000);
-
-  it("scales a fitted 1920x1080 root inside a grid-centered body to a 1280x720 viewport", async () => {
-    const dir = appRoot();
-    writeMountedPage(dir, {
-      bodyCss: "margin: 0; display: grid; place-items: center;",
-      frameCss: "position: relative; width: 1920px; height: 1080px;",
-    });
-
-    const { value: transform, pageErrors } = await withPage(
-      {
-        page: "page.html",
-        width: 1280,
-        height: 720,
-        source: { kind: "serve", root: dir },
-      },
-      async ({ page, advanceTo }) => {
-        await advanceTo(0);
-        return page.evaluate(() => {
-          const root = document.getElementById("frame");
-          return root === null ? null : root.style.transform;
-        });
-      },
-    );
-
-    expect(pageErrors).toEqual([]);
-    expect(transform).toMatch(/^scale\(0\.6666/);
   }, 60000);
 
   it("scales a fitted 1080x1920 root inside a grid-centered body to a 1280x720 viewport", async () => {

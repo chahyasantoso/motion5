@@ -1,10 +1,11 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
 import { afterEach, describe, expect, it } from "vitest";
 import { compareFrames, comparisonLines, parseFramesArgs } from "../src/page/frames";
 import { decodePng } from "../src/page/png";
+import { removeTemp } from "../../../test/support/temp";
 
 type Rgb = [number, number, number];
 
@@ -80,7 +81,7 @@ function folder(files: Record<string, Buffer>): string {
 }
 
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0)) removeTemp(dir);
 });
 
 describe("decodePng", () => {

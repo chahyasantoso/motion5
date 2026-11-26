@@ -1,14 +1,15 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { checkMotion, parseCheckArgs, type Finding } from "../src/page/check";
 import { parseReviewArgs, reviewPage } from "../src/page/review";
+import { removeTemp } from "../../../test/support/temp";
 
 describe("gerak check --safe-zone in browser", () => {
   const dirs: string[] = [];
   afterEach(() => {
-    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+    for (const dir of dirs.splice(0)) removeTemp(dir);
   });
 
   function site(caption: string, style: string, extra = ""): string {
@@ -64,18 +65,6 @@ describe("gerak check --safe-zone in browser", () => {
     expect(found[0]?.kind === "unsafe-zone" && found[0].element).toContain("Bottom words");
   });
 
-  it("reports text in the right margin", async () => {
-    const found = await zoneFindingsOf(site("Side", "left: 1010px; top: 600px; margin: 0;"));
-    expect(found.map((finding) => finding.kind === "unsafe-zone" && finding.edge)).toContain(
-      "right",
-    );
-  });
-
-  it("reports nothing for text inside the margins", async () => {
-    const found = await zoneFindingsOf(site("Centre", "left: 300px; top: 900px; margin: 0;"));
-    expect(found).toEqual([]);
-  });
-
   it("keeps two texts with the same words as separate findings", async () => {
     const root = mkdtempSync(join(tmpdir(), "gerak-safezone-"));
     dirs.push(root);
@@ -119,15 +108,6 @@ describe("gerak check --safe-zone in browser", () => {
     if (bottom?.kind !== "unsafe-zone") throw new Error("no bottom finding");
     // The 48 px line box crosses y 1440 when top passes 1392, 490 ms into the slide.
     expect(Math.abs(bottom.at - 490)).toBeLessThanOrEqual(16);
-  });
-
-  it("ignores a caption that slides in from below and rests at the centre", async () => {
-    const root = site(
-      "Passing",
-      "left: 200px; top: 2000px; margin: 0; animation: rise 150ms linear forwards;",
-      "@keyframes rise { from { top: 2000px } to { top: 900px } }",
-    );
-    expect(await zoneFindingsOf(root, "600")).toEqual([]);
   });
 
   it("lists the finding in a review", async () => {

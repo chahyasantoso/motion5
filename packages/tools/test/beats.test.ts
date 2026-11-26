@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseBeatsArgs, runBeats } from "../src/audio/beats";
 import type { Cue } from "../src/audio/levels";
+import { removeTemp } from "../../../test/support/temp";
 
 const hasFfmpeg = spawnSync("ffmpeg", ["-version"]).status === 0;
 const SAMPLE_RATE = 48_000;
@@ -114,7 +115,7 @@ describe.skipIf(!hasFfmpeg)("runBeats end-to-end", () => {
       }
       expect(levels.map((c) => c.at)).toEqual(Array.from({ length: 20 }, (_, i) => i * 100));
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      removeTemp(dir);
     }
   });
 });

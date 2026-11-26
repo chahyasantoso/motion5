@@ -1,14 +1,15 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { checkMotion, describeCheckLines, parseCheckArgs } from "../src/page/check";
 import { parseReviewArgs, reviewPage } from "../src/page/review";
+import { removeTemp } from "../../../test/support/temp";
 
 describe("multi-viewport gerak check and review in browser", () => {
   const dirs: string[] = [];
   afterEach(() => {
-    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+    for (const dir of dirs.splice(0)) removeTemp(dir);
   });
 
   it("checks and reviews multiple viewports against one page, prefixing mobile defects and writing labelled sheets", async () => {

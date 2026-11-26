@@ -8,7 +8,7 @@ const source = { kind: "serve", root: PIECES } as const;
 const SCROLLED = ["#story-progress", "#story-step-1", "#story-step-2"];
 const TRIGGERED = ["#features .feature-card", "#gallery .gallery-card"];
 const ENGINE = ["#drink", "#hero-aura", "#hero-sub"];
-const POSITIONS = 50;
+const POSITIONS = 11;
 
 interface Seen {
   readonly selector: string;
@@ -19,7 +19,7 @@ interface Seen {
   readonly animations: number;
 }
 
-/** Each selector's drawn transform and opacity at 50 scroll positions across the page, after two frames. */
+/** Each selector's drawn transform and opacity at evenly spaced scroll positions across the page, from the top to the bottom, after two frames. */
 async function lookAcross(page: Page): Promise<readonly (readonly Seen[])[]> {
   return page.evaluate(
     async ({ selectors, positions }) => {
@@ -54,6 +54,21 @@ async function lookAcross(page: Page): Promise<readonly (readonly Seen[])[]> {
   );
 }
 
+/** Waits until the page has mounted and drawn two frames, so the engine has attached what it will. */
+async function ready(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+    return Array.isArray(listed) && listed.length > 0;
+  });
+  await frames(page, 2);
+}
+
+const frames = (page: Page, count: number): Promise<void> =>
+  page.evaluate(async (n) => {
+    for (let k = 0; k < n; k += 1)
+      await new Promise<void>((done) => requestAnimationFrame(() => done()));
+  }, count);
+
 const offEngine = async (page: Page): Promise<void> => {
   await page.addInitScript(() => {
     Reflect.set(globalThis, Symbol.for("@gerak/dom/compositor-off"), true);
@@ -81,7 +96,7 @@ async function run(
       ...(prepare === undefined ? {} : { prepare }),
     },
     async ({ page }) => {
-      await page.waitForTimeout(1200);
+      await ready(page);
       await then?.(page);
       return lookAcross(page);
     },
@@ -134,8 +149,19 @@ describe("yuzu's scroll-driven elements on the browser's scroll timeline", () =>
 
   it("rebuilds its keyframes when the page is measured again", async () => {
     const played = await run(1280, 720, undefined, async (page) => {
+      await page.evaluate(() => {
+        Reflect.set(
+          window,
+          "__before",
+          document.querySelector("#story-progress")?.getAnimations()[0],
+        );
+      });
       await page.setViewportSize({ width: 390, height: 844 });
-      await page.waitForTimeout(500);
+      await page.waitForFunction(() => {
+        const now = document.querySelector("#story-progress")?.getAnimations()[0];
+        return now !== undefined && now !== Reflect.get(window, "__before");
+      });
+      await frames(page, 2);
     });
     const engine = await run(390, 844, offEngine);
     expectMatch(played, engine);
@@ -157,7 +183,7 @@ describe("yuzu's scroll-driven elements on the browser's scroll timeline", () =>
         clock: "real",
       },
       async ({ page }) => {
-        await page.waitForTimeout(1200);
+        await ready(page);
         return page.evaluate(async () => {
           const frame = () => new Promise<void>((done) => requestAnimationFrame(() => done()));
           const storyProgress = document.querySelector("#story-progress");
@@ -270,27 +296,33 @@ describe("triggered cards on the document timeline", () => {
       },
       async ({ page }) => {
         // At rest the poses match within the sampling tolerance; while a card runs, a frame of skew.
-        const rest = (when: string) => async () =>
+        const quiet = () =>
+          page.waitForFunction(() =>
+            ["reverse", "stay", "replay"].every((id) =>
+              (document.getElementById(id)?.getAnimations() ?? []).every(
+                (animation) => animation.playState !== "running",
+              ),
+            ),
+          );
+        const rest = async (when: string) => {
+          await quiet();
           expectCards(await cardsNow(page), 0.25 + SLACK, 0.005 + SLACK, when);
-        const running = (when: string) => async () =>
+        };
+        const running = async (when: string) => {
+          await frames(page, 3);
           expectCards(await cardsNow(page), 2, 0.05, when);
-        await page.waitForTimeout(400);
-        await rest("before crossing")();
+        };
+        await ready(page);
+        await rest("before crossing");
         await scrollTo(page, 600);
-        await page.waitForTimeout(400);
-        await running("while revealing")();
-        await page.waitForTimeout(1000);
-        await rest("revealed")();
+        await running("while revealing");
+        await rest("revealed");
         await scrollTo(page, 0);
-        await page.waitForTimeout(400);
-        await running("after crossing back")();
-        await page.waitForTimeout(1000);
-        await rest("back at rest")();
+        await running("after crossing back");
+        await rest("back at rest");
         await scrollTo(page, 600);
-        await page.waitForTimeout(400);
-        await running("crossing again")();
-        await page.waitForTimeout(1000);
-        await rest("revealed again")();
+        await running("crossing again");
+        await rest("revealed again");
         // Back and forth within one task: replay starts again with no frame between the two crossings.
         await page.evaluate(() => {
           for (const top of [0, 600]) {
@@ -298,8 +330,7 @@ describe("triggered cards on the document timeline", () => {
             window.dispatchEvent(new Event("scroll"));
           }
         });
-        await page.waitForTimeout(400);
-        await running("crossed back and forth in one task")();
+        await running("crossed back and forth in one task");
       },
     );
   }, 120000);

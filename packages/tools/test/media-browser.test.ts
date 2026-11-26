@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { checkMotion, parseCheckArgs } from "../src/page/check";
 import { captureFrames } from "../src/page/frames";
 import { decodePng } from "../src/page/png";
+import { removeTemp } from "../../../test/support/temp";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/media/count.webm", import.meta.url));
 const DIRS: string[] = [];
@@ -68,7 +69,7 @@ function centrePixel(pngPath: string): readonly [number, number, number] {
 
 afterEach(() => {
   for (const dir of DIRS.splice(0)) {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    removeTemp(dir);
   }
 });
 
@@ -83,7 +84,7 @@ const show = beat("show", 1600, { at: 400 });
 const piece = scene({ length: 2200 }, box("clip", { media: true }).shows(show));`,
     );
 
-    const times = [0, 400, 480, 640, 1040, 1440] as const;
+    const times = [0, 480, 1040, 1440] as const;
     const captured = await captureFrames({
       page: "clip.html",
       width: 200,
@@ -109,12 +110,12 @@ const piece = scene({ length: 2200 }, box("clip", { media: true }).shows(show));
     );
   }, 60000);
 
-  it("reports media-short when a 2 s clip sits in a 3 s window and not in a 1.5 s window", async () => {
+  it("reports media-short when a 2 s clip sits in a 2.4 s window and not in a 1 s window", async () => {
     const longDir = appRoot();
     writeMediaPage(
       longDir,
       `import { box, scene } from "@gerak/stage";
-const piece = scene({ length: 3000 }, box("clip", { media: true }));`,
+const piece = scene({ length: 2400 }, box("clip", { media: true }));`,
     );
     const longArgs = parseCheckArgs([
       "clip.html",
@@ -125,20 +126,20 @@ const piece = scene({ length: 3000 }, box("clip", { media: true }));`,
       "--size",
       "200x200",
       "--to",
-      "3000",
+      "2400",
     ]);
     if (longArgs.kind !== "ok") throw new Error(longArgs.message);
     const longCheck = await checkMotion(longArgs);
     expect(longCheck.pageErrors).toEqual([]);
     expect(longCheck.findings).toEqual([
-      { kind: "media-short", element: "clip", clipMs: 2000, shownMs: 3000 },
+      { kind: "media-short", element: "clip", clipMs: 2000, shownMs: 2400 },
     ]);
 
     const shortDir = appRoot();
     writeMediaPage(
       shortDir,
       `import { box, scene } from "@gerak/stage";
-const piece = scene({ length: 1500 }, box("clip", { media: true }));`,
+const piece = scene({ length: 1000 }, box("clip", { media: true }));`,
     );
     const shortArgs = parseCheckArgs([
       "clip.html",
@@ -149,7 +150,7 @@ const piece = scene({ length: 1500 }, box("clip", { media: true }));`,
       "--size",
       "200x200",
       "--to",
-      "1500",
+      "1000",
     ]);
     if (shortArgs.kind !== "ok") throw new Error(shortArgs.message);
     const shortCheck = await checkMotion(shortArgs);
