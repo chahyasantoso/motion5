@@ -1,5 +1,8 @@
+import { isMotionEvent, type Events } from "@gerak/core";
 import type { StudioGraph } from "../graph";
 import type { CanvasLayout } from "../layout";
+import { parsePins, type NewPin, type Pin } from "../pins";
+import type { Rect } from "../protocol";
 
 /** A platform's reserved margins, as `GET /__gerak/safe-zones` answers them. */
 export interface ZoneMargins {
@@ -130,6 +133,67 @@ export async function saveLayout(piece: string, layout: CanvasLayout): Promise<v
     });
   } catch {
     return;
+  }
+}
+
+/** The pins of `piece` the file lists; empty when the server cannot answer. */
+export async function fetchPins(piece: string): Promise<readonly Pin[]> {
+  try {
+    const response = await fetch(`/__gerak/pins${query(piece)}`);
+    const list = record(await jsonOf(response))?.["pins"];
+    return parsePins(list);
+  } catch {
+    return [];
+  }
+}
+
+/** Stores a new pin through the server; `false` when it did not. */
+export async function postPin(piece: string, pin: NewPin): Promise<boolean> {
+  try {
+    const response = await fetch(`/__gerak/pins${query(piece)}`, {
+      method: "POST",
+      body: JSON.stringify(pin),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+const presetQuery = (piece: string, name: string): string =>
+  `${query(piece)}&name=${encodeURIComponent(name)}`;
+
+/** The recorded preset names of `piece`; empty when the server cannot answer. */
+export async function fetchPresetNames(piece: string): Promise<readonly string[]> {
+  try {
+    const names = record(await jsonOf(await fetch(`/__gerak/presets${query(piece)}`)))?.["names"];
+    return Array.isArray(names) ? names.filter((each) => typeof each === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** The events of one recorded preset; empty when it cannot be read. */
+export async function fetchPreset(piece: string, name: string): Promise<Events> {
+  try {
+    const response = await fetch(`/__gerak/presets${presetQuery(piece, name)}`);
+    const events = record(await jsonOf(response))?.["events"];
+    return Array.isArray(events) ? events.filter(isMotionEvent) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Saves `events` as a preset through the server; `false` when it refused. */
+export async function putPreset(piece: string, name: string, events: Events): Promise<boolean> {
+  try {
+    const response = await fetch(`/__gerak/presets${presetQuery(piece, name)}`, {
+      method: "PUT",
+      body: JSON.stringify(events),
+    });
+    return response.ok;
+  } catch {
+    return false;
   }
 }
 

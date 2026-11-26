@@ -616,5 +616,95 @@ button.bar {
   z-index: 3;
   width: 2px;
   margin-left: -1px;
+  pointer-events: none;
   background: var(--accent);
+}
+
+.canvas-area[data-pin-mode="true"],
+.canvas-area[data-pin-mode="true"] .card,
+.canvas-area[data-pin-mode="true"] .card-head,
+.canvas-area[data-pin-mode="true"] .react-flow__pane {
+  cursor: crosshair;
+}
+
+.pin-badges {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.pin-mark {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--space-1);
+  font-size: var(--text-small);
+  line-height: 16px;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+  border-radius: 9px;
+}
+
+.pin-mark[data-status="resolved"] {
+  color: var(--text-dim);
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  opacity: 0.6;
+}
+
+.pin-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pin-stage {
+  position: absolute;
+  z-index: 2;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+
+.pin-capture {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: crosshair;
+}
+
+.pin-tick {
+  position: absolute;
+  top: 3px;
+  z-index: 1;
+  transform: translateX(-50%);
+}
+
+.record-button[aria-pressed="true"] {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.event-tick {
+  position: absolute;
+  bottom: 0;
+  width: var(--border-width);
+  height: 10px;
+  background: var(--port-events);
+  pointer-events: auto;
+}
+
+.selection-toolbar {
+  position: absolute;
+  bottom: var(--space-3);
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-small);
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-card);
+  transform: translateX(-50%);
 }

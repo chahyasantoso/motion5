@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import {
   INPUT_EVENTS,
   NO_EVENTS,
@@ -31,6 +31,8 @@ import {
 } from "@gerak/stage";
 import { drawStrokes } from "@gerak/stage/render";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
+import { readPreset } from "../page/presets";
+import { piecesRoot } from "../page/root";
 import { SCENE_LIMITS } from "./limits";
 import {
   loadSceneFile,
@@ -73,12 +75,24 @@ export interface SceneReviewResult {
 }
 
 const USAGE =
-  "usage: gerak review <scene.ts> [--to ms] [--events list] [--measure] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]";
+  "usage: gerak review <scene.ts> [--to ms] [--events list|@preset] [--measure] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]";
 
 /** A path ending in .ts or .tsx is a scene file, reviewed from its values with no page. */
 export function isSceneFile(argv: readonly string[]): boolean {
   const file = argv[0];
   return file !== undefined && /\.tsx?$/.test(file);
+}
+
+function presetEvents(file: string, name: string): Events | { readonly reason: string } {
+  const path = resolve(file);
+  const found = piecesRoot(dirname(path));
+  if (found.kind === "missing") return { reason: found.message };
+  const piece = basename(path)
+    .replace(/\.tsx?$/, "")
+    .replace(/-scene$/, "");
+  if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(piece))
+    return { reason: `${basename(path)} names no piece, so it has no presets.` };
+  return readPreset(found.root, piece, name);
 }
 
 export function parseSceneReviewArgs(argv: readonly string[]): SceneReviewArgs {
@@ -116,7 +130,11 @@ export function parseSceneReviewArgs(argv: readonly string[]): SceneReviewArgs {
   };
   const to = number("--to");
   const rawEvents = flags.get("--events");
-  const parsedEvents = rawEvents === undefined ? undefined : parseEvents(rawEvents);
+  let parsedEvents: ReturnType<typeof parseEvents> | undefined;
+  if (rawEvents !== undefined)
+    parsedEvents = rawEvents.startsWith("@")
+      ? presetEvents(file, rawEvents.slice(1))
+      : parseEvents(rawEvents);
   if (flags.has("--events")) {
     if (parsedEvents === undefined) return usage("--events needs a list.");
     if ("reason" in parsedEvents) return usage(parsedEvents.reason);

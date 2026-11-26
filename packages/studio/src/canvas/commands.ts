@@ -80,6 +80,7 @@ export function changesCanvas(command: StudioCommand): boolean {
     case "inspect":
     case "graph":
     case "check":
+    case "act":
       return false;
     case "focus":
     case "viewport":
@@ -102,6 +103,7 @@ export async function runCommand(
       return { kind: "status", status: control.status() };
     case "graph":
     case "check":
+    case "act":
       return failed(`${command.kind} is answered by the server.`);
     case "focus": {
       const found = focusCard(command.target, control.cards());

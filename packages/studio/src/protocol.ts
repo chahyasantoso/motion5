@@ -1,3 +1,4 @@
+import type { Events } from "@gerak/core";
 import type { StepSummary } from "@gerak/stage/provenance";
 import type { CheckResult } from "@gerak/tools/page";
 import type { StudioGraph } from "./graph";
@@ -10,6 +11,9 @@ export const COMMAND_EVENT = "gerak:command";
 
 /** The Vite socket event the canvas answers a command on. */
 export const REPLY_EVENT = "gerak:reply";
+
+/** The Vite socket event the server sends when a piece's recorded presets change. */
+export const PRESETS_EVENT = "gerak:presets";
 
 /** Who drives the canvas: nobody, the agent with the canvas mirroring it, or the agent on a hidden worker frame. */
 export type FollowState = "idle" | "following" | "detached";
@@ -48,7 +52,14 @@ export type StudioCommand =
       /** The last ms to sample; the scene's length when undefined. */
       readonly to: number | undefined;
     }
-  | { readonly kind: "graph" };
+  | { readonly kind: "graph" }
+  | {
+      readonly kind: "act";
+      /** A `gerak review --action` list, run on the piece's page in the session's browser. */
+      readonly actions: string;
+      /** The preset name to save the events under, when given. */
+      readonly savePreset: string | undefined;
+    };
 
 /** What `status` answers. */
 export interface StudioStatus {
@@ -97,6 +108,7 @@ export type StudioReply =
   | { readonly kind: "inspect"; readonly inspection: Inspection }
   | { readonly kind: "check"; readonly result: CheckResult }
   | { readonly kind: "graph"; readonly graph: StudioGraph }
+  | { readonly kind: "act"; readonly events: Events; readonly saved: string | undefined }
   | { readonly kind: "failed"; readonly message: string };
 
 /** A command on the socket for the canvas of `piece`, with the id its reply carries back. */

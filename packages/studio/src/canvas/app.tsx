@@ -16,13 +16,21 @@ import { groupOf, type PortType, type StudioGraph } from "../graph";
 import type { FocusTarget } from "../protocol";
 import type { Problem } from "./api";
 import { autoLayout, PREVIEW_SIZE } from "./auto-layout";
+import { describeCapability, pinOnlyAgentPort } from "../agent-port-pin";
+import type { StudioAgentEvent } from "../agent-port";
 import { Banner } from "./banner";
 import { Follow } from "./follow";
 import { FollowPill } from "./follow-pill";
 import { useFollow } from "./use-follow";
 import { StudioContext, type PreviewChoice, type StudioValue } from "./context";
 import { NODE_TYPES, nodeTypeOf, type CardNode } from "./nodes";
+import { buildPin, restorePin } from "./pin-actions";
+import { contextOf, type ContextView } from "./prompt-context";
+import { SelectionToolbar } from "./selection-toolbar";
+import type { PinRequest } from "./pin-view";
 import { Playhead } from "./playhead";
+import { usePins } from "./use-pins";
+import { usePresets } from "./use-presets";
 import { DEFAULT_PRESET } from "./presets";
 import { Timeline } from "./timeline";
 import { Toolbar } from "./toolbar";
@@ -61,6 +69,10 @@ function sceneLength(graph: StudioGraph): number {
   return root?.span?.to ?? 0;
 }
 
+async function settle(events: AsyncIterable<StudioAgentEvent>): Promise<void> {
+  for await (const event of events) if (event.kind === "failed") return;
+}
+
 function Canvas(props: {
   readonly piece: string;
   readonly data: StudioData;
@@ -82,6 +94,9 @@ function Canvas(props: {
   const [focus, setFocus] = useState<FocusTarget>({ kind: "all" });
   const [maximised, setMaximised] = useState(false);
   const [host, setHost] = useState<HTMLElement | null>(null);
+  const [pinMode, setPinMode] = useState(false);
+  const pinStore = usePins(piece);
+  const presets = usePresets(piece, playhead);
   const area = useRef<HTMLDivElement | null>(null);
   const length = sceneLength(data.graph);
 
@@ -160,6 +175,8 @@ function Canvas(props: {
         void flow.fitView({ padding: 0.1, duration: 0 });
         remember();
       }
+      if (event.key === "p" || event.key === "P") setPinMode((on) => !on);
+      if (event.key === "Escape") setPinMode(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -170,8 +187,9 @@ function Canvas(props: {
     saver.setPreview(next);
     saver.save();
   };
+  const problem = props.pageProblem ?? data.problem;
   const followState = useFollow(follow, playhead);
-  const { resume } = useBus({
+  const { resume, control } = useBus({
     piece,
     page: data.page,
     length,
@@ -180,7 +198,7 @@ function Canvas(props: {
     zones: data.zones,
     playhead,
     preview,
-    problem: props.pageProblem ?? data.problem,
+    problem,
     selected,
     focus,
     setFocus,
@@ -197,7 +215,70 @@ function Canvas(props: {
       ),
   });
 
+  const view: ContextView = {
+    piece,
+    graph: data.graph,
+    focus,
+    preview,
+    playhead,
+    preset: presets.selected,
+    problem,
+  };
+  const placePin = (request: PinRequest): void => {
+    setPinMode(false);
+    void pinStore.add(buildPin(request, view));
+  };
+  const addPin = pinStore.add;
+  const port = useMemo(
+    () =>
+      pinOnlyAgentPort(addPin, async (text) => {
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          return undefined;
+        }
+      }),
+    [addPin],
+  );
+  const selectedCard =
+    selected.length === 1 ? data.graph.cards.find((card) => card.id === selected[0]) : undefined;
+  const queueFix = (): void => {
+    if (problem === undefined) return;
+    void settle(
+      port.submit(contextOf(view, { card: selectedCard, prompt: `Fix: ${problem.message}` })),
+    );
+  };
+  const placeRef = useRef(placePin);
+  placeRef.current = placePin;
+  useEffect(() => {
+    const element = area.current;
+    if (!pinMode || element === null) return undefined;
+    const onClick = (event: MouseEvent): void => {
+      const target = event.target instanceof Element ? event.target : null;
+      const card = target?.closest("[data-card-id]") ?? null;
+      if (card === null || target?.closest("[data-pin-id], [data-pin-capture]") !== null) return;
+      const id = card.getAttribute("data-card-id");
+      const found = data.graph.cards.find((each) => each.id === id);
+      if (found === undefined || found.kind === "preview") return;
+      event.stopPropagation();
+      event.preventDefault();
+      placeRef.current({ kind: "card", card: found });
+    };
+    element.addEventListener("click", onClick, true);
+    return () => element.removeEventListener("click", onClick, true);
+  }, [pinMode, data.graph.cards]);
+
   const value: StudioValue = {
+    pins: pinStore.pins,
+    pinMode,
+    setPinMode,
+    placePin,
+    presets,
+    restorePin: (pin) => {
+      if (pin.preset !== undefined && presets.names.includes(pin.preset))
+        presets.select(pin.preset);
+      void restorePin(pin, control);
+    },
     piece,
     graph: data.graph,
     page: data.page,
@@ -209,12 +290,12 @@ function Canvas(props: {
     maximised,
     setMaximised,
     host,
-    problem: props.pageProblem ?? data.problem,
+    problem,
   };
   return (
     <StudioContext.Provider value={value}>
       <div className="studio">
-        <div className="canvas-area" ref={area} data-framed={framedNow}>
+        <div className="canvas-area" ref={area} data-framed={framedNow} data-pin-mode={pinMode}>
           <ReactFlow<CardNode>
             nodes={nodes}
             edges={edges}
@@ -248,9 +329,20 @@ function Canvas(props: {
             <MiniMap pannable zoomable ariaLabel="Minimap" />
             <Controls showInteractive={false} />
           </ReactFlow>
-          <Toolbar piece={piece} onFrame={() => void flow.fitView({ padding: 0.1, duration: 0 })} />
+          <Toolbar
+            piece={piece}
+            onFrame={() => void flow.fitView({ padding: 0.1, duration: 0 })}
+            pinMode={pinMode}
+            onPinMode={setPinMode}
+          />
           <div className="maximised-host" ref={setHost} />
-          <Banner problem={value.problem} />
+          {selectedCard === undefined ? null : (
+            <SelectionToolbar
+              label={describeCapability(port.capability)}
+              context={() => contextOf(view, { card: selectedCard })}
+            />
+          )}
+          <Banner problem={value.problem} onQueueFix={queueFix} />
           <FollowPill state={followState} onResume={resume} />
         </div>
         <Timeline />

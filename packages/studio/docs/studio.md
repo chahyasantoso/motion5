@@ -78,3 +78,51 @@ npx gerak studio graph                         # the open piece's graph as JSON
   element on the page, from 0 to the scene's length or `--to`, at 1440×900 unless `--sizes` says otherwise.
 - **No canvas.** When no canvas page is open, a command fails after 10 s and tells you to run
   `gerak studio open`. A headless session always has its canvas open.
+
+### Pins
+
+A pin is a numbered note on a piece, kept in `<pieces>/.gerak/pins.json`. It records where it was left: a card, a
+point on the stage, or a moment on the timeline. It also records the moment and view at that time: the scene and
+shot, the size preset and safe zone, `atMs`, `scrollY`, the events preset, the card's pose and rest box, and the file
+the card opens in. A number is never reused.
+
+- **On the canvas.** Press `P` (or the toolbar's pin button), then click a card, the preview stage or the ruler.
+  Escape leaves pin mode. Pins draw as numbered badges on their cards, as markers over the stage near their moment
+  and preset, and as ticks on the ruler. Clicking one restores its view and moment and selects its card.
+- **From the terminal**, with or without an open canvas:
+
+```sh
+npx gerak studio pins list [--piece reel] [--all] [--json]
+npx gerak studio pins show 3
+npx gerak studio pins add --card member:hookEyebrow --note "lands too early"   # fills the moment from an open canvas
+npx gerak studio pins resolve 3
+npx gerak studio pins clear [--piece reel] [--resolved]
+```
+
+An open canvas redraws whenever the file changes, whoever wrote it.
+
+### Recorded events
+
+A preset is a list of page events (pointer, scroll, sent samples) kept at
+`<pieces>/.gerak/presets/<piece>/<name>.json`.
+
+- **Record events** on the preview toolbar takes the events the page logs until you stop, and saves them as the next
+  `take-<n>`. The **Events preset** menu picks a preset. Its events draw as ticks on the ruler, and pins made while
+  it is picked name it.
+- `npx gerak studio act '<action-list>' [--save-preset name]` runs a `gerak review --action` list on the piece's page
+  in the session's browser, and answers the events the page logged. It loads the page once on the real clock first,
+  and answers `failed` after 60 s.
+- `npx gerak studio presets [--piece p]` lists the names.
+- `npx gerak review <scene.ts> --events @<name>` replays a preset in a review.
+
+### Agent seams
+
+A place on the canvas has one context (`StudioPromptContext`): its piece, card, scene and shot, view, moment, pose,
+rest box, steps, findings and a prompt. A pin is that context saved.
+
+- With one card selected, a toolbar shows **Copy @card**, which copies a short token such as
+  `@member:hookEyebrow@3000ms`.
+- The error banner has **Queue fix pin**, which saves the banner's problem as an open pin.
+
+`StudioAgentPort` is where a context goes. The only port shipped is `pinOnlyAgentPort`, which saves a pin. A live
+agent can mount on the dev server through `registerStudioAgentTransport`.

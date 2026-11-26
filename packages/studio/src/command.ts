@@ -124,6 +124,13 @@ export function parseCommand(body: unknown): StudioCommand | undefined {
         ? undefined
         : { kind: "check", sizes, safeZone: zone, to };
     }
+    case "act": {
+      const actions = text(body, "actions");
+      const savePreset = optionalText(body, "savePreset");
+      return actions === undefined || savePreset === "bad"
+        ? undefined
+        : { kind: "act", actions, savePreset };
+    }
     default:
       return undefined;
   }

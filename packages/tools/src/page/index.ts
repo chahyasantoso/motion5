@@ -7,6 +7,7 @@ export * from "./fps";
 export * from "./frames";
 export * from "./page";
 export * from "./points";
+export * from "./presets";
 export * from "./measure";
 export * from "./measure-cache";
 export * from "./probe";

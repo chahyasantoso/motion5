@@ -1,5 +1,5 @@
 import { unreachable } from "@gerak/core";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { StudioGraph } from "../graph";
 import { COMMAND_EVENT, REPLY_EVENT, type FocusTarget, type StudioReply } from "../protocol";
 import { parseCommand } from "../command";
@@ -118,9 +118,13 @@ function same(a: unknown, b: unknown): boolean {
 }
 
 /** Answers every bus command addressed to this canvas's piece, once; returns how the person takes the canvas back. */
-export function useBus(inputs: BusInputs): { readonly resume: () => void } {
+export function useBus(inputs: BusInputs): {
+  readonly resume: () => void;
+  readonly control: CanvasControl;
+} {
   const latest = useRef(inputs);
   latest.current = inputs;
+  const control = useMemo(() => controlOf(latest, () => visibleSurface(latest.current)), []);
   const worker = useRef<WorkerFrame | undefined>(undefined);
   const starting = useRef<Promise<void>>(Promise.resolve());
   const { piece } = inputs;
@@ -143,7 +147,7 @@ export function useBus(inputs: BusInputs): { readonly resume: () => void } {
   useEffect(() => {
     const hot = import.meta.hot;
     if (hot === undefined) return undefined;
-    const visible = controlOf(latest, () => visibleSurface(latest.current));
+    const visible = control;
     const hidden = controlOf(latest, () => worker.current ?? visibleSurface(latest.current));
     const received = (data: unknown): void => {
       const id: unknown = Reflect.get(Object(data), "id");
@@ -177,7 +181,7 @@ export function useBus(inputs: BusInputs): { readonly resume: () => void } {
       worker.current?.close();
       worker.current = undefined;
     };
-  }, [piece]);
+  }, [piece, control]);
 
-  return { resume };
+  return { resume, control };
 }

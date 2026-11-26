@@ -1,7 +1,7 @@
 # ADR-206: The Studio command bus, follow mode and pins
 
 **Date:** 2026-11-25
-**Status:** Accepted, 2026-11-25. Decision 1 is built; Decisions 2 to 4 are planned in `plan/studio-agent-plan.md`.
+**Status:** Accepted and built, 2026-11-25.
 
 ## Context
 
@@ -29,9 +29,18 @@ on it without describing them in words.
    or wheel input on the canvas or inside the preview page moves `following` to `detached`. While detached, the
    agent's commands run on a hidden worker frame of the same page with its own playhead. "Resume follow" hands the
    worker's focus, preview, selection and time back to the visible canvas and removes the worker.
-3. **Pins, recorded presets and prompt seams** follow the plan: pins in `.gerak/pins.json` with
-   `gerak studio pins`, recorded `Events` presets under `.gerak/presets/`, and `StudioPromptContext` with a closed
-   `StudioAgentPort` union.
+3. **Pins.** `<pieces>/.gerak/pins.json` holds every piece's numbered pins, and `pin-store.ts` is the only code
+   that writes it. A pin's number is never reused, and a write goes through a rename. The CLI
+   (`gerak studio pins`), the server routes and the canvas all go through that store, and the server's watcher on the
+   file is what tells an open canvas. A pin records the moment and the view it was left in, so clicking it restores
+   them.
+4. **Recorded presets.** A preset is a plain `Events` file at `<pieces>/.gerak/presets/<piece>/<name>.json`. Its path
+   and name rule belong to the tools package, which `gerak review --events @name`, `gerak studio act` and the
+   canvas's Record button share. A recording is the part of the page mount's own event log between Record and Stop.
+5. **Prompt seams.** `contextOf` builds one `StudioPromptContext` for a place on the canvas, and a pin is that
+   context saved. What the canvas does with a context is read through the closed `StudioAgentCapability` union. The
+   only port shipped is `pinOnlyAgentPort`. `registerStudioAgentTransport` is the Vite hook a later transport mounts
+   on.
 
 ## Rejected alternatives
 
@@ -40,6 +49,8 @@ on it without describing them in words.
 - **Running each command in a fresh Playwright page:** that is the cold path this bus exists to avoid.
 - **The agent and the person sharing one playhead:** each would undo the other's seek. The worker frame keeps the
   agent's work going without moving what the person is looking at.
+- **Pins kept by the canvas:** a pin left by the CLI would not show until a reload, and two copies could disagree.
+- **A preset format of its own:** `Events` is what `gerak review`, `gerak sample` and the player already read.
 
 ## Consequences
 
@@ -50,3 +61,6 @@ on it without describing them in words.
 - `render` and `frame` on the bus wait for `<name>.render.json` and the canvas's job cards
   (`plan/studio-canvas-plan.md` PR 7).
 - The page server config loads Vite only when it is called, so a command that never serves a page does not load it.
+- A preset recorded on the canvas scrubs in that canvas only while the page keeps its event log. After a reload it
+  replays through `gerak review --events @name`, not on the canvas.
+- Two writers adding pins in the same instant can still lose one: the store has no lock.

@@ -1,4 +1,12 @@
-import { callerDir, parseSizes, piecesRoot, SAFE_ZONE_NAMES, safeZone } from "@gerak/tools/page";
+import {
+  callerDir,
+  parseActions,
+  parseSizes,
+  piecesRoot,
+  PRESET_NAME,
+  SAFE_ZONE_NAMES,
+  safeZone,
+} from "@gerak/tools/page";
 import { PRESETS } from "./canvas/presets";
 import type { FocusTarget, SeekTarget, StudioCommand } from "./protocol";
 import { BUS_PATH } from "./protocol";
@@ -36,6 +44,7 @@ const USAGES: Readonly<Record<string, string>> = {
   check:
     "usage: gerak studio check [--sizes WxH,...] [--safe-zone platform] [--to ms] [--root dir] [--piece name]",
   graph: "usage: gerak studio graph [--root dir] [--piece name]",
+  act: "usage: gerak studio act '<action-list>' [--save-preset name] [--root dir] [--piece name]",
 };
 
 function usage(subcommand: string, message: string): { kind: "usage"; message: string } {
@@ -138,6 +147,7 @@ export function parseBusArgs(subcommand: string, argv: readonly string[]): Parse
     seek: ["--ms", "--scroll"],
     play: ["--from", "--to", "--speed"],
     check: ["--sizes", "--safe-zone", "--to"],
+    act: ["--save-preset"],
   };
   if (!(subcommand in USAGES)) return fail(`Unknown studio subcommand ${subcommand}.`);
   const split = splitFlags(argv, valueFlags[subcommand] ?? []);
@@ -206,6 +216,17 @@ export function parseBusArgs(subcommand: string, argv: readonly string[]): Parse
       const wrong = wantPositional(0, 1);
       if (wrong !== undefined) return fail(wrong);
       return done({ kind: "inspect", card: positional[0] });
+    }
+    case "act": {
+      const wrong = wantPositional(1, 1);
+      if (wrong !== undefined) return fail(wrong);
+      const actions = positional[0] ?? "";
+      const parsedActions = parseActions(actions);
+      if ("reason" in parsedActions) return fail(parsedActions.reason);
+      const name = values.get("--save-preset");
+      if (name !== undefined && !PRESET_NAME.test(name))
+        return fail(`--save-preset must be lowercase letters, digits and dashes, got "${name}".`);
+      return done({ kind: "act", actions, savePreset: name });
     }
     case "check": {
       const wrong = wantPositional(0, 0);

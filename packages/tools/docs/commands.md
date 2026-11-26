@@ -21,11 +21,11 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   takes `check`'s `--safe-zone` and reports its findings; prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
   With `--sizes`, runs each viewport in turn, prefixes findings, frames and errors with `[WIDTHxHEIGHT]`, and writes labelled `sheet-<WIDTHxHEIGHT>.png` files.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
-- **`gerak review <scene.ts> [--to ms] [--events list] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms] [--measure]`**: no page: samples
+- **`gerak review <scene.ts> [--to ms] [--events list|@preset] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms] [--measure]`**: no page: samples
   every field of every target each 16 ms and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
-  `--events` injects synthetic `name=value@ms` or `name:target@ms` events alongside `cues`.
+  `--events` injects synthetic `name=value@ms` or `name:target@ms` events alongside `cues`; `--events @<name>` reads the recorded preset `<pieces>/.gerak/presets/<piece>/<name>.json`, where the piece is the scene file's name without `.ts` and `-scene`.
   For a `scene` piece a finding that names a time also names the beat there, and it
   adds: an element whose value changes outside its `.shows` windows (before the first, in a gap, or after the last),
   frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout

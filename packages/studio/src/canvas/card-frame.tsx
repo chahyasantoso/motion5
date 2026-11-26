@@ -1,6 +1,7 @@
 import { Handle, Position } from "@xyflow/react";
 import { groupOf, type Card, type PortType } from "../graph";
 import { GroupIcon } from "./icons";
+import { CardPins } from "./pin-marks";
 
 export function Chip(props: { readonly text: string; readonly tone?: "alert" }): React.JSX.Element {
   return <span className={props.tone === "alert" ? "chip chip-alert" : "chip"}>{props.text}</span>;
@@ -34,6 +35,7 @@ export function Frame(props: {
           {card.name}
         </span>
         <Chip text={card.kind} />
+        <CardPins cardId={card.id} />
       </header>
       <div className="card-body">{props.children}</div>
       {props.ports.length > 0 ? (
