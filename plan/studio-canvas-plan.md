@@ -91,7 +91,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
   - set the text of a cast element whose content is plain text (Decision 10);
   - set a field of `<name>.render.json` (Decision 7).
 - A patch writes the code an agent would write; the canvas has no format of its own. A refused patch shows "edit in code" with the file and line; it never writes a partial change. A patch whose file changed since the graph was built is refused (stale write).
-- Adding cast, moves or scenes from the canvas is not in this plan (see Not in this plan).
+- Adding or removing cast, moves or scenes from the canvas is not in this plan (see Not in this plan). Nothing on the canvas deletes: the Delete key does nothing, on cards from code and on the canvas's own cards and wires alike.
 
 ### 7. Render settings are a piece file (`@gerak/tools`)
 
@@ -209,7 +209,7 @@ The agent plan (`plan/studio-agent-plan.md`) runs after PR 2 and before PR 3.
 
 ## Not in this plan
 
-- Building pieces on the canvas: adding cast, moves or scenes from cards. It is the Studio's later goal, for the owner first and people without an agent after; each action will be one more patch in Decision 6's closed set that writes the code an agent would write, added in a later plan after PR 8.
+- Building pieces on the canvas: adding and removing cast, moves or scenes from cards. It is the Studio's later goal, for the owner first and people without an agent after; each action will be one more patch in Decision 6's closed set that writes the code an agent would write, added in a later plan after PR 8. Removing checks first: it takes a sub-scene out of its `scene(...)` call, asks before deleting its `const` or file, and refuses while other code still uses what it would remove (a `travel` to its slot, a `stayWith` or `context.read` of its members, a state it defines).
 - Move curves: a sparkline per pose field over a move's window.
 - Constants as knobs: a `const` a code motion uses, edited from its card.
 - Setting a state's value from its card to try an input without doing it.
