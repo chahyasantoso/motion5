@@ -47,8 +47,8 @@ async function statusOf(piece: string): Promise<Status> {
   return reply.status;
 }
 
-async function until(read: () => Promise<boolean>, what: string): Promise<void> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+async function until(read: () => Promise<boolean>, what: string, tries = 100): Promise<void> {
+  for (let attempt = 0; attempt < tries; attempt += 1) {
     if (await read()) return;
     await new Promise((done) => setTimeout(done, 100));
   }
@@ -57,21 +57,28 @@ async function until(read: () => Promise<boolean>, what: string): Promise<void> 
 
 async function mounted(page: Page): Promise<Frame> {
   await page.waitForSelector('.canvas-area[data-framed="true"] [data-card-id]');
-  const handle = await page.waitForSelector("iframe[data-preview]");
-  const frame = await handle.contentFrame();
-  if (frame === null) throw new Error("The preview has no frame.");
-  await until(async () => {
-    try {
-      return (
-        (await frame.evaluate(
-          `(() => { const m = window[${MOUNTS}]; return Array.isArray(m) && m.length > 0; })()`,
-        )) === true
-      );
-    } catch {
-      return false;
-    }
-  }, "the page to mount");
-  return frame;
+  let found: Frame | undefined;
+  // The preview frame is looked up on every try, since a reload while the server warms replaces it.
+  await until(
+    async () => {
+      try {
+        const frame = await (await page.$("iframe[data-preview]"))?.contentFrame();
+        if (frame === null || frame === undefined) return false;
+        const ready =
+          (await frame.evaluate(
+            `(() => { const m = window[${MOUNTS}]; return Array.isArray(m) && m.length > 0; })()`,
+          )) === true;
+        if (ready) found = frame;
+        return ready;
+      } catch {
+        return false;
+      }
+    },
+    "the page to mount",
+    300,
+  );
+  if (found === undefined) throw new Error("The preview has no frame.");
+  return found;
 }
 
 function open<T>(piece: string, visit: (page: Page) => Promise<T>): Promise<T> {
