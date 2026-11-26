@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-25, Asia/Jakarta.
-- **Read against:** `main` after PR 643, with the Studio pins branch.
+- **Read against:** `main` after PR 645.
 
 ## Now
 
@@ -21,7 +21,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Studio canvas PR 3 (`plan/studio-canvas-plan.md`): the player card and a readable graph.** Then, in order: canvas PR 4, marks PRs 1–2 (`plan/marks-plan.md`), canvas PRs 5–8.
+- **Mount driver (`plan/mount-driver-plan.md`): `mount` runs on a handed driver, so the Studio plays a live page like a reel.** Then, in order: canvas PR 3 (`plan/studio-canvas-plan.md`, the player card, scene rows and a readable graph), canvas PR 4, marks PRs 1–2 (`plan/marks-plan.md`), canvas PRs 5–8.
 
 ## Open, and not scheduled
 
