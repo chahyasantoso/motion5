@@ -81,7 +81,7 @@ describe("the studio driver", () => {
     expect(built.length).toBe(Math.max(3000, 2350, 1000 / SWEEP_PX_PER_MS));
   });
 
-  it("scrolls the page to the take's samples as it seeks, and sweeps with no take", () => {
+  it("scrolls the page to the take's samples as it seeks, and sweeps over the whole timeline with no take", () => {
     const withTake = host(1000);
     const a = studioDriver({
       host: withTake,
@@ -97,7 +97,7 @@ describe("the studio driver", () => {
     const plain = host(500);
     const b = studioDriver({ host: plain, length: 1000, take: [], frames: manualFrames() });
     b.driver.seek(0.25);
-    expect(plain.at.at(-1)).toBe(250);
+    expect(plain.at.at(-1)).toBe(125);
   });
 
   it("starts paused at 0 and moves with the frames it is given", () => {

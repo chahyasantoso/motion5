@@ -41,5 +41,9 @@ page calls `mount` itself, so a host could not reach in without editing the piec
 
 - A live page in the Studio plays, seeks, loops and replays like a reel, and `gerak studio play` and `seek` work on it.
 - The Studio's scroll-scrub mode is gone; a page with no mount yet reads as waiting.
-- The sweep's length is fixed when the driver is built, so a page that grows after mounting ends its sweep early.
+- The sweep spans the whole timeline and reads the page's height as it plays; the timeline's length is set when the
+  driver is built, from the page's height then.
+- A loop on a driven page keeps the last pass's real input: a `Driver` cannot tell the mount that a loop wrapped, as
+  the timed clock's own recorder is told.
+- Every mount in one framed document shares that document's driver; a reload builds a new one.
 - Tools still hold a page's clock with a paused fake clock; moving them onto a handed driver is open.

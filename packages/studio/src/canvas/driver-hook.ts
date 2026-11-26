@@ -9,7 +9,9 @@ import {
 export const DRIVER_FOR = Symbol.for("@gerak/studio/driver-for");
 
 const owners = new Set<DriverOwner>();
-const handed = new WeakMap<Window, HandedDriver>();
+// Keyed by document: a frame's window outlives a reload, and every mount in one document shares its driver.
+const handed = new WeakMap<Document, HandedDriver>();
+const lastOf = new WeakMap<Window, HandedDriver>();
 
 /** Lets `owner` be asked for the driver of a page window it owns, until the returned function runs. */
 export function registerOwner(owner: DriverOwner): () => void {
@@ -21,7 +23,7 @@ export function registerOwner(owner: DriverOwner): () => void {
 
 /** The driver the canvas handed the page in `win`, or `undefined` when the page runs on its own clock. */
 export function handedDriver(win: Window | null | undefined): HandedDriver | undefined {
-  return win === null || win === undefined ? undefined : handed.get(win);
+  return win === null || win === undefined ? undefined : handed.get(win.document);
 }
 
 function hostOf(win: Window): ScrollHost {
@@ -35,9 +37,12 @@ function driverFor(win: Window, info: unknown): HandedDriver["driver"] | undefin
   const owner = [...owners].find((each) => each.owns(win));
   const length: unknown = Reflect.get(Object(info), "length");
   if (owner === undefined || typeof length !== "number") return undefined;
-  handed.get(win)?.driver.dispose();
+  const shared = handed.get(win.document);
+  if (shared !== undefined) return shared.driver;
+  lastOf.get(win)?.driver.dispose();
   const built = studioDriver({ host: hostOf(win), length, take: owner.take() });
-  handed.set(win, built);
+  handed.set(win.document, built);
+  lastOf.set(win, built);
   return built.driver;
 }
 

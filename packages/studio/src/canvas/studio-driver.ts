@@ -68,7 +68,7 @@ export function studioDriver(options: {
     const ms = elapsed.kind === "timed" ? elapsed.elapsed : 0;
     if (ms === last) return;
     last = ms;
-    host.scrollTo(0, scrollAt(ms, take, sweepMs, host.maxScroll()));
+    host.scrollTo(0, scrollAt(ms, take, length, host.maxScroll()));
   });
   return { driver: { ...clock, events: () => inputs }, length };
 }
