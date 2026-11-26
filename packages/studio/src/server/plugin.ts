@@ -39,6 +39,9 @@ const CLIENT = fileURLToPath(
 );
 const THEME = fileURLToPath(new URL("../canvas/theme.css", import.meta.url));
 
+/** Hands a page framed in the canvas the driver its canvas builds, when the canvas offers one. */
+const DRIVER_SCRIPT = `try{var f=window.parent!==window&&window.parent[Symbol.for("@gerak/studio/driver-for")];if(typeof f==="function")globalThis[Symbol.for("@gerak/dom/driver")]=function(i){return f(window,i)}}catch(e){}`;
+
 function fsUrl(path: string): string {
   return `/@fs/${path.replaceAll("\\", "/").replace(/^\//, "")}`;
 }
@@ -141,6 +144,10 @@ export function studioPlugin(options: {
   return {
     name: "gerak-studio",
     apply: "serve",
+    transformIndexHtml(_html, context) {
+      if (context.path === STUDIO_PATH) return undefined;
+      return [{ tag: "script", children: DRIVER_SCRIPT, injectTo: "head-prepend" }];
+    },
     configureServer(server: ViteDevServer) {
       const changed = (file: string): void => {
         const path = resolve(file);

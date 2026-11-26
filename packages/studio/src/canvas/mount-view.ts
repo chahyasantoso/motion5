@@ -1,4 +1,5 @@
 import type { Problem } from "./api";
+import { handedDriver } from "./driver-hook";
 
 /** The part of a page's clock the timeline drives. */
 export interface TimedClock {
@@ -11,9 +12,11 @@ export interface TimedClock {
   elapsed(): number | undefined;
 }
 
-/** What the canvas reads of a page's mount: its clock when timed, and a way to swap its scene. */
+/** What the canvas reads of a page's mount: its clock when timed or driven, and a way to swap its scene. */
 export interface MountView {
   readonly clock: TimedClock | undefined;
+  /** Whether the Studio handed the page its driver, rather than the mount timing itself. */
+  readonly driven: boolean;
   readonly durationMs: number | undefined;
   replace(next: unknown): void;
 }
@@ -66,10 +69,12 @@ export function mountOf(win: Window | null | undefined): MountView | undefined {
   const replace = method(mounted, "replace");
   if (replace === undefined) return undefined;
   const duration: unknown = Reflect.get(mounted, "durationMs");
-  const clock = clockOf(Reflect.get(mounted, "driver"));
+  const given = handedDriver(win);
   return {
-    clock,
-    durationMs: typeof duration === "number" ? duration : undefined,
+    clock: clockOf(given === undefined ? Reflect.get(mounted, "driver") : given.driver),
+    driven: given !== undefined,
+    durationMs:
+      given === undefined ? (typeof duration === "number" ? duration : undefined) : given.length,
     replace: (next) => void replace(next),
   };
 }

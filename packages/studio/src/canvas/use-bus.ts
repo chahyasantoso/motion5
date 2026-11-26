@@ -163,7 +163,12 @@ export function useBus(inputs: BusInputs): {
         if (now.follow.snapshot() !== "detached" || now.page === null)
           return runCommand(command, visible);
         if (worker.current === undefined) {
-          const started = new WorkerFrame(now.page, visibleSurface(now), now.length);
+          const started = new WorkerFrame(
+            now.page,
+            visibleSurface(now),
+            now.length,
+            now.playhead.take(),
+          );
           const at = now.playhead.snapshot().ms;
           worker.current = started;
           starting.current = started.ready().then(() => started.playhead.seek(at));

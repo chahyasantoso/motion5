@@ -132,8 +132,6 @@ function Ruler(props: {
 
 function transportNote(state: PlayheadState): string {
   switch (state.mode) {
-    case "scroll":
-      return "scrolls the page";
     case "waiting":
       return "waiting for the page";
     case "timed":
@@ -183,6 +181,17 @@ function Controls(props: { readonly playhead: Playhead }): React.JSX.Element {
       >
         <Glyph name="loop" />
       </button>
+      {state.driven ? (
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Replay"
+          title="Replay from the top"
+          onClick={() => playhead.replay()}
+        >
+          <Glyph name="replay" />
+        </button>
+      ) : null}
       <span className="dim spacer">{transportNote(state)}</span>
     </div>
   );
