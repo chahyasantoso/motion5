@@ -53,6 +53,8 @@ export interface ClockDriver extends Driver {
    * `SAMPLE_SETTLE_MS` after the latest; a seek keeps the log, `replay` forgets it. */
   send(name: string, value: number, target?: string): void;
   events(): Events;
+  /** Calls `listener` each time the clock forgets its log: a loop that wraps, or `replay`. */
+  forgets(listener: () => void): () => void;
 }
 
 /** How long a clock runs on past its end after the latest sample, for a spring to settle. */
@@ -91,9 +93,11 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     for (const listener of [...listeners]) listener();
   };
   const recorder = eventRecorder(elapsedNow, () => notify());
+  const forgetters = new Set<() => void>();
   const forget = (): void => {
     recorder.clear();
     settleUntil = -Infinity;
+    for (const listener of [...forgetters]) listener();
   };
   // A listener may pause or play during `notify`, so the next frame is asked for only after it.
   const request = (): void => {
@@ -200,6 +204,12 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       }
     },
     events: () => recorder.log,
+    forgets(listener) {
+      forgetters.add(listener);
+      return () => {
+        forgetters.delete(listener);
+      };
+    },
     seek(next) {
       stop();
       overtime = 0;
@@ -221,6 +231,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       stop();
       recorder.dispose();
       listeners.clear();
+      forgetters.clear();
     },
     setRate(next) {
       rate = Math.max(0, next);

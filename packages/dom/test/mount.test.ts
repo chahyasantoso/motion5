@@ -38,6 +38,7 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   BINDER_CASTS,
+  clockDriver,
   mount,
   MOUNTS,
   ready,
@@ -1786,6 +1787,28 @@ describe("mount on a handed driver", () => {
     mounted.send("note", 2);
     expect(frames.queued).toBe(0);
     mounted.dispose();
+  });
+
+  it("forgets its recorded input when a handed clock driver replays", () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
+    const frames = fakeFrames();
+    const driver = clockDriver({ duration: 1000, autoplay: false, frames: fakeFrames() });
+    const seen = { events: [] as Events };
+    const mounted = mount(watchedScene(seen), {
+      root,
+      frames,
+      clock: { kind: "driver", driver },
+    });
+    driver.seek(0.4);
+    card.fire("click");
+    expect(mounted.events().map((e) => e.at)).toEqual([400]);
+    driver.seek(0.1);
+    expect(mounted.events().map((e) => e.at)).toEqual([400]);
+    driver.replay();
+    expect(mounted.events()).toEqual([]);
+    mounted.dispose();
+    driver.dispose();
   });
 });
 

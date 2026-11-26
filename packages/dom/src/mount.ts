@@ -1285,6 +1285,12 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   if (lastScrollY !== 0) recorder.sample(INPUT_EVENTS.scroll, lastScrollY);
 
   const unwatch: (() => void)[] = [];
+  // A handed driver that forgets its log on a loop or replay, as a clock driver does, has the mount forget too.
+  const forgets: unknown = given === undefined ? undefined : Reflect.get(given, "forgets");
+  if (typeof forgets === "function") {
+    const stop: unknown = Reflect.apply(forgets, given, [() => recorder.clear()]);
+    if (typeof stop === "function") unwatch.push(() => void Reflect.apply(stop, undefined, []));
+  }
   const watchNode = (name: string, node: PageElement): (() => void) =>
     timed === undefined ? recorder.watch(name, node) : timed.watch(name, node);
   for (const target of targets) {

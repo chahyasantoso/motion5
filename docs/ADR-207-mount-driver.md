@@ -43,7 +43,7 @@ page calls `mount` itself, so a host could not reach in without editing the piec
 - The Studio's scroll-scrub mode is gone; a page with no mount yet reads as waiting.
 - The sweep spans the whole timeline and reads the page's height as it plays; the timeline's length is set when the
   driver is built, from the page's height then.
-- A loop on a driven page keeps the last pass's real input: a `Driver` cannot tell the mount that a loop wrapped, as
-  the timed clock's own recorder is told.
+- A handed `clockDriver` tells the mount through `forgets` when a loop wraps or it replays, so the mount forgets its
+  recorded input then, as a timed clock forgets its own; a seek keeps it.
 - Every mount in one framed document shares that document's driver; a reload builds a new one.
 - Tools still hold a page's clock with a paused fake clock; moving them onto a handed driver is open.
