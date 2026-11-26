@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  CANVAS_EVENT,
   COMMAND_EVENT,
   discoveryPath,
   REPLY_EVENT,
@@ -43,6 +44,7 @@ async function canvas(base: string, handler: Handler): Promise<WebSocket> {
   });
   await new Promise<void>((done, fail) => {
     socket.addEventListener("open", () => {
+      socket.send(JSON.stringify({ type: "custom", event: CANVAS_EVENT, data: { piece: "reel" } }));
       done();
     });
     socket.addEventListener("error", () => {
@@ -89,7 +91,9 @@ describe("the studio command bus", () => {
   });
 
   it("answers 504 failed when no canvas is open", async () => {
+    const started = performance.now();
     const answer = await post(JSON.stringify({ kind: "status" }));
+    expect(performance.now() - started).toBeLessThan(2000);
     expect(answer.status).toBe(504);
     const reply: unknown = await answer.json();
     expect(Reflect.get(Object(reply), "kind")).toBe("failed");

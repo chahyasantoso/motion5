@@ -78,6 +78,7 @@ describe("pins on the studio server", () => {
           .find((id: unknown) => String(id).startsWith("shot:"))
       : undefined;
     expect(typeof shot).toBe("string");
+    const started = performance.now();
     const added = await runPins([
       "add",
       "--piece",
@@ -89,6 +90,10 @@ describe("pins on the studio server", () => {
       "--root",
       pieces,
     ]);
+    expect(
+      performance.now() - started,
+      "adding a pin without a canvas answers at once",
+    ).toBeLessThan(5000);
     expect(added.ok).toBe(true);
     await waitFor(1);
     expect(events).toContain(PINS_EVENT);

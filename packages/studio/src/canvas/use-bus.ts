@@ -1,7 +1,13 @@
 import { unreachable } from "@gerak/core";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { StudioGraph } from "../graph";
-import { COMMAND_EVENT, REPLY_EVENT, type FocusTarget, type StudioReply } from "../protocol";
+import {
+  CANVAS_EVENT,
+  COMMAND_EVENT,
+  REPLY_EVENT,
+  type FocusTarget,
+  type StudioReply,
+} from "../protocol";
 import { parseCommand } from "../command";
 import type { Problem, ZoneMargins } from "./api";
 import { changesCanvas, runCommand, type CanvasControl } from "./commands";
@@ -181,7 +187,13 @@ export function useBus(inputs: BusInputs): {
         .then((reply) => hot.send(REPLY_EVENT, { id, reply }));
     };
     hot.on(COMMAND_EVENT, received);
+    const announce = (): void => {
+      hot.send(CANVAS_EVENT, { piece });
+    };
+    announce();
+    hot.on("vite:ws:connect", announce);
     return () => {
+      hot.off?.("vite:ws:connect", announce);
       hot.off?.(COMMAND_EVENT, received);
       worker.current?.close();
       worker.current = undefined;

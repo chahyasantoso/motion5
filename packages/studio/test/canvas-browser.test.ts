@@ -72,7 +72,7 @@ async function frameOf(page: Page, attempts = 3): Promise<Frame> {
   } catch (error) {
     const detached = error instanceof Error && error.message.includes("detached");
     if (!detached || attempts <= 1) throw error;
-    await page.waitForTimeout(500);
+    await page.waitForLoadState("load");
     return frameOf(page, attempts - 1);
   }
   return frame;
@@ -103,7 +103,7 @@ async function dragHeader(page: Page, id: string, by: { x: number; y: number }):
   await page.mouse.up();
 }
 
-const SCRATCH = ["scratch-canvas-throws", "scratch-canvas-keeps"] as const;
+const SCRATCH = ["scratch-canvas-keeps"] as const;
 
 function scratchPiece(name: (typeof SCRATCH)[number]): {
   readonly scene: string;
@@ -127,53 +127,26 @@ function scratchPiece(name: (typeof SCRATCH)[number]): {
 }
 
 describe("the canvas", () => {
-  it("renders exactly the cards of the graph", async () => {
+  it("renders the cards of the graph, lists shots as rows, and solos one on click", async () => {
     const answer: unknown = await (await fetch(`${base}__gerak/graph?piece=reel`)).json();
     const cards: unknown = Reflect.get(Object(Reflect.get(Object(answer), "graph")), "cards");
     const expected = (Array.isArray(cards) ? cards : [])
       .map((card: unknown) => String(Reflect.get(Object(card), "id")))
       .sort();
     expect(expected.length).toBeGreaterThan(50);
-    const found = await open("reel", { width: 1440, height: 900 }, async (page) => {
-      await ready(page);
-      await page.waitForTimeout(500);
-      return page.$$eval("[data-card-id]", (nodes) =>
-        nodes.map((node) => node.getAttribute("data-card-id") ?? "").sort(),
-      );
-    });
-    expect(found).toEqual(expected);
-  }, 60000);
-
-  it("draws cookie's sub-scenes as rows of its root card, each with a stage port", async () => {
-    await open("cookie", { width: 1440, height: 900 }, async (page) => {
-      await ready(page);
-      const names = ["heroScene", "closingScene"];
-      const rows = page.locator('[data-card-id="scene:cookie"] .scene-row');
-      expect(await rows.count()).toBe(5);
-      const named = await rows.locator(".card-name").allTextContents();
-      expect(named[0]).toBe(names[0]);
-      expect(named[4]).toBe(names[1]);
-      for (const row of await rows.all()) {
-        const id = await row.getAttribute("data-card-id");
-        expect(await row.locator(`.react-flow__handle[data-handleid="stage:${id}"]`).count()).toBe(
-          1,
-        );
-        expect(await page.locator(`.card[data-card-id="${id}"]`).count()).toBe(0);
-      }
-      await rows.first().click();
-      await page.locator(".scene-row.is-selected").waitFor();
-      expect(await page.locator(".scene-row.is-selected").getAttribute("data-card-id")).toBe(
-        "scene:heroScene",
-      );
-    });
-  }, 60000);
-
-  it("lists the reel's shots as rows and solos one on click", async () => {
     await open("reel", { width: 1440, height: 900 }, async (page) => {
       await ready(page);
+      await expect
+        .poll(
+          () =>
+            page.$$eval("[data-card-id]", (nodes) =>
+              nodes.map((node) => node.getAttribute("data-card-id") ?? "").sort(),
+            ),
+          { message: "the canvas draws exactly the graph's cards", timeout: 20000 },
+        )
+        .toEqual(expected);
       expect(await page.locator('.card[data-kind="shot"]').count()).toBe(0);
       const row = page.locator('.scene-row[data-card-id="shot:hook"]');
-      await row.waitFor();
       await row.click();
       await page.locator('.scene-row[data-card-id="shot:hook"].is-active').waitFor();
       await page.locator("[data-timeline] .is-soloed").first().waitFor();
@@ -182,8 +155,12 @@ describe("the canvas", () => {
     });
   }, 60000);
 
-  it("keeps a dragged card in its place after a reload", async () => {
-    rmSync(layoutFile("reel"), { force: true });
+  it("keeps a dragged card after a reload and prunes a stale id from the layout", async () => {
+    mkdirSync(join(gerak, "canvas"), { recursive: true });
+    writeFileSync(
+      layoutFile("reel"),
+      JSON.stringify({ cards: { "shot:gone": { x: 5, y: 5 }, "shot:cta": { x: 0, y: 0 } } }),
+    );
     await open("reel", { width: 1440, height: 900 }, async (page) => {
       await ready(page);
       const before = await transformOf(page, "output:check");
@@ -198,6 +175,9 @@ describe("the canvas", () => {
       await ready(page);
       expect(await transformOf(page, "output:check")).toBe(moved);
     });
+    const saved = readFileSync(layoutFile("reel"), "utf8");
+    expect(saved).not.toContain("shot:gone");
+    expect(saved).toContain("output:check");
   }, 60000);
 
   it("floats a wire to the facing sides when a card is dragged past its neighbour", async () => {
@@ -220,12 +200,10 @@ describe("the canvas", () => {
     const cast = move === wire.from ? wire.to : wire.from;
     await open("saved", { width: 1440, height: 900 }, async (page) => {
       await ready(page);
-      await page.waitForTimeout(500);
       const edge = page.locator(
         `.react-flow__edge[data-id="${wire.id}"] path.react-flow__edge-path`,
       );
-      const startX = async (): Promise<number> =>
-        Number(((await edge.getAttribute("d")) ?? "").match(/^M\s*(-?[\d.]+)/)?.[1]);
+      await edge.waitFor({ state: "attached" });
       const rect = async (id: string) => {
         const box = await page.locator(`[data-card-id="${id}"]`).boundingBox();
         if (box === null) throw new Error(`${id} has no box.`);
@@ -234,48 +212,50 @@ describe("the canvas", () => {
       const before = await rect(move);
       const castBox = await rect(cast);
       await dragHeader(page, cast, { x: before.x - castBox.x - 700, y: 0 });
-      await page.waitForTimeout(200);
+      await expect
+        .poll(
+          async () => {
+            const left = await rect(cast);
+            return left.x + left.width < (await rect(move)).x;
+          },
+          { message: "the cast card sits left of the move card" },
+        )
+        .toBe(true);
       const moved = await rect(move);
-      const after = await rect(cast);
-      expect(after.x + after.width).toBeLessThan(moved.x);
-      const fromMove = move === wire.from;
-      const x = await startX();
-      const first = (await edge.getAttribute("d")) ?? "";
-      const pts = first.match(/-?[\d.]+/g)?.map(Number) ?? [];
+      const pts = ((await edge.getAttribute("d")) ?? "").match(/-?[\d.]+/g)?.map(Number) ?? [];
+      const startX = pts[0] ?? Number.NaN;
       const endX = pts[pts.length - 2] ?? Number.NaN;
-      const wireX = fromMove ? x : endX;
+      const wireX = move === wire.from ? startX : endX;
       const flow = await page.locator(".react-flow__viewport").boundingBox();
       if (flow === null) throw new Error("no viewport");
       const zoom = await page
         .locator(".react-flow__viewport")
         .evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
-      const moveLeft = (moved.x - flow.x) / zoom;
-      expect(wireX).toBeLessThanOrEqual(moveLeft + 2);
+      expect(wireX).toBeLessThanOrEqual((moved.x - flow.x) / zoom + 2);
     });
   }, 60000);
 
-  it("prunes a stale id from the layout on the next save", async () => {
-    mkdirSync(join(gerak, "canvas"), { recursive: true });
-    writeFileSync(
-      layoutFile("reel"),
-      JSON.stringify({ cards: { "shot:gone": { x: 5, y: 5 }, "shot:cta": { x: 0, y: 0 } } }),
-    );
-    await open("reel", { width: 1440, height: 900 }, async (page) => {
-      await ready(page);
-      await dragHeader(page, "output:check", { x: 40, y: 40 });
-      await until(
-        async () => JSON.stringify(await layoutOf("reel")).includes("output:check"),
-        "the layout to be saved",
-      );
-    });
-    const saved = readFileSync(layoutFile("reel"), "utf8");
-    expect(saved).not.toContain("shot:gone");
-    expect(saved).toContain("output:check");
-  }, 60000);
-
-  it("runs cookie.html with its 3D canvas at desktop and mobile sizes", async () => {
+  it("runs cookie's rows and 3D canvas at desktop and mobile sizes", async () => {
     await open("cookie", { width: 1440, height: 900 }, async (page) => {
       await ready(page);
+      const rows = page.locator('[data-card-id="scene:cookie"] .scene-row');
+      await page.locator('[data-handleid="stage:scene:heroScene"]').waitFor({ state: "attached" });
+      await expect.poll(() => rows.count(), { message: "cookie's five rows" }).toBe(5);
+      const named = await rows.locator(".card-name").allTextContents();
+      expect(named[0]).toBe("heroScene");
+      expect(named[4]).toBe("closingScene");
+      for (const row of await rows.all()) {
+        const id = await row.getAttribute("data-card-id");
+        expect(await row.locator(`.react-flow__handle[data-handleid="stage:${id}"]`).count()).toBe(
+          1,
+        );
+        expect(await page.locator(`.card[data-card-id="${id}"]`).count()).toBe(0);
+      }
+      await rows.first().click();
+      await page.locator(".scene-row.is-selected").waitFor();
+      expect(await page.locator(".scene-row.is-selected").getAttribute("data-card-id")).toBe(
+        "scene:heroScene",
+      );
       const frame = await frameOf(page);
       const read = (): Promise<{ w: number; h: number; canvas: number }> =>
         frame.evaluate(() => ({
@@ -291,20 +271,46 @@ describe("the canvas", () => {
       await frame.waitForFunction("window.innerWidth === 390");
       expect(await read()).toMatchObject({ w: 390, h: 844 });
       expect((await read()).canvas).toBeGreaterThan(0);
-      await page.getByLabel("Replay").waitFor();
     });
   }, 120000);
 
-  it("runs the reel at 1080x1920 with the tiktok overlay", async () => {
+  it("scrubs the reel paused, seeks from the timeline, and sizes it with the tiktok overlay", async () => {
     await open("reel", { width: 1440, height: 900 }, async (page) => {
       await ready(page);
       const frame = await frameOf(page);
+      const ruler = page.locator("[data-ruler]");
+      const box = await ruler.boundingBox();
+      const length = Number(await ruler.getAttribute("aria-valuemax"));
+      if (box === null) throw new Error("The ruler has no box.");
+      expect(length).toBeGreaterThan(3000);
+      await page.evaluate(
+        ({ x, y }) => {
+          const pause = document.querySelector('button[aria-label="Pause"]');
+          const bar = document.querySelector("[data-ruler]");
+          if (!(pause instanceof HTMLElement) || bar === null) throw new Error("No controls.");
+          pause.click();
+          const at = { clientX: x, clientY: y, bubbles: true, pointerId: 1, isPrimary: true };
+          bar.dispatchEvent(new PointerEvent("pointerdown", at));
+          bar.dispatchEvent(new PointerEvent("pointerup", at));
+        },
+        { x: box.x + box.width * 0.25, y: box.y + box.height / 2 },
+      );
+      const first = await elapsedIn(frame);
+      await frame.evaluate(
+        "new Promise((done) => { let n = 0; const tick = () => (++n >= 12 ? done(0) : requestAnimationFrame(tick)); tick(); })",
+      );
+      expect(await elapsedIn(frame), "a pause and a scrub in one frame stay paused").toBe(first);
+      await page.mouse.click(box.x + (3000 / length) * box.width, box.y + box.height / 2);
+      await until(
+        async () => Math.abs((await elapsedIn(frame)) - 3000) < 1,
+        "the mount at 3000 ms",
+      );
+      expect(await page.locator("[data-timeline] [data-ms]").getAttribute("data-ms")).toBe("3000");
       await page.selectOption('select[aria-label="Size preset"]', "1080x1920");
       await page.check('input[aria-label="Safe zones"]');
       await page.selectOption('select[aria-label="Safe zone profile"]', "tiktok");
       await frame.waitForFunction("window.innerWidth === 1080 && window.innerHeight === 1920");
-      const overlay = page.locator('[data-safe-zone="tiktok"]');
-      await overlay.waitFor();
+      await page.locator('[data-safe-zone="tiktok"]').waitFor();
       const whole = await page.locator(".preview-frame").boundingBox();
       const top = await page.locator(".safe-top").boundingBox();
       if (whole === null || top === null) throw new Error("The overlay has no box.");
@@ -317,54 +323,11 @@ describe("the canvas", () => {
         "the preview choice to be saved",
       );
     });
-  }, 90000);
+  }, 120000);
 
-  it("seeks the reel to 3000 ms from the timeline", async () => {
-    await open("reel", { width: 1440, height: 900 }, async (page) => {
-      await ready(page);
-      const frame = await frameOf(page);
-      await page.getByRole("button", { name: "Pause" }).click();
-      const ruler = page.locator("[data-ruler]");
-      const box = await ruler.boundingBox();
-      const length = Number(await ruler.getAttribute("aria-valuemax"));
-      if (box === null) throw new Error("The ruler has no box.");
-      expect(length).toBeGreaterThan(3000);
-      await page.mouse.click(box.x + (3000 / length) * box.width, box.y + box.height / 2);
-      await until(
-        async () => Math.abs((await elapsedIn(frame)) - 3000) < 1,
-        "the mount at 3000 ms",
-      );
-      expect(await page.locator("[data-timeline] [data-ms]").getAttribute("data-ms")).toBe("3000");
-    });
-  }, 90000);
-
-  it("stays paused after a scrub that starts in the same frame as a pause", async () => {
-    await open("reel", { width: 1440, height: 900 }, async (page) => {
-      await ready(page);
-      const frame = await frameOf(page);
-      const box = await page.locator("[data-ruler]").boundingBox();
-      if (box === null) throw new Error("The ruler has no box.");
-      await page.evaluate(
-        ({ x, y }) => {
-          const pause = document.querySelector('button[aria-label="Pause"]');
-          const ruler = document.querySelector("[data-ruler]");
-          if (!(pause instanceof HTMLElement) || ruler === null) throw new Error("No controls.");
-          pause.click();
-          const at = { clientX: x, clientY: y, bubbles: true, pointerId: 1, isPrimary: true };
-          ruler.dispatchEvent(new PointerEvent("pointerdown", at));
-          ruler.dispatchEvent(new PointerEvent("pointerup", at));
-        },
-        { x: box.x + box.width * 0.25, y: box.y + box.height / 2 },
-      );
-      const first = await elapsedIn(frame);
-      await page.waitForTimeout(600);
-      expect(await elapsedIn(frame)).toBe(first);
-    });
-  }, 90000);
-
-  it("keeps the last good frame under a banner when an edit throws", async () => {
-    const piece = scratchPiece("scratch-canvas-throws");
-    await open("scratch-canvas-throws", { width: 1440, height: 900 }, async (page) => {
+  it("shows a banner when an edit throws, and keeps time across a hot swap and a reload", async () => {
+    const piece = scratchPiece("scratch-canvas-keeps");
+    await open("scratch-canvas-keeps", { width: 1440, height: 900 }, async (page) => {
       await ready(page);
       const frame = await frameOf(page);
       await frame.evaluate("window.__marker = 1");
@@ -378,20 +341,12 @@ throw new Error("boom in the scene");
       await page.locator("[data-banner]").waitFor({ timeout: 20000 });
       const banner = await page.locator("[data-banner]").innerText();
       expect(banner).toContain("boom in the scene");
-      expect(banner).toContain("scratch-canvas-throws.ts");
+      expect(banner).toContain("scratch-canvas-keeps.ts");
       expect(await frame.evaluate("window.__marker")).toBe(1);
       expect(await frame.evaluate(`window[${MOUNTS}].length`)).toBe(1);
       writeFileSync(piece.scene, piece.good);
       await page.locator("[data-banner]").waitFor({ state: "detached", timeout: 20000 });
-    });
-  }, 120000);
 
-  it("keeps time across a scene hot swap and a page reload", async () => {
-    const piece = scratchPiece("scratch-canvas-keeps");
-    await open("scratch-canvas-keeps", { width: 1440, height: 900 }, async (page) => {
-      await ready(page);
-      const frame = await frameOf(page);
-      await frame.evaluate("window.__marker = 1");
       await page.getByRole("button", { name: "Pause" }).click();
       const ruler = page.locator("[data-ruler]");
       const box = await ruler.boundingBox();
@@ -399,8 +354,14 @@ throw new Error("boom in the scene");
       if (box === null) throw new Error("The ruler has no box.");
       await page.mouse.click(box.x + (800 / length) * box.width, box.y + box.height / 2);
       await until(async () => Math.abs((await elapsedIn(frame)) - 800) < 1, "the mount at 800 ms");
+      await frame.evaluate(
+        "window.__swaps = 0; window.addEventListener('motion:hot', () => { window.__swaps += 1; })",
+      );
       writeFileSync(piece.scene, piece.good.replace("overshoot: 0.15", "overshoot: 0.3"));
-      await page.waitForTimeout(1500);
+      await until(
+        async () => Number(await frame.evaluate("window.__swaps")) > 0,
+        "the scene to hot swap",
+      );
       expect(await frame.evaluate("window.__marker")).toBe(1);
       expect(Math.abs((await elapsedIn(frame)) - 800)).toBeLessThan(1);
       writeFileSync(

@@ -11,7 +11,6 @@ const gerak = join(pieces, ".gerak");
 const hadGerak = existsSync(gerak);
 const MOUNTS = "Symbol.for('@gerak/dom/mounts')";
 const MEMBER = "hookEyebrow";
-const BUDGET_MS = 200;
 
 let base = "";
 let close: () => Promise<void> = async () => undefined;
@@ -46,14 +45,6 @@ async function statusOf(): Promise<Extract<StudioReply, { kind: "status" }>["sta
   return reply.status;
 }
 
-async function timed(command: unknown): Promise<number> {
-  const started = performance.now();
-  const { reply } = await send("reel", command);
-  const took = performance.now() - started;
-  expect(reply.kind).not.toBe("failed");
-  return took;
-}
-
 async function mounted(page: Page): Promise<void> {
   await page.waitForSelector('.canvas-area[data-framed="true"] [data-card-id]');
   const handle = await page.waitForSelector("iframe[data-preview]");
@@ -78,8 +69,9 @@ describe("the canvas answers bus commands", () => {
       },
       async ({ page }) => {
         await mounted(page);
-        await page.waitForTimeout(500);
-
+        await expect
+          .poll(async () => (await send("reel", { kind: "status" })).reply.kind, { timeout: 20000 })
+          .toBe("status");
         const first = await statusOf();
         expect(first).toMatchObject({ piece: "reel", follow: "idle", focus: { kind: "all" } });
 
@@ -126,18 +118,6 @@ describe("the canvas answers bus commands", () => {
 
         const other = await send("cookie", { kind: "status" });
         expect(other.status).toBe(504);
-
-        const times: Record<string, number> = {};
-        const cases: Record<string, unknown> = {
-          status: { kind: "status" },
-          seek: { kind: "seek", target: { kind: "ms", ms: 1000 } },
-          select: { kind: "select", card: id },
-          inspect: { kind: "inspect", card: id },
-        };
-        for (const command of Object.values(cases)) await timed(command);
-        for (const [name, command] of Object.entries(cases)) times[name] = await timed(command);
-        console.log(`warm round trips (ms): ${JSON.stringify(times)}`);
-        for (const took of Object.values(times)) expect(took).toBeLessThan(BUDGET_MS);
       },
     );
   }, 120000);

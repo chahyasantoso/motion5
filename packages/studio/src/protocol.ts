@@ -9,6 +9,9 @@ export const BUS_PATH = "/__gerak/bus";
 /** The Vite socket event the server sends a command to the canvas on. */
 export const COMMAND_EVENT = "gerak:command";
 
+/** The Vite socket event a canvas announces itself on, with its piece, so the server knows one is listening. */
+export const CANVAS_EVENT = "gerak:canvas";
+
 /** The Vite socket event the canvas answers a command on. */
 export const REPLY_EVENT = "gerak:reply";
 

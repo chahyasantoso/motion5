@@ -101,80 +101,38 @@ async function wireTo(page: Page, handle: string, target: string): Promise<void>
   await page.mouse.up();
 }
 
+/** Resolves after `count` animation frames of the page, so a layout that animates has moved on. */
+function frames(page: Page, count: number): Promise<unknown> {
+  return page.evaluate(
+    (n) =>
+      new Promise((done) => {
+        let left = n;
+        const tick = (): void => {
+          left -= 1;
+          if (left <= 0) done(0);
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+    count,
+  );
+}
+
+/** Waits until the element's box stops moving across a few frames, such as after a fit-view animation. */
+async function steady(page: Page, selector: string): Promise<void> {
+  let last = "";
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const box = await page.locator(selector).first().boundingBox();
+    const now = JSON.stringify(box);
+    if (box !== null && now === last) return;
+    last = now;
+    await frames(page, 3);
+  }
+  throw new Error(`${selector} never stopped moving.`);
+}
+
 describe("several previews", () => {
-  it("adds a preview, wires it, keeps it, and refuses deletion", async () => {
-    const done = await withPage(
-      {
-        page: "__gerak/studio?piece=cookie",
-        width: 2400,
-        height: 1000,
-        clock: "real",
-        source: { kind: "url", base },
-      },
-      async ({ page }) => {
-        await ready(page);
-        await page.getByRole("button", { name: "Add preview" }).click();
-        await page.waitForSelector('[data-preview-card="preview:2"]');
-        await page.keyboard.press("f");
-        await until(
-          async () => (await previewsOf()).some((entry) => entry.id === "preview:2"),
-          "the new preview to be saved",
-        );
-        await page.waitForTimeout(300);
-        await wireTo(page, "stage:scene:heroScene", "preview:2");
-        await sourceSaved("preview:2", "scene:heroScene");
-        const before = await page.locator("[data-card-id]").count();
-        await page.locator('[data-card-id="scene:heroScene"]').click();
-        await page.keyboard.press("Delete");
-        await page.waitForTimeout(300);
-        expect(await page.locator("[data-card-id]").count()).toBe(before);
-        await page.reload();
-        await ready(page);
-        await page.waitForSelector(
-          '[data-preview-card="preview:2"][data-source="scene:heroScene"]',
-        );
-        expect(await page.locator(".react-flow__edge.wire-source").count()).toBe(2);
-        return true;
-      },
-    );
-    expect(done.value).toBe(true);
-  }, 180000);
-
-  it("follows the preview last clicked and pauses the other", async () => {
-    const done = await withPage(
-      {
-        page: "__gerak/studio?piece=cookie",
-        width: 2400,
-        height: 1000,
-        clock: "real",
-        source: { kind: "url", base },
-      },
-      async ({ page }) => {
-        await ready(page);
-        const first = await frameOfPreview(page, "output:preview");
-        const second = await frameOfPreview(page, "preview:2");
-        await page.keyboard.press("f");
-        await page.locator('[data-card-id="preview:2"] .card-head').click();
-        await page.waitForSelector('[data-preview-card="preview:2"][data-active="true"]');
-        await page.getByRole("button", { name: "Play", exact: true }).click();
-        await page.getByRole("button", { name: "Pause" }).waitFor();
-        const held = await elapsedIn(first);
-        const start = await elapsedIn(second);
-        await page.waitForTimeout(600);
-        expect(await elapsedIn(first)).toBe(held);
-        expect(await elapsedIn(second)).not.toBe(start);
-        await page.locator('[data-card-id="output:preview"] .card-head').click();
-        await page.waitForSelector('[data-preview-card="output:preview"][data-active="true"]');
-        const stopped = await elapsedIn(second);
-        await page.waitForTimeout(400);
-        expect(await elapsedIn(second)).toBe(stopped);
-        return true;
-      },
-    );
-    expect(done.value).toBe(true);
-  }, 180000);
-
-  it("keeps a hero-wired preview scrolling inside the hero cast range", async () => {
+  it("adds a preview and wires it, follows the clicked one, and scrolls inside the hero range", async () => {
     const cards = await cardsOf(base, "cookie");
     const names = cards
       .filter(
@@ -202,12 +160,53 @@ describe("several previews", () => {
       },
       async ({ page }) => {
         await ready(page);
-        const frame = await frameOfPreview(page, "preview:2");
+        await page.getByRole("button", { name: "Add preview" }).click();
+        await page.waitForSelector('[data-preview-card="preview:2"]');
+        await page.keyboard.press("f");
+        await until(
+          async () => (await previewsOf()).some((entry) => entry.id === "preview:2"),
+          "the new preview to be saved",
+        );
+        await steady(page, '[data-handleid="stage:scene:heroScene"]');
+        await wireTo(page, "stage:scene:heroScene", "preview:2");
+        await sourceSaved("preview:2", "scene:heroScene");
+        const before = await page.locator("[data-card-id]").count();
+        await page.locator('[data-card-id="scene:heroScene"]').click();
+        await page.keyboard.press("Delete");
+        await frames(page, 5);
+        expect(await page.locator("[data-card-id]").count(), "a wired card is not deleted").toBe(
+          before,
+        );
+        await page.reload();
+        await ready(page);
+        await page.waitForSelector(
+          '[data-preview-card="preview:2"][data-source="scene:heroScene"]',
+        );
+        expect(await page.locator(".react-flow__edge.wire-source").count()).toBe(2);
+
+        const first = await frameOfPreview(page, "output:preview");
+        const second = await frameOfPreview(page, "preview:2");
         await page.keyboard.press("f");
         await page.locator('[data-card-id="preview:2"] .card-head').click();
         await page.waitForSelector('[data-preview-card="preview:2"][data-active="true"]');
-        const top: number[] = [];
-        const read = await frame.evaluate(`(() => {
+        await page.getByRole("button", { name: "Play", exact: true }).click();
+        await page.getByRole("button", { name: "Pause" }).waitFor();
+        const held = await elapsedIn(first);
+        const start = await elapsedIn(second);
+        await until(async () => (await elapsedIn(second)) !== start, "the active preview to play");
+        expect(await elapsedIn(first), "the other preview stays paused").toBe(held);
+        await page.locator('[data-card-id="output:preview"] .card-head').click();
+        await page.waitForSelector('[data-preview-card="output:preview"][data-active="true"]');
+        const stopped = await elapsedIn(second);
+        await frames(page, 10);
+        expect(await elapsedIn(second), "the preview left behind is paused").toBe(stopped);
+
+        await page.locator('[data-card-id="preview:2"] .card-head').click();
+        await page.waitForSelector('[data-preview-card="preview:2"][data-active="true"]');
+        const play = page.getByRole("button", { name: "Play", exact: true });
+        if ((await play.count()) > 0) await play.click();
+        await page.getByRole("button", { name: "Pause" }).waitFor();
+        const read = await second.evaluate(`(() => {
           const rects = ${JSON.stringify(names)}
             .flatMap((n) => [...document.querySelectorAll('[data-cast="' + n + '"]')])
             .map((e) => e.getBoundingClientRect());
@@ -218,17 +217,14 @@ describe("several previews", () => {
             innerHeight,
           ];
         })()`);
-        top.push(...(Array.isArray(read) ? read.map(Number) : []));
-        const [first = 0, last = 0, max = 1, view = 0] = top;
-        const low = Math.max(0, first - view);
+        const [top = 0, last = 0, max = 1, view = 0] = Array.isArray(read) ? read.map(Number) : [];
+        const low = Math.max(0, top - view);
         const high = Math.min(max, last);
         const length = Math.max(sceneMs, max);
-        await page.getByRole("button", { name: "Play", exact: true }).click();
-        await page.getByRole("button", { name: "Pause" }).waitFor();
-        for (let sample = 0; sample < 12; sample += 1) {
-          await page.waitForTimeout(150);
-          const y = Number(await frame.evaluate("scrollY"));
-          const ms = await elapsedIn(frame);
+        for (let sample = 0; sample < 6; sample += 1) {
+          await frames(page, 8);
+          const y = Number(await second.evaluate("scrollY"));
+          const ms = await elapsedIn(second);
           expect(y).toBeGreaterThanOrEqual(low - 2);
           expect(y).toBeLessThanOrEqual(high + 2);
           expect(ms).toBeGreaterThanOrEqual((low / max) * length - 5);
@@ -238,7 +234,7 @@ describe("several previews", () => {
       },
     );
     expect(done.value).toBe(true);
-  }, 180000);
+  }, 240000);
 });
 
 describe("a preview of a shot", () => {
@@ -266,7 +262,7 @@ describe("a preview of a shot", () => {
           await page.getByRole("button", { name: "Add preview" }).click();
           await page.waitForSelector('[data-preview-card="preview:2"]');
           await page.keyboard.press("f");
-          await page.waitForTimeout(300);
+          await steady(page, '[data-handleid="stage:shot:reveal"]');
           await wireTo(page, "stage:shot:reveal", "preview:2");
           await page.waitForSelector('[data-preview-card="preview:2"][data-source="shot:reveal"]');
           const frame = await frameOfPreview(page, "preview:2");
@@ -275,10 +271,15 @@ describe("a preview of a shot", () => {
           await page.getByRole("button", { name: "Play", exact: true }).click();
           await page.getByRole("button", { name: "Pause" }).waitFor();
           const seen: number[] = [];
-          for (let sample = 0; sample < 20; sample += 1) {
-            await page.waitForTimeout(250);
+          for (let sample = 0; sample < 2000; sample += 1) {
+            await frames(page, 4);
             seen.push(await elapsedIn(frame));
+            if (seen.some((ms, at) => at > 0 && ms < (seen[at - 1] ?? 0))) break;
           }
+          expect(
+            seen.some((ms, at) => at > 0 && ms < (seen[at - 1] ?? 0)),
+            "the preview wraps back to the shot's start",
+          ).toBe(true);
           expect(Math.min(...seen)).toBeGreaterThanOrEqual(from - 20);
           expect(Math.max(...seen)).toBeLessThanOrEqual(to + 20);
           return true;

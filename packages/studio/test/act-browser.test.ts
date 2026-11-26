@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseSceneReviewArgs } from "@gerak/tools/scene";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PRESETS_EVENT, startStudio, type StudioReply } from "../src";
+import { startStudio, type StudioReply } from "../src";
 
 const pieces = fileURLToPath(new URL("../../../apps/pieces/", import.meta.url));
 const gerak = join(pieces, ".gerak");
@@ -90,8 +90,4 @@ describe("act on the studio server", () => {
     expect(running).toBe(true);
     expect(await slow).toMatchObject({ kind: "act" });
   }, 90000);
-
-  it("names the presets event", () => {
-    expect(PRESETS_EVENT).toBe("gerak:presets");
-  });
 });

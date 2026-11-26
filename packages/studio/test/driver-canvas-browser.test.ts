@@ -95,13 +95,20 @@ function open<T>(piece: string, visit: (page: Page) => Promise<T>): Promise<T> {
 }
 
 describe("a live page driven by the canvas", () => {
-  it("plays, seeks, replays a take and reloads at the top", async () => {
+  it("plays, seeks, grows its ruler with the page, replays a take and reloads at the top", async () => {
     await open("cookie", async (page) => {
       const frame = await mounted(page);
       const ruler = async (): Promise<number> =>
         Number(await page.locator("[data-ruler]").getAttribute("aria-valuemax"));
       // The timeline grows with the page as it loads, past the 3000 ms this test seeks to.
       await until(async () => (await ruler()) > 3000, "the timeline to cover the page", 300);
+      const grown = Number(await page.locator("[data-ruler]").getAttribute("aria-valuemax"));
+      const at = await frame.evaluate(`window[${MOUNTS}][0].driver.now().clock.elapsed`);
+      await frame.evaluate(
+        "(() => { const tall = document.createElement('div'); tall.style.height = '4000px'; document.body.appendChild(tall); })()",
+      );
+      await until(async () => (await ruler()) > grown, "the ruler to grow with the page");
+      expect(await frame.evaluate(`window[${MOUNTS}][0].driver.now().clock.elapsed`)).toBe(at);
       expect(await frame.evaluate(`window[${MOUNTS}][0].driver.now().clock.kind`)).toBe("timed");
       await page.getByLabel("Replay").waitFor();
 
@@ -165,23 +172,6 @@ describe("a live page driven by the canvas", () => {
       await until(async () => (await statusOf("cookie")).playing, "the replay to play");
     });
   }, 180000);
-
-  it("follows the page's height: the ruler grows with the page and the playhead stays", async () => {
-    await open("cookie", async (page) => {
-      const frame = await mounted(page);
-      const ruler = page.locator("[data-ruler]");
-      const before = Number(await ruler.getAttribute("aria-valuemax"));
-      const at = await frame.evaluate(`window[${MOUNTS}][0].driver.now().clock.elapsed`);
-      await frame.evaluate(
-        "(() => { const tall = document.createElement('div'); tall.style.height = '4000px'; document.body.appendChild(tall); })()",
-      );
-      await until(
-        async () => Number(await ruler.getAttribute("aria-valuemax")) > before,
-        "the ruler to grow",
-      );
-      expect(await frame.evaluate(`window[${MOUNTS}][0].driver.now().clock.elapsed`)).toBe(at);
-    });
-  }, 90000);
 
   it("leaves a reel on its own timed clock, with no replay", async () => {
     await open("reel", async (page) => {

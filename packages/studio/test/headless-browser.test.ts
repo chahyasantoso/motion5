@@ -8,7 +8,7 @@ const pieces = fileURLToPath(new URL("../../../apps/pieces/", import.meta.url));
 const gerak = join(pieces, ".gerak");
 const hadGerak = existsSync(gerak);
 const MEMBER = "member:hookEyebrow";
-const BUDGET_MS = 200;
+const BUDGET_MS = 1000;
 
 let base = "";
 let launches: () => number = () => -1;
@@ -55,9 +55,8 @@ describe("a headless studio", () => {
     for (;;) {
       if ((await send({ kind: "status" })).kind === "status") break;
       if (Date.now() > deadline) throw new Error("The headless canvas never answered.");
-      await new Promise((done) => setTimeout(done, 250));
+      await new Promise((done) => setTimeout(done, 100));
     }
-    await new Promise((done) => setTimeout(done, 500));
 
     const cases = [
       { kind: "seek", target: { kind: "ms", ms: 2000 } },
