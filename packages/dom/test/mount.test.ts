@@ -1,6 +1,7 @@
 import {
   INPUT_EVENTS,
   aim,
+  liveAt,
   motion,
   pointer,
   scroll,
@@ -10,6 +11,7 @@ import {
   toCubics,
   transition,
   viewSize3d,
+  type Events,
   type Lens3d,
   type Pose2d,
   type Pose3d,
@@ -46,6 +48,7 @@ import {
   type PageRoot,
   type PageStyle,
 } from "../src";
+import { DRIVER_HOOK } from "../src/frames";
 import type { Driver } from "@gerak/player";
 
 function isClock(driver: Driver): driver is ClockDriver {
@@ -1680,5 +1683,187 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
 
     mounted.dispose();
     expect(prehidden.style.visibility).toBe("hidden");
+  });
+});
+
+function handedDriver(initial: Events = []): Driver & {
+  at: number;
+  step(ms: number): void;
+} {
+  const listeners = new Set<() => void>();
+  const handed = {
+    at: 0,
+    now: () => liveAt(handed.at),
+    events: () => initial,
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    step(ms: number) {
+      handed.at = ms;
+      for (const listener of [...listeners]) listener();
+    },
+  };
+  return handed;
+}
+
+function watchedScene(seen: { events: Events }) {
+  return scene(
+    box("card", { watch: true }).moves(
+      bind({
+        x: (_t, e) => {
+          seen.events = e;
+          return 0;
+        },
+      }),
+    ),
+  );
+}
+
+describe("mount on a handed driver", () => {
+  it("shows the scene the recorded log and the driver's events up to the time, merged", () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
+    const frames = fakeFrames();
+    const driver = handedDriver([
+      { name: "tap", at: 100 },
+      { name: "late", at: 900 },
+    ]);
+    const seen = { events: [] as Events };
+    const mounted = mount(watchedScene(seen), {
+      root,
+      frames,
+      clock: { kind: "driver", driver },
+    });
+    driver.step(300);
+    mounted.send("note", 1);
+    expect(seen.events.map((e) => [e.name, e.at])).toEqual([
+      ["tap", 100],
+      ["note", 300],
+    ]);
+    expect(mounted.driver.now().clock).toEqual({ kind: "live", elapsed: 300 });
+    driver.step(1000);
+    expect(seen.events.map((e) => e.name)).toEqual(["tap", "note", "late"]);
+    mounted.dispose();
+  });
+
+  it("keeps a click logged at 400 ms across a seek back and forward", () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
+    const driver = handedDriver();
+    const seen = { events: [] as Events };
+    const mounted = mount(watchedScene(seen), {
+      root,
+      frames: fakeFrames(),
+      clock: { kind: "driver", driver },
+    });
+    driver.step(400);
+    card.fire("click");
+    expect(seen.events.map((e) => [e.name, e.at])).toEqual([["click", 400]]);
+    driver.step(200);
+    expect(seen.events).toEqual([]);
+    driver.step(500);
+    expect(seen.events.map((e) => [e.name, e.at])).toEqual([["click", 400]]);
+    expect(mounted.events().map((e) => e.at)).toEqual([400]);
+    mounted.dispose();
+  });
+
+  it("requests no animation frame of its own", () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
+    const frames = fakeFrames();
+    const driver = handedDriver();
+    const seen = { events: [] as Events };
+    const mounted = mount(watchedScene(seen), {
+      root,
+      frames,
+      clock: { kind: "driver", driver },
+    });
+    driver.step(100);
+    card.fire("click");
+    mounted.send("note", 2);
+    expect(frames.queued).toBe(0);
+    mounted.dispose();
+  });
+});
+
+describe("mount host hook", () => {
+  const withHook = (hook: unknown, run: () => void): void => {
+    Reflect.set(globalThis, DRIVER_HOOK, hook);
+    try {
+      run();
+    } finally {
+      Reflect.deleteProperty(globalThis, DRIVER_HOOK);
+    }
+  };
+
+  it("runs a live mount on the hook's driver, calling it once with the length and root", () => {
+    const root = new FakeRoot([new FakeNode("card")]);
+    const driver = handedDriver();
+    driver.at = 700;
+    const calls: unknown[] = [];
+    withHook(
+      (info: unknown) => {
+        calls.push(info);
+        return driver;
+      },
+      () => {
+        const mounted = mount(watchedScene({ events: [] }), {
+          root,
+          frames: fakeFrames(),
+          clock: "live",
+          now: () => 5,
+        });
+        expect(mounted.driver.now().clock).toEqual({ kind: "live", elapsed: 700 });
+        mounted.dispose();
+      },
+    );
+    expect(calls).toEqual([{ length: 1000, root }]);
+  });
+
+  it("keeps the live clock when the hook returns undefined or is absent", () => {
+    const root = new FakeRoot([new FakeNode("card")]);
+    let ms = 0;
+    const live = () => {
+      ms = 250;
+      const mounted = mount(watchedScene({ events: [] }), {
+        root,
+        frames: fakeFrames(),
+        clock: "live",
+        now: () => ms,
+      });
+      expect(mounted.driver.now().clock).toEqual({ kind: "live", elapsed: 0 });
+      ms = 400;
+      expect(mounted.driver.now().clock).toEqual({ kind: "live", elapsed: 150 });
+      mounted.dispose();
+    };
+    live();
+    withHook(() => undefined, live);
+  });
+
+  it("never calls the hook for a timed or an explicit driver mount", () => {
+    const root = new FakeRoot([new FakeNode("card")]);
+    let calls = 0;
+    withHook(
+      () => {
+        calls += 1;
+        return handedDriver();
+      },
+      () => {
+        mount(watchedScene({ events: [] }), {
+          root,
+          frames: fakeFrames(),
+          clock: "timed",
+        }).dispose();
+        mount(watchedScene({ events: [] }), {
+          root,
+          frames: fakeFrames(),
+          clock: { kind: "driver", driver: handedDriver() },
+        }).dispose();
+      },
+    );
+    expect(calls).toBe(0);
   });
 });

@@ -1,5 +1,9 @@
+import type { Driver } from "@gerak/player";
+
 /** Page tools set this while holding a paused fake clock. */
 export const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
+/** A host sets a function `(info) => Driver | undefined` here; a live mount then runs on the driver it returns. */
+export const DRIVER_HOOK = Symbol.for("@gerak/dom/driver");
 const HELD_FRAMES = Symbol.for("@gerak/dom/held-frames");
 const HELD_STEP = Symbol.for("@gerak/dom/held-step");
 
@@ -56,4 +60,27 @@ export function pageFrames(): FrameSource {
     requestFrame: (listener) => globalThis.requestAnimationFrame(listener),
     cancelFrame: (handle) => globalThis.cancelAnimationFrame(handle),
   };
+}
+
+/** What a host's driver hook is told of the mount asking: the scene's length in ms and its root. */
+export interface HostDriverInfo {
+  readonly length: number;
+  readonly root: unknown;
+}
+
+function isDriver(value: unknown): value is Driver {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof Reflect.get(value, "now") === "function" &&
+    typeof Reflect.get(value, "subscribe") === "function"
+  );
+}
+
+/** The driver the host's hook hands this mount, or undefined when there is no hook or it hands none. */
+export function hostDriver(info: HostDriverInfo): Driver | undefined {
+  const hook: unknown = Reflect.get(globalThis, DRIVER_HOOK);
+  if (typeof hook !== "function") return undefined;
+  const handed: unknown = Reflect.apply(hook, undefined, [info]);
+  return isDriver(handed) ? handed : undefined;
 }

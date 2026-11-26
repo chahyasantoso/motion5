@@ -3,6 +3,7 @@ import {
   clamp,
   elapsedOf,
   liveAt,
+  mergeEvents,
   unreachable,
   type Events,
   type Pose2d,
@@ -54,7 +55,7 @@ import {
 } from "./compositor";
 import { clockDriver, type ClockDriver } from "./drivers";
 import { eventRecorder, type EventSource } from "./events";
-import { HELD_CLOCK, pageFrames, type FrameSource } from "./frames";
+import { HELD_CLOCK, hostDriver, pageFrames, type FrameSource } from "./frames";
 import { mediaBounds, mediaStep, SEEK_EPSILON_S, waitForMedia } from "./media";
 import { applyPath, applyValue, pathData, type RenderStyle } from "./render";
 import type { PointerLike } from "./events";
@@ -154,7 +155,7 @@ export interface PageScrollTarget {
 
 /** What a mount's time is: `"live"` runs on from mount, read by scroll, pointer and triggers;
  * `"timed"` runs over the scene's length and seeks, for reels and capture. */
-export type MountClock = "live" | "timed";
+export type MountClock = "live" | "timed" | { readonly kind: "driver"; readonly driver: Driver };
 
 /** Where a mount draws: `"page"` in place, or `"fit"`, scaling `root` about its top left to fit
  * its parent (or the viewport for `body`, `html`, or an unsized parent). */
@@ -1147,8 +1148,13 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const elapsed = (): number => Math.max(0, now() - start);
   // A timed mount runs on a seekable clock over the scene's length, each frame the whole scene.
   let timed: ClockDriver | undefined;
+  let given: Driver | undefined;
   let durationMs: number | undefined;
-  switch (options.clock) {
+  const hosted =
+    options.clock === "live" ? hostDriver({ length: stage.durationMs, root }) : undefined;
+  const clock: MountClock =
+    hosted === undefined ? options.clock : { kind: "driver", driver: hosted };
+  switch (clock) {
     case "live":
       durationMs = undefined;
       break;
@@ -1157,8 +1163,18 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       durationMs = stage.durationMs;
       break;
     default:
-      return unreachable(options.clock);
+      switch (clock.kind) {
+        case "driver":
+          given = clock.driver;
+          durationMs = undefined;
+          break;
+        default:
+          return unreachable(clock.kind);
+      }
   }
+  const driverMs = (source: Driver): number => elapsedOf(source.now().clock) ?? 0;
+  const clockMs = (): number =>
+    timed !== undefined ? driverMs(timed) : given !== undefined ? driverMs(given) : elapsed();
   const settleMs = options.settleMs ?? stage.settleMs ?? 2000;
   const ambient = stage.members.some((member) => member.expect === "ambient");
   let introMs = 0;
@@ -1199,11 +1215,15 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const ambientNames = stage.members
     .filter((member) => member.expect === "ambient")
     .map((member) => member.name);
-  const recorder = eventRecorder(elapsed, (at) => {
-    activeUntil = Math.max(activeUntil, at + settleMs);
-    fresh = true;
-    schedule();
-  });
+  const recorder = eventRecorder(
+    () => (given === undefined ? elapsed() : driverMs(given)),
+    (at) => {
+      activeUntil = Math.max(activeUntil, at + settleMs);
+      fresh = true;
+      if (given === undefined) schedule();
+      else notify();
+    },
+  );
   // What the next frame runs is decided when it is asked for, as the clock stands then.
   let wholeNext = true;
   let maybeNext = true;
@@ -1258,7 +1278,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   };
 
   function schedule(): void {
-    if (live && timed === undefined && frameHandle === undefined)
+    if (live && timed === undefined && given === undefined && frameHandle === undefined)
       frameHandle = frames.requestFrame(tick);
   }
 
@@ -1301,17 +1321,38 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const pointerTarget = eventTargetOf(root, doc);
   if (timed === undefined) pointerTarget.add(onPointerMove);
 
-  const driver: Driver = timed ?? {
-    now: (): Time => liveAt(elapsed()),
-    events: (): Events => recorder.log,
-    options,
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-  };
+  const sceneEvents = (): Events =>
+    given === undefined ? recorder.log : mergeEvents(recorder.log, given.events?.() ?? []);
+  const driver: Driver =
+    timed ??
+    (given === undefined
+      ? {
+          now: (): Time => liveAt(elapsed()),
+          events: (): Events => recorder.log,
+          options,
+          subscribe(listener) {
+            listeners.add(listener);
+            return () => {
+              listeners.delete(listener);
+            };
+          },
+        }
+      : handedOver(given));
+  function handedOver(source: Driver): Driver {
+    return {
+      now: () => source.now(),
+      events: sceneEvents,
+      ...(source.options === undefined ? {} : { options: source.options }),
+      subscribe(listener) {
+        listeners.add(listener);
+        const stop = source.subscribe(listener);
+        return () => {
+          listeners.delete(listener);
+          stop();
+        };
+      },
+    };
+  }
 
   const hiddenByUs = new WeakSet<PageElement>();
   let lastFrame: FrameOutput | undefined;
@@ -1523,7 +1564,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   };
   const handOff = (): void => {
     release();
-    if (timed !== undefined || fitted !== undefined) return;
+    if (timed !== undefined || given !== undefined || fitted !== undefined) return;
     if (Reflect.get(globalThis, COMPOSITOR_OFF) === true) return;
     if (Reflect.get(globalThis, HELD_CLOCK) === true) return;
     const Timeline: unknown = Reflect.get(globalThis, "ScrollTimeline");
@@ -1719,7 +1760,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     measure();
     const nextMaxScroll = readMaxScroll();
     if (!sameRest(prevRest, currentRest)) {
-      const at = timed === undefined ? elapsed() : (elapsedOf(timed.now().clock) ?? 0);
+      const at = clockMs();
       measures.push({ at, rest: currentReader });
       activeUntil = Math.max(activeUntil, at + settleMs);
       fresh = true;
@@ -1856,7 +1897,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       if (timed === undefined) recorder.sample(name, value, target);
       else timed.send(name, value, target);
     },
-    events: () => (timed === undefined ? recorder.log : timed.events()),
+    events: () => (timed === undefined ? sceneEvents() : timed.events()),
     settled() {
       if (mediaStates.size === 0) return Promise.resolve();
       const registerDispose = (listener: () => void): (() => void) => {
