@@ -264,16 +264,49 @@ export function useSignal<T extends object, V>(
   player: Player<T> | undefined,
   signal: Signal<V>,
 ): V | undefined {
-  const [held, setHeld] = useState<
+  const cache = useRef<
     { readonly player: Player<T>; readonly signal: Signal<V>; readonly value: V } | undefined
   >(undefined);
-  useEffect(() => {
+  const subscribe = useCallback(
+    (onStoreChange: () => void): (() => void) => {
+      if (player === undefined) return () => undefined;
+      let subscribed = false;
+      const stop = player.observe(signal, (value) => {
+        const prev = cache.current;
+        cache.current = { player, signal, value };
+        if (
+          subscribed &&
+          (prev === undefined ||
+            prev.player !== player ||
+            prev.signal !== signal ||
+            !Object.is(prev.value, value))
+        ) {
+          onStoreChange();
+        }
+      });
+      subscribed = true;
+      return stop;
+    },
+    [player, signal],
+  );
+  const getSnapshot = (): V | undefined => {
     if (player === undefined) return undefined;
-    return player.observe(signal, (value) => setHeld({ player, signal, value }));
-  }, [player, signal]);
-  return held !== undefined && held.player === player && held.signal === signal
-    ? held.value
-    : undefined;
+    const held = cache.current;
+    if (held !== undefined && held.player === player && held.signal === signal) return held.value;
+    let seeded: { readonly value: V } | undefined;
+    const stop = player.observe(signal, (value) => {
+      seeded = { value };
+    });
+    stop();
+    if (seeded === undefined) return undefined;
+    cache.current = { player, signal, value: seeded.value };
+    return seeded.value;
+  };
+  return useSyncExternalStore(
+    player === undefined ? NO_SUBSCRIPTION : subscribe,
+    getSnapshot,
+    getSnapshot,
+  );
 }
 
 /** Logs the events of the element the ref lands on to `driver` as `target`'s; put it on an element that stays still. */

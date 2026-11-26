@@ -1,9 +1,73 @@
 import type { Point3d, Pose3d } from "@gerak/core";
-import { Euler, type EulerOrder, type Object3D } from "three";
+import { Euler, Quaternion, type EulerOrder, type Material, type Object3D } from "three";
+import { applyObjectOpacity, captureMaterials, restoreMaterials } from "./materials";
 import { writeCustom, type CustomWriter } from "./pose2d";
 
 /** Three.js Euler order for core's CSS convention (`ZXY`, Rz·Rx·Ry). Core angles are degrees. */
 export const EULER_ORDER_3D: EulerOrder = "ZXY";
+
+/** Full rest transform, visibility, and Euler order captured from an `Object3D`. */
+export interface Rest3d {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly quaternion: readonly [number, number, number, number];
+  readonly scale: readonly [number, number, number];
+  readonly visible: boolean;
+  readonly order: EulerOrder;
+}
+
+const TEMP_EULER = new Euler(0, 0, 0, EULER_ORDER_3D);
+const TEMP_REST_QUAT = new Quaternion();
+const TEMP_POSE_QUAT = new Quaternion();
+
+function isRest3d(rest: Point3d | Rest3d): rest is Rest3d {
+  return "quaternion" in rest;
+}
+
+function hasNonIdentityQuaternion(q: readonly [number, number, number, number]): boolean {
+  return q[0] !== 0 || q[1] !== 0 || q[2] !== 0 || Math.abs(q[3] - 1) > 1e-12;
+}
+
+/** Captures position, rotation quaternion, scale, visibility, and material baseline of `object`. */
+export function captureRest3d(object: Object3D, sharedMaterials?: ReadonlySet<Material>): Rest3d {
+  captureMaterials(object, sharedMaterials);
+  const quaternion: readonly [number, number, number, number] = Object.freeze([
+    object.quaternion.x,
+    object.quaternion.y,
+    object.quaternion.z,
+    object.quaternion.w,
+  ]);
+  const scale: readonly [number, number, number] = Object.freeze([
+    object.scale.x,
+    object.scale.y,
+    object.scale.z,
+  ]);
+  return Object.freeze({
+    x: object.position.x,
+    y: object.position.y,
+    z: object.position.z,
+    quaternion,
+    scale,
+    visible: object.visible,
+    order: object.rotation.order,
+  });
+}
+
+/** Restores `object` to its captured `Rest3d` transform, visibility, and materials. */
+export function restoreRest3d(object: Object3D, rest: Rest3d): void {
+  object.position.set(rest.x, rest.y, rest.z);
+  object.rotation.order = rest.order;
+  object.quaternion.set(
+    rest.quaternion[0],
+    rest.quaternion[1],
+    rest.quaternion[2],
+    rest.quaternion[3],
+  );
+  object.scale.set(rest.scale[0], rest.scale[1], rest.scale[2]);
+  object.visible = rest.visible;
+  restoreMaterials(object);
+}
 
 /** Sole degrees-to-radians owner for `ZXY`; angles reduce mod 360. */
 export function setEulerDegrees(
@@ -43,23 +107,31 @@ export const UNWRITTEN_3D: Readonly<Partial<Record<keyof Pose3d, string>>> = Obj
 export function applyPose3d(
   object: Object3D,
   pose: Pose3d,
-  rest: Point3d = { x: 0, y: 0, z: 0 },
+  rest: Point3d | Rest3d = { x: 0, y: 0, z: 0 },
   custom?: CustomWriter,
 ): void {
   const all = pose.scale ?? 1;
   object.position.set(rest.x + (pose.x ?? 0), rest.y + (pose.y ?? 0), rest.z + (pose.z ?? 0));
-  setEulerDegrees(object.rotation, pose.rotation ?? 0, pose.rotationX ?? 0, pose.rotationY ?? 0);
-  object.scale.set(all * (pose.scaleX ?? 1), all * (pose.scaleY ?? 1), all * (pose.scaleZ ?? 1));
-  if (pose.opacity !== undefined) {
-    const material: unknown = Reflect.get(object, "material");
-    if (material !== null && typeof material === "object" && "opacity" in material) {
-      Reflect.set(material, "opacity", pose.opacity);
-      // A material drawn while opaque keeps its opaque shader until Three.js is told to rebuild it.
-      if (Reflect.get(material, "transparent") !== true) {
-        Reflect.set(material, "transparent", true);
-        Reflect.set(material, "needsUpdate", true);
-      }
-    }
+  if (isRest3d(rest) && hasNonIdentityQuaternion(rest.quaternion)) {
+    setEulerDegrees(TEMP_EULER, pose.rotation ?? 0, pose.rotationX ?? 0, pose.rotationY ?? 0);
+    TEMP_POSE_QUAT.setFromEuler(TEMP_EULER);
+    TEMP_REST_QUAT.set(
+      rest.quaternion[0],
+      rest.quaternion[1],
+      rest.quaternion[2],
+      rest.quaternion[3],
+    );
+    object.rotation.order = EULER_ORDER_3D;
+    object.quaternion.multiplyQuaternions(TEMP_REST_QUAT, TEMP_POSE_QUAT);
+  } else {
+    setEulerDegrees(object.rotation, pose.rotation ?? 0, pose.rotationX ?? 0, pose.rotationY ?? 0);
   }
+  const [rx, ry, rz] = isRest3d(rest) ? rest.scale : [1, 1, 1];
+  object.scale.set(
+    rx * all * (pose.scaleX ?? 1),
+    ry * all * (pose.scaleY ?? 1),
+    rz * all * (pose.scaleZ ?? 1),
+  );
+  applyObjectOpacity(object, pose.opacity);
   writeCustom(object, pose.custom, custom);
 }
