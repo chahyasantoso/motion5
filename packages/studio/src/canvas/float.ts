@@ -60,3 +60,11 @@ export function floating(source: Box, target: Box): Floating {
         : Position.Top;
   return { source: pointOn(source, side), target: pointOn(target, opposite(side)) };
 }
+
+/** A row port: only the left or right edge of the card, at the row's height, facing the target. */
+export function floatingRow(source: Box, rowY: number, target: Box): Floating {
+  const dx = target.x + target.width / 2 - (source.x + source.width / 2);
+  const side = dx >= 0 ? Position.Right : Position.Left;
+  const x = side === Position.Right ? source.x + source.width : source.x;
+  return { source: { x, y: rowY, position: side }, target: pointOn(target, opposite(side)) };
+}

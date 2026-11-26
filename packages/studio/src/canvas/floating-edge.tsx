@@ -1,5 +1,5 @@
 import { BaseEdge, getBezierPath, useInternalNode, type EdgeProps } from "@xyflow/react";
-import { floating, type Box } from "./float";
+import { floating, floatingRow, type Box } from "./float";
 
 function boxOf(node: NonNullable<ReturnType<typeof useInternalNode>>): Box | undefined {
   const { width, height } = node.measured;
@@ -15,7 +15,11 @@ export function FloatingEdge(props: EdgeProps): React.JSX.Element | null {
   const a = boxOf(from);
   const b = boxOf(to);
   if (a === undefined || b === undefined) return null;
-  const { source, target } = floating(a, b);
+  const port = from.internals.handleBounds?.source?.find(
+    (handle) => handle.id === props.sourceHandleId,
+  );
+  const { source, target } =
+    port === undefined ? floating(a, b) : floatingRow(a, a.y + port.y + port.height / 2, b);
   const [path] = getBezierPath({
     sourceX: source.x,
     sourceY: source.y,

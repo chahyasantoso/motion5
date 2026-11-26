@@ -192,10 +192,6 @@ select:disabled {
   box-shadow: var(--shadow-selected);
 }
 
-.card.is-active {
-  border-color: var(--accent);
-}
-
 .card[data-kind="preview"] {
   width: 100%;
   height: 100%;
@@ -734,4 +730,29 @@ button.bar {
 .knobs dd {
   margin: 0;
   margin-left: auto;
+}
+
+.scene-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 0 var(--space-3);
+  border-top: var(--border-width) solid var(--border);
+  cursor: pointer;
+}
+
+.scene-row:hover {
+  background: var(--surface-raised);
+}
+
+.scene-row.is-selected {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.scene-row.is-active {
+  box-shadow: inset 2px 0 0 var(--accent);
 }

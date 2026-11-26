@@ -18,6 +18,7 @@ import type { Problem } from "./api";
 import { autoLayout, PREVIEW_SIZE } from "./auto-layout";
 import { describeCapability, pinOnlyAgentPort } from "../agent-port-pin";
 import type { StudioAgentEvent } from "../agent-port";
+import { rootOf, rowPort, rowsOf } from "./rows";
 import { Banner } from "./banner";
 import { Follow } from "./follow";
 import { FollowPill } from "./follow-pill";
@@ -42,27 +43,43 @@ import { useWheelNavigation } from "./use-wheel-navigation";
 
 const GRID = 8;
 
+function homeOf(graph: StudioGraph): (id: string) => string {
+  const root = rootOf(graph)?.id;
+  const rows = new Set(rowsOf(graph).map((row) => row.id));
+  return (id) => (root !== undefined && rows.has(id) ? root : id);
+}
+
 function portsOf(graph: StudioGraph): ReadonlyMap<string, readonly PortType[]> {
   const found = new Map<string, Set<PortType>>();
+  const home = homeOf(graph);
   for (const wire of graph.wires)
-    for (const id of [wire.from, wire.to])
+    for (const id of [home(wire.from), home(wire.to)])
       found.set(id, (found.get(id) ?? new Set()).add(wire.type));
   return new Map([...found].map(([id, types]) => [id, [...types]]));
 }
 
 function edgesOf(graph: StudioGraph, selected: readonly string[]): Edge[] {
-  return graph.wires.map((wire) => {
+  const home = homeOf(graph);
+  const rows = new Map(rowsOf(graph).map((row) => [row.id, row]));
+  return graph.wires.flatMap((wire) => {
     const related =
       selected.length === 0 || selected.includes(wire.from) || selected.includes(wire.to);
-    return {
-      id: wire.id,
-      source: wire.from,
-      target: wire.to,
-      type: "floating",
-      className: `wire wire-${wire.type}${related ? "" : " wire-dim"}`,
-      selectable: false,
-      focusable: false,
-    };
+    const row = rows.get(wire.from);
+    const source = home(wire.from);
+    const target = home(wire.to);
+    if (source === target) return [];
+    return [
+      {
+        id: wire.id,
+        source,
+        target,
+        ...(row === undefined ? {} : { sourceHandle: rowPort(row) }),
+        type: "floating",
+        className: `wire wire-${wire.type}${related ? "" : " wire-dim"}`,
+        selectable: false,
+        focusable: false,
+      },
+    ];
   });
 }
 
@@ -89,7 +106,13 @@ function Canvas(props: {
   const [framedNow, setFramedNow] = useState(false);
   const saver = useLayoutSaver(piece, data.layout);
   const [nodes, setNodes] = useState<CardNode[]>([]);
-  const [selected, setSelected] = useState<readonly string[]>([]);
+  const [picked, setSelected] = useState<readonly string[]>([]);
+  const [rowPicked, setRowPicked] = useState<string | undefined>(undefined);
+  const selected = useMemo(
+    () => (rowPicked === undefined ? picked : [rowPicked]),
+    [picked, rowPicked],
+  );
+  const rows = useMemo(() => rowsOf(data.graph), [data.graph]);
   const [preview, setPreviewState] = useState<PreviewChoice>(
     data.layout.preview ?? { preset: DEFAULT_PRESET },
   );
@@ -113,27 +136,36 @@ function Canvas(props: {
   useEffect(() => {
     const auto = autoLayout(data.graph);
     const ports = portsOf(data.graph);
+    const inRows = new Set(rows.map((row) => row.id));
+    const root = rootOf(data.graph);
     setNodes((before) => {
       const held = new Map(before.map((node) => [node.id, node]));
-      return data.graph.cards.map((card): CardNode => {
-        const old = held.get(card.id);
-        const place = old?.position ?? saver.places().get(card.id) ?? auto.get(card.id);
-        return {
-          id: card.id,
-          type: nodeTypeOf(groupOf(card.kind)),
-          position: place ?? { x: 0, y: 0 },
-          data: { card, ports: ports.get(card.id) ?? [] },
-          dragHandle: ".card-drag",
-          selected: old?.selected ?? false,
-          ...(card.kind === "preview" ? { style: { ...PREVIEW_SIZE } } : {}),
-        };
-      });
+      return data.graph.cards
+        .filter((card) => !inRows.has(card.id))
+        .map((card): CardNode => {
+          const old = held.get(card.id);
+          const place = old?.position ?? saver.places().get(card.id) ?? auto.get(card.id);
+          return {
+            id: card.id,
+            type: nodeTypeOf(groupOf(card.kind)),
+            position: place ?? { x: 0, y: 0 },
+            data: {
+              card,
+              ports: ports.get(card.id) ?? [],
+              ...(card === root ? { rows } : {}),
+            },
+            dragHandle: ".card-drag",
+            selected: old?.selected ?? false,
+            ...(card.kind === "preview" ? { style: { ...PREVIEW_SIZE } } : {}),
+          };
+        });
     });
-  }, [data.graph, saver]);
+  }, [data.graph, saver, rows]);
 
   const onSelectionChange = useCallback(
-    ({ nodes: picked }: { nodes: readonly { id: string }[] }) => {
-      const ids = picked.map((node) => node.id);
+    ({ nodes: chosen }: { nodes: readonly { id: string }[] }) => {
+      const ids = chosen.map((node) => node.id);
+      if (ids.length > 0) setRowPicked(undefined);
       setSelected((before) =>
         before.length === ids.length && before.every((id, index) => id === ids[index])
           ? before
@@ -143,7 +175,8 @@ function Canvas(props: {
     [],
   );
   useEffect(() => {
-    const ready = initialised && nodes.length > 0 && nodes.length === data.graph.cards.length;
+    const ready =
+      initialised && nodes.length > 0 && nodes.length === data.graph.cards.length - rows.length;
     if (!ready || framed.current) return;
     framed.current = true;
     if (data.layout.viewport !== undefined) setFramedNow(true);
@@ -152,14 +185,13 @@ function Canvas(props: {
         const root = data.graph.cards.find(
           (card) => card.kind === "scene" && card.parent === undefined,
         );
-        const shot = data.graph.cards.find((card) => card.kind === "shot");
-        const first = [root, shot, { id: "output:preview" }].flatMap((card) =>
+        const first = [root, { id: "output:preview" }].flatMap((card) =>
           card === undefined ? [] : [{ id: card.id }],
         );
         void flow.fitView({ nodes: first, padding: 0.15, maxZoom: 1, duration: 0 });
         setFramedNow(true);
       }, 100);
-  }, [initialised, nodes.length, flow, data.graph.cards, data.layout.viewport]);
+  }, [initialised, nodes.length, flow, data.graph.cards, data.layout.viewport, rows.length]);
 
   const edges = useMemo(() => edgesOf(data.graph, selected), [data.graph, selected]);
   const onNodesChange = useCallback(
@@ -195,6 +227,15 @@ function Canvas(props: {
   };
   const problem = props.pageProblem ?? data.problem;
   const followState = useFollow(follow, playhead);
+  const selectCard = useCallback(
+    (id: string): void => {
+      const isRow = rows.some((row) => row.id === id);
+      setNodes((before) => before.map((node) => ({ ...node, selected: !isRow && node.id === id })));
+      setSelected(isRow ? [] : [id]);
+      setRowPicked(isRow ? id : undefined);
+    },
+    [rows],
+  );
   const { resume, control } = useBus({
     piece,
     page: data.page,
@@ -209,15 +250,12 @@ function Canvas(props: {
     focus,
     setFocus,
     setPreview,
-    select: (id) => {
-      setNodes((before) => before.map((node) => ({ ...node, selected: node.id === id })));
-      setSelected([id]);
-    },
+    select: selectCard,
     frame: (ids) =>
       void flow.fitView(
         ids === undefined
           ? { padding: 0.1, duration: 0 }
-          : { nodes: ids.map((id) => ({ id })), padding: 0.2, duration: 0 },
+          : { nodes: ids.map((id) => ({ id: homeOf(data.graph)(id) })), padding: 0.2, duration: 0 },
       ),
   });
 
@@ -275,6 +313,8 @@ function Canvas(props: {
   }, [pinMode, data.graph.cards]);
 
   const value: StudioValue = {
+    selected,
+    select: selectCard,
     pins: pinStore.pins,
     pinMode,
     setPinMode,
@@ -309,6 +349,7 @@ function Canvas(props: {
             edgeTypes={EDGE_TYPES}
             onNodesChange={onNodesChange}
             onSelectionChange={onSelectionChange}
+            onPaneClick={() => setRowPicked(undefined)}
             onNodeDragStop={(_event, _node, dragged) => {
               for (const node of dragged) saver.place(node.id, node.position);
               remember();

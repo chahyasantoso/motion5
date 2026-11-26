@@ -1,6 +1,6 @@
 import { Position } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
-import { floating } from "../src/canvas/float";
+import { floating, floatingRow } from "../src/canvas/float";
 
 const card = (x: number, y: number) => ({ x, y, width: 256, height: 100 });
 
@@ -24,5 +24,21 @@ describe("floating", () => {
   });
   it("faces top when the target is far above", () => {
     expect(floating(card(0, 800), card(0, 0)).source.position).toBe(Position.Top);
+  });
+});
+
+describe("floatingRow", () => {
+  it("leaves the right edge at the row height when the target is to the right", () => {
+    const f = floatingRow(card(0, 0), 30, card(500, 10));
+    expect(f.source).toEqual({ x: 256, y: 30, position: Position.Right });
+    expect(f.target).toEqual({ x: 500, y: 60, position: Position.Left });
+  });
+  it("leaves the left edge when the target is to the left, even when far below", () => {
+    const f = floatingRow(card(500, 0), 70, card(-100, 900));
+    expect(f.source).toEqual({ x: 500, y: 70, position: Position.Left });
+    expect(f.target.position).toBe(Position.Right);
+  });
+  it("never picks top or bottom", () => {
+    expect(floatingRow(card(0, 0), 10, card(0, 900)).source.position).toBe(Position.Right);
   });
 });

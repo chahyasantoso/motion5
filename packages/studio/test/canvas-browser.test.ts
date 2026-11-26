@@ -144,21 +144,59 @@ describe("the canvas", () => {
     expect(found).toEqual(expected);
   }, 60000);
 
+  it("draws cookie's sub-scenes as rows of its root card, each with a stage port", async () => {
+    await open("cookie", { width: 1440, height: 900 }, async (page) => {
+      await ready(page);
+      const names = ["heroScene", "closingScene"];
+      const rows = page.locator('[data-card-id="scene:cookie"] .scene-row');
+      expect(await rows.count()).toBe(5);
+      const named = await rows.locator(".card-name").allTextContents();
+      expect(named[0]).toBe(names[0]);
+      expect(named[4]).toBe(names[1]);
+      for (const row of await rows.all()) {
+        const id = await row.getAttribute("data-card-id");
+        expect(await row.locator(`.react-flow__handle[data-handleid="stage:${id}"]`).count()).toBe(
+          1,
+        );
+        expect(await page.locator(`.card[data-card-id="${id}"]`).count()).toBe(0);
+      }
+      await rows.first().click();
+      await page.locator(".scene-row.is-selected").waitFor();
+      expect(await page.locator(".scene-row.is-selected").getAttribute("data-card-id")).toBe(
+        "scene:heroScene",
+      );
+    });
+  }, 60000);
+
+  it("lists the reel's shots as rows and solos one on click", async () => {
+    await open("reel", { width: 1440, height: 900 }, async (page) => {
+      await ready(page);
+      expect(await page.locator('.card[data-kind="shot"]').count()).toBe(0);
+      const row = page.locator('.scene-row[data-card-id="shot:hook"]');
+      await row.waitFor();
+      await row.click();
+      await page.locator('.scene-row[data-card-id="shot:hook"].is-active').waitFor();
+      await page.locator("[data-timeline] .is-soloed").first().waitFor();
+      await row.click();
+      await page.waitForSelector(".scene-row.is-active", { state: "detached" });
+    });
+  }, 60000);
+
   it("keeps a dragged card in its place after a reload", async () => {
     rmSync(layoutFile("reel"), { force: true });
     await open("reel", { width: 1440, height: 900 }, async (page) => {
       await ready(page);
-      const before = await transformOf(page, "shot:hook");
-      await dragHeader(page, "shot:hook", { x: 60, y: 40 });
-      const moved = await transformOf(page, "shot:hook");
+      const before = await transformOf(page, "output:check");
+      await dragHeader(page, "output:check", { x: 60, y: 40 });
+      const moved = await transformOf(page, "output:check");
       expect(moved).not.toBe(before);
       await until(
-        async () => JSON.stringify(await layoutOf("reel")).includes("shot:hook"),
+        async () => JSON.stringify(await layoutOf("reel")).includes("output:check"),
         "the layout to be saved",
       );
       await page.reload();
       await ready(page);
-      expect(await transformOf(page, "shot:hook")).toBe(moved);
+      expect(await transformOf(page, "output:check")).toBe(moved);
     });
   }, 60000);
 
@@ -224,15 +262,15 @@ describe("the canvas", () => {
     );
     await open("reel", { width: 1440, height: 900 }, async (page) => {
       await ready(page);
-      await dragHeader(page, "shot:reveal", { x: 40, y: 40 });
+      await dragHeader(page, "output:check", { x: 40, y: 40 });
       await until(
-        async () => JSON.stringify(await layoutOf("reel")).includes("shot:reveal"),
+        async () => JSON.stringify(await layoutOf("reel")).includes("output:check"),
         "the layout to be saved",
       );
     });
     const saved = readFileSync(layoutFile("reel"), "utf8");
     expect(saved).not.toContain("shot:gone");
-    expect(saved).toContain("shot:reveal");
+    expect(saved).toContain("output:check");
   }, 60000);
 
   it("runs cookie.html with its 3D canvas at desktop and mobile sizes", async () => {

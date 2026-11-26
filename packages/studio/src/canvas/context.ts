@@ -36,6 +36,10 @@ export interface StudioValue {
   setPinMode(on: boolean): void;
   /** Stores a pin for a click made in pin mode, then leaves pin mode. */
   placePin(request: PinRequest): void;
+  /** The ids of the selected cards, a scene row's among them. */
+  readonly selected: readonly string[];
+  /** Selects one card by id, as the bus `select` does. */
+  select(id: string): void;
   /** Puts the canvas back where `pin` was left. */
   restorePin(pin: Pin): void;
 }
