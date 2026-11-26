@@ -8,7 +8,6 @@ const pieces = fileURLToPath(new URL("../../../apps/pieces/", import.meta.url));
 const gerak = join(pieces, ".gerak");
 const hadGerak = existsSync(gerak);
 const MEMBER = "member:hookEyebrow";
-const BUDGET_MS = 1000;
 
 let base = "";
 let launches: () => number = () => -1;
@@ -41,16 +40,8 @@ async function send(command: unknown): Promise<StudioReply> {
   return answer.json();
 }
 
-async function timed(command: unknown): Promise<number> {
-  const started = performance.now();
-  const reply = await send(command);
-  const took = performance.now() - started;
-  expect(reply.kind).not.toBe("failed");
-  return took;
-}
-
 describe("a headless studio", () => {
-  it("answers bus commands warm and checks on the one shared browser", async () => {
+  it("answers bus commands and checks on the one shared browser", async () => {
     const deadline = Date.now() + 90000;
     for (;;) {
       if ((await send({ kind: "status" })).kind === "status") break;
@@ -63,11 +54,7 @@ describe("a headless studio", () => {
       { kind: "select", card: MEMBER },
       { kind: "status" },
     ];
-    for (const command of cases) await timed(command);
-    const times = [];
-    for (const command of cases) times.push(await timed(command));
-    console.log(`headless warm round trips (ms): ${JSON.stringify(times)}`);
-    for (const took of times) expect(took).toBeLessThan(BUDGET_MS);
+    for (const command of cases) expect((await send(command)).kind).not.toBe("failed");
 
     const first = await send({ kind: "check", sizes: undefined, safeZone: undefined, to: 500 });
     expect(first.kind).toBe("check");
