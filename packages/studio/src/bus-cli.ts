@@ -34,7 +34,7 @@ const USAGES: Readonly<Record<string, string>> = {
   select: "usage: gerak studio select <card-id> [--root dir] [--piece name]",
   inspect: "usage: gerak studio inspect [<card-id>] [--root dir] [--piece name]",
   check:
-    "usage: gerak studio check [--sizes WxH,...] [--safe-zone platform] [--root dir] [--piece name]",
+    "usage: gerak studio check [--sizes WxH,...] [--safe-zone platform] [--to ms] [--root dir] [--piece name]",
   graph: "usage: gerak studio graph [--root dir] [--piece name]",
 };
 
@@ -137,7 +137,7 @@ export function parseBusArgs(subcommand: string, argv: readonly string[]): Parse
     viewport: ["--safe-zone"],
     seek: ["--ms", "--scroll"],
     play: ["--from", "--to", "--speed"],
-    check: ["--sizes", "--safe-zone"],
+    check: ["--sizes", "--safe-zone", "--to"],
   };
   if (!(subcommand in USAGES)) return fail(`Unknown studio subcommand ${subcommand}.`);
   const split = splitFlags(argv, valueFlags[subcommand] ?? []);
@@ -218,10 +218,15 @@ export function parseBusArgs(subcommand: string, argv: readonly string[]): Parse
         return fail(
           `--safe-zone must be a platform (${SAFE_ZONE_NAMES.join(", ")}), got "${zone}".`,
         );
+      const toText = values.get("--to");
+      const to = toText === undefined ? undefined : count("--to", toText);
+      if (typeof to === "string") return fail(to);
+      if (to === 0) return fail("--to must be above 0.");
       return done({
         kind: "check",
         sizes: sizes?.map((each) => ({ width: each.width, height: each.height })),
         safeZone: zone,
+        to,
       });
     }
     default:

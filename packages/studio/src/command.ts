@@ -119,9 +119,10 @@ export function parseCommand(body: unknown): StudioCommand | undefined {
     case "check": {
       const sizes = sizesOf(Reflect.get(Object(body), "sizes"));
       const zone = optionalText(body, "safeZone");
-      return sizes === "bad" || zone === "bad"
+      const to = amount(body, "to", 1);
+      return sizes === "bad" || zone === "bad" || to === "bad"
         ? undefined
-        : { kind: "check", sizes, safeZone: zone };
+        : { kind: "check", sizes, safeZone: zone, to };
     }
     default:
       return undefined;

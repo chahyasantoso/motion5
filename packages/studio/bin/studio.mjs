@@ -16,7 +16,7 @@ const usage = [
   "  play [--from ms] [--to ms] [--speed n]  play the timeline",
   "  select <card-id>  select a card",
   "  inspect [<card-id>]  a card's live values",
-  "  check [--sizes WxH,...] [--safe-zone platform]  check the page",
+  "  check [--sizes WxH,...] [--safe-zone platform] [--to ms]  check the page",
   "  every subcommand but open and graph <piece> takes --root dir and --piece name",
 ].join("\n");
 

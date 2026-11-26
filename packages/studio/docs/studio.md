@@ -66,7 +66,7 @@ npx gerak studio seek --ms 3000                # or --scroll <px|selector>
 npx gerak studio play --from 0 --to 4000 --speed 0.5
 npx gerak studio select member:hookEyebrow     # the same selection the canvas shows
 npx gerak studio inspect                       # the selected card: pose, page box, rest box, 3D bounds, steps
-npx gerak studio check --sizes 390x844,1440x900 --safe-zone tiktok
+npx gerak studio check --sizes 390x844,1440x900 --safe-zone tiktok --to 4000
 npx gerak studio graph                         # the open piece's graph as JSON
 ```
 
@@ -75,6 +75,6 @@ npx gerak studio graph                         # the open piece's graph as JSON
   "Manual". After that, the agent's commands run on a hidden copy of the page, so they never move what the person
   sees. "Resume follow" gives the canvas the agent's focus, size, selection and time.
 - **Check.** `check` runs on the server in one headless browser that the session keeps open. It watches every cast
-  element on the page, from 0 to the scene's length, at 1440×900 unless `--sizes` says otherwise.
+  element on the page, from 0 to the scene's length or `--to`, at 1440×900 unless `--sizes` says otherwise.
 - **No canvas.** When no canvas page is open, a command fails after 10 s and tells you to run
   `gerak studio open`. A headless session always has its canvas open.

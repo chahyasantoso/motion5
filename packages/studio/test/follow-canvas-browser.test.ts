@@ -83,7 +83,7 @@ describe("the agent follows the canvas until the person takes it", () => {
 
         const checked = await fetch(`${base}__gerak/bus?piece=reel`, {
           method: "POST",
-          body: JSON.stringify({ kind: "check", sizes: undefined, safeZone: undefined }),
+          body: JSON.stringify({ kind: "check", sizes: undefined, safeZone: undefined, to: 500 }),
         });
         const checkReply: StudioReply = await checked.json();
         expect(checkReply.kind).toBe("check");
