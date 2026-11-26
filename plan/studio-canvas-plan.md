@@ -213,6 +213,7 @@ The agent plan (`plan/studio-agent-plan.md`) runs after PR 2 and before PR 3.
 - Move curves: a sparkline per pose field over a move's window.
 - Constants as knobs: a `const` a code motion uses, edited from its card.
 - Setting a state's value from its card to try an input without doing it.
+- Wiring a take into a preview, check or render card from the terminal, for an agent (a bus command such as `gerak studio wire take-1 --to preview`), to add once take wires exist; until then an agent records with `gerak studio act --save-preset` and replays with `gerak review --events @name`.
 - Previewing a sub-scene isolated: mounting it alone while the rest of the page sits at rest.
 - Picking a single 3D object inside a canvas element (a raycast pick hook on `threeBinder`).
 - Floating code editors beside the docked panel.
