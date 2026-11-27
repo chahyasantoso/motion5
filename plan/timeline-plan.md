@@ -152,6 +152,12 @@ interface StageTimeline extends Timeline<StageInput> {
 - One brief, the section that mixes a clock beat, a scroll beat, a trigger beat, a hover and a loop, built by a
   Claude Sonnet subagent on the merged foundation, on this plan's branch, and as plain HTML and JS. The branch must cost no
   more tokens than the foundation and beat the plain build.
+- The same three runs also count how well the agent wrote, since tokens alone do not show it:
+  - rounds to working: fix rounds until `gerak review` passes and the section does what the brief says;
+  - wrong constructs: places it reached for the wrong tool, such as a scroll-reached trigger where the brief
+    asks for a click, or a fixed `react` shape where the brief describes its own motion.
+  The branch must need no more rounds and make fewer wrong constructs than the foundation. All counts go in the
+  pull request.
 
 ## Slices
 
