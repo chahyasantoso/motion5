@@ -4,20 +4,45 @@ import {
   createStore,
   derivedInput,
   elapsedOf,
-  inputSerialsOf,
   generationOf,
+  inputLog,
+  inputSerialsOf,
+  versionOf,
   withStore,
+  type Contract,
   type Input,
   type InputEntry,
+  type InputSpec,
   type RuntimeStore,
   type Signal,
+  type TargetOf,
   type Time,
 } from "@gerak/core";
 
-/** What drives a scene: the time now, the input so far when it watches any, and a signal each time it moves. */
+/** What drives a scene: the time now, the input log, typed input writers, and a signal each time it moves. */
 export interface Driver {
   now(): Time;
-  events?(): Input;
+  input(): Input;
+  set<
+    V extends Record<string, InputSpec>,
+    T extends Record<string, InputSpec>,
+    K extends keyof V & string,
+  >(
+    contract: Contract<V, T>,
+    name: K,
+    value: number,
+    target?: TargetOf<V[K]> | undefined,
+  ): void;
+  trigger<
+    V extends Record<string, InputSpec>,
+    T extends Record<string, InputSpec>,
+    K extends keyof T & string,
+  >(
+    contract: Contract<V, T>,
+    name: K,
+    value?: number,
+    target?: TargetOf<T[K]> | undefined,
+  ): void;
   subscribe(listener: () => void): () => void;
   /** The options it was made with, so a host can tell a changed driver from the same one. */
   readonly options?: object;
@@ -59,10 +84,10 @@ export function play<T extends object>(
   let time = driver.now();
 
   const resolveEvents = (targetTime: Time = time): Input =>
-    eventCache.resolve(cues, driver.events?.() ?? NO_INPUT, elapsedOf(targetTime.clock));
+    eventCache.resolve(cues, driver.input(), elapsedOf(targetTime.clock));
 
   let current = scene;
-  const initialPage = driver.events?.() ?? NO_INPUT;
+  const initialPage = driver.input();
   let values = withStore(store, () => current(time, resolveEvents()));
   let reached = elapsedOf(time.clock);
 
@@ -161,8 +186,8 @@ export function play<T extends object>(
     const nextTime = driver.now();
     const nextNow = elapsedOf(nextTime.clock);
     time = nextTime;
-    const page = driver.events?.() ?? NO_INPUT;
-    const all = resolveEvents(time);
+    const page = driver.input();
+    const all = eventCache.resolve(cues, page, nextNow);
     withStore(store, () => {
       if (Reflect.get(globalThis, "__gerakTiming") === true) {
         const started = performance.now();
@@ -251,6 +276,7 @@ export interface ManualDriver extends Driver {
 /** A driver moved by hand: `.seek(progress)`, `.seekMs(ms)`. Timed when given `durationMs`, untimed otherwise. */
 export function manualDriver(options: { readonly durationMs?: number } = {}): ManualDriver {
   const listeners = new Set<() => void>();
+  const log = inputLog();
   let progress = 0;
   let exactMs: number | undefined;
   const now = (): Time =>
@@ -264,12 +290,23 @@ export function manualDriver(options: { readonly durationMs?: number } = {}): Ma
             length: options.durationMs,
           },
         };
+  const elapsedMs = (): number => elapsedOf(now().clock) ?? 0;
   const tell = (): void => {
     for (const listener of [...listeners]) listener();
   };
   return {
     now,
+    input: () => log.input,
     options,
+    set(contract, name, value, target) {
+      const before = versionOf(log.input);
+      log.set(elapsedMs(), contract, name, value, target);
+      if (versionOf(log.input) !== before) tell();
+    },
+    trigger(contract, name, value, target) {
+      log.trigger(elapsedMs(), contract, name, value, target);
+      tell();
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => {

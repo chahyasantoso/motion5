@@ -3,8 +3,12 @@ import {
   inputs,
   liveAt,
   pageInputs,
+  versionOf,
+  type Contract,
   type Input,
+  type InputSpec,
   type Point2d,
+  type TargetOf,
   type Time,
 } from "@gerak/core";
 import type { Driver } from "@gerak/player";
@@ -53,6 +57,26 @@ export const WATCHED: Readonly<Record<string, string>> = Object.freeze(
 /** A log of input entries, in order of `at`, and the watching that fills it. */
 export interface EventRecorder {
   readonly log: Input;
+  set<
+    V extends Record<string, InputSpec>,
+    T extends Record<string, InputSpec>,
+    K extends keyof V & string,
+  >(
+    contract: Contract<V, T>,
+    name: K,
+    value: number,
+    target?: TargetOf<V[K]> | undefined,
+  ): void;
+  trigger<
+    V extends Record<string, InputSpec>,
+    T extends Record<string, InputSpec>,
+    K extends keyof T & string,
+  >(
+    contract: Contract<V, T>,
+    name: K,
+    value?: number,
+    target?: TargetOf<T[K]> | undefined,
+  ): void;
   /** Logs an event by hand at `at` or the ms `now` gives, and tells `onRecord` that ms. */
   record(name: string, target?: string, point?: Point2d, at?: number): void;
   /** Logs a sample of a live number at `at` or the ms `now` gives, and tells `onRecord` that ms. */
@@ -89,6 +113,17 @@ export function eventRecorder(
   };
   return {
     log: log.input,
+    set(contract, name, value, target) {
+      const at = now();
+      const before = versionOf(log.input);
+      log.set(at, contract, name, value, target);
+      if (versionOf(log.input) !== before) onRecord(at);
+    },
+    trigger(contract, name, value, target) {
+      const at = now();
+      log.trigger(at, contract, name, value, target);
+      onRecord(at);
+    },
     record,
     sample(name, value, target, explicitAt) {
       if (!Number.isFinite(value))
@@ -193,7 +228,9 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
     recorder.record(name, target, point);
   const driver: EventDriver = {
     now: (): Time => liveAt(elapsed()),
-    events: (): Input => recorder.log,
+    input: (): Input => recorder.log,
+    set: recorder.set,
+    trigger: recorder.trigger,
     options,
     subscribe(listener) {
       listeners.add(listener);

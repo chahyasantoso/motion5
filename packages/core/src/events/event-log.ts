@@ -374,6 +374,8 @@ export function inputLog(options?: { readonly windowMs?: number }): InputLog {
   return {
     input,
     set(at, _contract, name, value, target) {
+      if (!Number.isFinite(value))
+        throw new RangeError(`set "${name}": the value must be a finite number, not ${value}.`);
       const prev = latestValueByName.get(name)?.get(target);
       if (prev !== undefined && (Object.is(prev.value, value) || prev.value === value)) {
         return;
@@ -385,6 +387,8 @@ export function inputLog(options?: { readonly windowMs?: number }): InputLog {
       insert(entry);
     },
     trigger(at, _contract, name, value = 1, target) {
+      if (!Number.isFinite(value))
+        throw new RangeError(`trigger "${name}": the value must be a finite number, not ${value}.`);
       const entry: InputEntry =
         target === undefined
           ? { kind: "trigger", name, at, value }

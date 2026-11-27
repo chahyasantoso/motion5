@@ -102,7 +102,7 @@ describe("useSignal", () => {
   it("renders a signal's value at once and again only when an event changes it", async () => {
     const tapInputs = inputs({ triggers: { tap: {} } });
     const log = inputLog();
-    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.input };
+    const driver = { ...manualDriver({ durationMs: 1000 }), input: () => log.input };
     const createDriver = () => driver;
     const taps = state(0, (count, event) => (event.name === "tap" ? count + 1 : count));
     const seen: (number | undefined)[] = [];
@@ -145,7 +145,7 @@ describe("useWatch", () => {
       renderer = create(createElement(Card), { createNodeMock: () => node });
     });
     listeners.get("pointerenter")?.();
-    expect(driver.events?.()).toEqual([
+    expect(driver.input()).toEqual([
       { kind: "trigger", name: "enter", at: 0, value: 1, target: "card" },
     ]);
     await act(() => renderer?.unmount());

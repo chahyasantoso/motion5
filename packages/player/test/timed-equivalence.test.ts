@@ -55,7 +55,7 @@ function buildScene(): Signal<ScenePose> {
 function withEvents(base: ManualDriver, events: Input): ManualDriver {
   return {
     ...base,
-    events: () => events,
+    input: () => events,
   };
 }
 

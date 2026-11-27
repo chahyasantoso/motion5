@@ -1,7 +1,13 @@
-import { atProgress, type Input, type Time, unreachable } from "@gerak/core";
-import { createLoopCycle, type LoopCycle } from "./loop-cycle";
+import {
+  atProgress,
+  elapsedOf,
+  inputLog,
+  unreachable,
+  versionOf,
+  type Time,
+} from "@gerak/core";
 import type { Driver } from "@gerak/player";
-import { eventRecorder, type EventSource } from "./events";
+import { createLoopCycle, type LoopCycle } from "./loop-cycle";
 import { pageFrames, type FrameSource } from "./frames";
 
 /** Settings of `clockDriver`: `duration` ms, `delay`, `repeat`, `yoyo`, `autoplay`, `frames` and `reducedMotion`. */
@@ -48,13 +54,6 @@ export interface ClockDriver extends Driver {
   setDuration(ms: number): void;
   /** Whether frames are advancing it now; subscribers hear each change. */
   playing(): boolean;
-  /** Logs the pointer events of `element` for `target` at the clock's ms, and keeps the clock running past its
-   * end while any is watched; a seek keeps the log, `replay` forgets it. */
-  watch(target: string, element: EventSource): () => void;
-  /** Logs a sample of a live number at the clock's ms, and keeps the clock running past its end until
-   * `SAMPLE_SETTLE_MS` after the latest; a seek keeps the log, `replay` forgets it. */
-  send(name: string, value: number, target?: string): void;
-  events(): Input;
   /** Calls `listener` each time the clock forgets its log: a loop that wraps, or `replay`. */
   forgets(listener: () => void): () => void;
 }
@@ -83,22 +82,20 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   let rate = 1;
   let range: { readonly from: number; readonly to: number } | undefined;
   let running = false;
-  // While it watches a member the clock runs on past the end, so a later hover still plays out.
-  let watching = 0;
   let overtime = 0;
-  // A sample likewise keeps it running past the end until this ms.
+  // An input keeps it running past the end until this ms.
   let settleUntil = -Infinity;
-  // Whether the clock stopped by itself at its end, so a sample may start it again.
+  // Whether the clock stopped by itself at its end, so an input may start it again.
   let ended = false;
   const elapsedNow = (): number => progress * duration + overtime;
-  const runsOver = (): boolean => watching > 0 || elapsedNow() < settleUntil;
+  const runsOver = (): boolean => elapsedNow() < settleUntil;
   const notify = (): void => {
     for (const listener of [...listeners]) listener();
   };
-  const recorder = eventRecorder(elapsedNow, () => notify());
+  const log = inputLog();
   const forgetters = new Set<() => void>();
   const forget = (): void => {
-    recorder.clear();
+    log.clear();
     settleUntil = -Infinity;
     for (const listener of [...forgetters]) listener();
   };
@@ -162,11 +159,20 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     running = true;
     request();
   };
+  const extendSettle = (at: number): void => {
+    settleUntil = Math.max(settleUntil, at + SAMPLE_SETTLE_MS);
+    if (ended && range === undefined) {
+      ended = false;
+      running = true;
+      request();
+    }
+  };
   const driver: ClockDriver = {
     now: () => ({
       progress,
       clock: { kind: "timed", elapsed: elapsedNow(), length: duration },
     }),
+    input: () => log.input,
     options,
     subscribe(listener) {
       listeners.add(listener);
@@ -185,27 +191,19 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       notify();
     },
     playing: () => running,
-    watch(target, element) {
-      const unwatch = recorder.watch(target, element);
-      watching += 1;
-      let watched = true;
-      return () => {
-        if (!watched) return;
-        watched = false;
-        watching -= 1;
-        unwatch();
-      };
+    set(contract, name, value, target) {
+      const at = elapsedNow();
+      const before = versionOf(log.input);
+      log.set(at, contract, name, value, target);
+      extendSettle(at);
+      if (versionOf(log.input) !== before) notify();
     },
-    send(name, value, target) {
-      recorder.sample(name, value, target);
-      settleUntil = Math.max(settleUntil, elapsedNow() + SAMPLE_SETTLE_MS);
-      if (ended && range === undefined) {
-        ended = false;
-        running = true;
-        request();
-      }
+    trigger(contract, name, value, target) {
+      const at = elapsedNow();
+      log.trigger(at, contract, name, value, target);
+      extendSettle(at);
+      notify();
     },
-    events: () => recorder.log,
     forgets(listener) {
       forgetters.add(listener);
       return () => {
@@ -231,7 +229,6 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     },
     dispose() {
       stop();
-      recorder.dispose();
       listeners.clear();
       forgetters.clear();
     },
@@ -307,18 +304,38 @@ export function scrollDriver(options: {
   };
   const offset = (): number => target.scrollY ?? target.scrollTop ?? 0;
   const span = options.end - options.start;
+  const log = inputLog();
+  const listeners = new Set<() => void>();
   const now = (): Time => {
     const progress = span <= 0 ? 1 : Math.max(0, Math.min(1, (offset() - options.start) / span));
     return length === undefined
       ? atProgress(progress)
       : { progress, clock: { kind: "timed", elapsed: progress * length, length } };
   };
+  const elapsedMs = (): number => (length === undefined ? 0 : (elapsedOf(now().clock) ?? 0));
+  const tell = (): void => {
+    for (const listener of [...listeners]) listener();
+  };
   return {
     now,
+    input: () => log.input,
     options,
+    set(contract, name, value, targetName) {
+      const before = versionOf(log.input);
+      log.set(elapsedMs(), contract, name, value, targetName);
+      if (versionOf(log.input) !== before) tell();
+    },
+    trigger(contract, name, value, targetName) {
+      log.trigger(elapsedMs(), contract, name, value, targetName);
+      tell();
+    },
     subscribe(listener) {
-      target.addEventListener("scroll", listener);
-      return () => target.removeEventListener("scroll", listener);
+      if (listeners.size === 0) target.addEventListener("scroll", tell);
+      listeners.add(listener);
+      return () => {
+        if (!listeners.delete(listener)) return;
+        if (listeners.size === 0) target.removeEventListener("scroll", tell);
+      };
     },
   };
 }

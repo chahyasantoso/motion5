@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { inputs } from "@gerak/core";
 import { eventDriver, type EventSource, type FrameSource, type PointerLike } from "@gerak/dom";
 
 function frames(): FrameSource & { run(): void; readonly waiting: number } {
@@ -58,10 +59,18 @@ describe("eventDriver", () => {
     ms = 1300;
     card.fire("pointerleave");
     card.fire("click");
-    expect(driver.events?.()).toEqual([
+    expect(driver.input()).toEqual([
       { kind: "trigger", name: "enter", at: 200, value: 1, target: "card" },
       { kind: "trigger", name: "leave", at: 300, value: 1, target: "card" },
       { kind: "trigger", name: "click", at: 300, value: 1, target: "card" },
+    ]);
+    const contract = inputs({ values: { level: {} }, triggers: { ping: {} } });
+    ms = 1400;
+    driver.set(contract, "level", 5);
+    driver.trigger(contract, "ping");
+    expect(driver.input().slice(-2)).toEqual([
+      { kind: "value", name: "level", at: 400, value: 5 },
+      { kind: "trigger", name: "ping", at: 400, value: 1 },
     ]);
   });
 
