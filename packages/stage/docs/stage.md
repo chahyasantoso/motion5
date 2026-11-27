@@ -62,7 +62,7 @@ Scenes can share beats, states and signals. A scene passed to `scene(...)` as an
 - an element with no motion, such as a slot or a section another motion reads;
 - another scene, merged onto this one's clock;
 - `shot(scene, { name?, length?, until?, overlap? })`: a scene written from 0 that plays after the shot before it. Its
-  beats become `<shot>.<beat>` on the scene's clock, its length is its `length`, `until`, or last beat's end, and `overlap` starts it early. Inside it, time starts at 0 and it sees only the events from its start on (each `at` and scene cue shifted back by its start), and `context.read(x, { time })` takes a time
+  beats become `<shot>.<beat>` on the scene's clock, its length is its `length`, `until`, or last beat's end, and `overlap` starts it early. Inside it, time starts at 0 and it sees only the input from its start on (each `at` and scene cue shifted back by its start), and `context.read(x, { time })` takes a time
   on the shot's clock without mutating forward cursor state; its members show only during it unless they show wider. A shot holds no scroll or trigger beats
   and no shots; a scene holding shots may join another scene only before that one's shots. `stage.shots` lists each shot's `{ name, index, from, to, overlap }`.
 
@@ -76,12 +76,13 @@ Each call returns a new binding and never changes the element, so a list spreads
 
 ## App input
 
-The app owns rules and every state that lasts (what is selected, what is in a jar, what a click means); a scene only describes motion from two kinds of input declared once in a typed `Contract` via `inputs({ values?, triggers? })`:
+The app owns rules and every state that lasts (what is selected, what a click means); a scene only describes motion from two kinds of input declared once in a typed `Contract` via `inputs({ values?, triggers? })`:
 
 - **Values** (`value(contract, name, target?)`): how something is now, as a `State<number>` starting at 0 (`springTo`, `easeTo`, `transition`, and `follow` take it). `valueAt(contract, name, trigger, target?)` reads the value as it was when `trigger` arrived.
-- **Triggers** (`triggers(contract, name, target?)`): discrete moments with `at <= now` in arrival order (the retention window on a live clock, all of them on a timed clock), which `react` plays on.
+- **Triggers** (`triggers(contract, name, target?)`): discrete moments with `at <= now` in arrival order (kept for the live clock's window, or all of them on a timed clock), which `react` plays on.
 - **Sending from the app:** `mounted.set(contract, name, value, target?)` and `mounted.trigger(contract, name, value?, target?)` forward to `mounted.driver` and record into its `inputLog`, read back via `mounted.driver.input()`.
-- `state` and `tally` stay as folds for timed scenes; on a live page a fold sees only each name-and-target's latest entry and the retention window.
+- **DOM listening and shared clocks:** `mount` attaches no user-interaction listeners beyond passive `scroll`; a page opts into hover, press, focus, and pointer (`pageInputs`) with `listen`, and several mounts can share one `liveClock` via `{ kind: "driver", driver }` — see [page mount](../../dom/docs/page.md).
+- `state` and `tally` stay as folds for timed scenes and cues; on a live page a fold sees only each name-and-target's latest entry and the live window.
 
 ## Motions
 
@@ -111,9 +112,9 @@ Two elements that react to one thing share one signal; wrap it in `shared` when 
 - **Strokes:** `drawn` and `drawnFrom` dash a `<path>` by length. A dash of a few px is barely visible; `stroke-linecap: round` in CSS shows it as a dot.
 - More on layout, order, text spacing and CSS values: [drawing](../../dom/docs/drawing.md).
 
-## Events and re-measure
+## Input and re-measure
 
-- Read app values and opt-in `listen` values (`hovered`, `pressed`, `focused`, `pointer-x`, `pointer-y` on `pageInputs`) with `value(contract, name, target?)` and `triggers(contract, name, target?)`; `cues` in `scene`'s options script them for timed playback.
+- Read app values and opt-in `listen` values (`hovered`, `pressed`, `focused`, `pointer-x`, `pointer-y` on `pageInputs`) with `value(contract, name, target?)`, `valueAt(contract, name, trigger, target?)`, and `triggers(contract, name, target?)`; `cues` in `scene`'s options script them for timed playback.
 - When page CSS or viewport changes and the mount re-measures (`ResizeObserver`, `resize`, font load, or `mounted.remeasure()`), `carry` transitions any element whose rest box moved from its old box to its new one.
 
 ## Checking

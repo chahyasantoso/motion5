@@ -12,8 +12,8 @@ const sim = simulate(builtinWorld(), (world) => {
 }, {
   spawn: (event, world) => {
     if (event.name === "click")
-      world.addBody({ id: `bit${event.at}`, shape: { kind: "box", width: 14, height: 8 }, x: event.x ?? 0, y: event.y ?? 0 });
+      world.addBody({ id: `bit${event.at}`, shape: { kind: "box", width: 14, height: 8 }, x: event.point?.x ?? 0, y: event.point?.y ?? 0 });
   },
 });
-sim.place(`bit${click.at}`, time, events);
+sim.place(`bit${click.at}`, time, input);
 ```

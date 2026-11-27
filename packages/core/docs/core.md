@@ -4,7 +4,7 @@ Read this page whole before writing a scene. It says how core works; each refere
 
 ## The model
 
-A scene is a pure function of time and events. Every frame asks it again; it keeps no state. A motion answers the same to the same reads, so a renderer may skip a motion whose reads have not changed.
+A scene is a pure function of time and input. Every frame asks it again; it keeps no state. A motion answers the same to the same reads, so a renderer may skip a motion whose reads have not changed.
 
 ```text
 Time -> timing (span, lanes, loop) -> 0..1 progress -> curve (ease, envelope, path) -> pose -> combine
@@ -61,16 +61,16 @@ Each is built from options, then given a signal, and returns a signal of the sam
 
 Each has a `3d` twin where the pose type needs one. `smear`, `trail` and `trailTurn` are the parts they are built from. Slow in and out are eases; staging and appeal are not functions.
 
-## State from events
+## App input and state
 
-Inputs are `InputEntry` records (`{ kind: "value" | "trigger", name, at, value, target?, other?, point? }`), oldest first. On a live page, the app owns rules and lasting state, and sends values and triggers through a typed `Contract` declared once with `inputs({ values?, triggers? })`.
+The app owns rules and every state that lasts, and sends **values** (how things are now) and **triggers** (something just happened) through one typed port (`Driver.set` / `Driver.trigger`) checked against a declared `Contract` (`inputs({ values?, triggers? })`). Inputs are `InputEntry` records (`{ kind: "value" | "trigger", name, at, value, target?, other?, point? }`), oldest first.
 
 - `value(contract, name, target?)` returns a `State<number>` reading `"value"` entries (0 before any set), so `springTo`, `easeTo`, `transition`, and `@gerak/moves`'s `follow` take it.
 - `valueAt(contract, name, trigger, target?)` returns a `Signal<number>` for the value held when `trigger` arrived, by arrival order (`inputSerialsOf`).
-- `triggers(contract, name, target?)` returns a `Signal<readonly Trigger[]>` of every retained trigger with `at <= now` in arrival order (the retention window on a live clock, all of them on a timed clock), which `@gerak/moves`'s `react` plays on.
-- `state(start, rule, { target? })` and `tally` stay as folds for timed scenes; on a live page a fold sees only each name-and-target's latest entry and the retention window, because lasting state is the app's.
-- `scroll.y` folds `"scroll"` value entries in px (from 0); `pointer.x` and `pointer.y` fold `"pointer-x"` and `"pointer-y"` value entries from 0 to 1 across the viewport (from 0.5). `pageInputs` and `INPUT_EVENTS` name those page inputs; `springTo(scroll.y, (y) => y)` gives a scroll position that trails the page (a scroll beat's `smooth` uses it), and a [page mount](../../dom/docs/page.md) streams both from the live page.
-- `inputLog({ windowMs? })` keeps a typed log of entries in order; when given `windowMs`, older entries drop in batches past twice the window while keeping each name-and-target's latest. Every `Driver` owns one and exposes `input()`, `set(contract, name, value, target?)`, and `trigger(contract, name, value?, target?)`.
+- `triggers(contract, name, target?)` returns a `Signal<readonly Trigger[]>` of triggers with `at <= now` in arrival order (the live clock's window on a live page, all of them on a timed clock), which `@gerak/moves`'s `react` plays on.
+- `state(start, rule, { target? })` and `tally` stay as folds for timed scenes and cues; on a live page a fold sees only each name-and-target's latest entry and the live window, because lasting state is the app's.
+- `scroll.y` reads `"scroll"` value entries in px (from 0); `pointer.x` and `pointer.y` read `"pointer-x"` and `"pointer-y"` value entries from 0 to 1 across the viewport (from 0.5). `pageInputs` declares the built-in page values (`scroll`, `pointer-x`, `pointer-y`, `hovered`, `pressed`, `focused`); `springTo(scroll.y, (y) => y)` trails page scroll, and a [page mount](../../dom/docs/page.md) reads scroll once per frame while a page opts into `listen` for hover, press, focus and pointer.
+- `inputLog({ windowMs? })` keeps a typed log in order; when given `windowMs` (as `liveClock` does with `max(settleMs ?? 2000, 4000)`), older entries drop in batches past twice the window while keeping each name-and-target's latest. Every `Driver` owns one and exposes `input()`, `set`, and `trigger`.
 - `createStore`, `withStore`, and `withProbeStore` isolate stateful cursors per `Player` (`RuntimeStore`) and keep backward probes from mutating forward state.
 - `transition(state, options)` and `transition(state, pick, options)` return a `Signal<Transition<S>>` (`{ current, previous, progress, active }`) with `ms: number | ((from, to) => number)` and optional `ease`, restarting from mid-change and settling on untimed clocks.
 - `springTo(state, pick)` springs and `easeTo(state, pick, { ms })` eases to what `pick` reads, from wherever the value is when the state changes.

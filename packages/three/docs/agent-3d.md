@@ -88,7 +88,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
   `{ Jaw: (pose) => { poses["Jaw"] = pose; } }`, and call `applyBones(skeleton, poses)` in `draw` before rendering.
   Capture before moving or turning the model; place the model by a parent group instead.
 - **Talking:** drive a jaw bone (`{ rotationX: open * 18 }`) or a morph target from
-  `follow(value(voice, "mouthOpen"))(time, events)`, with `voice = inputs({ values: { mouthOpen: {} } })` and the samples (`talk.json`, imported with
+  `follow(value(voice, "mouthOpen"))(time, input)`, with `voice = inputs({ values: { mouthOpen: {} } })` and the `{ kind: "value", name: "mouthOpen", at, value }` samples (`talk.json`, imported with
   `with { type: "json" }`) exported as `cues`. Morph targets are custom numbers: `morphTargets(gltf.scene)` from
   `"@gerak/three"` is the fourth argument to `applyPose3d`, and `pose.custom` names the targets, clamped to `[0, 1]`.
 - **Readiness:** a page that awaits an async asset before calling `mount` registers `ready(bootstrap())` from `"@gerak/dom"`, warming shaders synchronously via `renderer.compile(world, camera)` + `draw()` + `renderer.getContext().finish()` (never `compileAsync` or `requestAnimationFrame`: timer-polled waits stall paused-clock page tools) so the promise settles right after mounting, and rejects from the loader's error callback, so the frame tools fail at once on a missing model instead of timing out.
@@ -133,7 +133,7 @@ sample, review and scrub with everything else.
   (`depth` greater than the object centre's) fades out over a few frames; never pop it.
 - **Drawing on the step:** `threeBinder` calls `draw` once a step, after it writes every object, and once when it
   binds. A free-running `requestAnimationFrame` loop can show the canvas a step behind the labels.
-- **Text from samples:** reveal a caption's words by how much has been said, `tally(...)(time, events) /
+- **Text from samples:** reveal a caption's words by how much has been said, `tally(...)(time, input) /
   total`, from `"@gerak/core"`, and update the text element from `mounted.player.subscribe(...)`.
 - **Reviewing a mixed piece:** the objects' `.limits` hold a jump about a fifth of the subject's size and
   `turn: 30`; the px labels keep the command's defaults. A `custom` number is judged as a ratio.
@@ -167,5 +167,5 @@ sample, review and scrub with everything else.
 - `smear3d`'s `stretch` is a share per unit a second, where `smear` counts per 1000 px a second: a 3D body moves a
   few units a second.
 - Not yet scaffolded: React Three Fiber (`--r3f`).
-- Not yet: pointer events on an object.
+- Not yet: pointer interactions directly on a 3D object.
 - A pose's `opacity` turns the affected meshes' materials transparent (supporting `Group`s, `Material[]`, and cloning shared materials automatically) and `Rest3d` restoration resets them on dispose.

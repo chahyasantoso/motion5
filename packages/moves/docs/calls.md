@@ -20,7 +20,7 @@ import {
 import { drop, fade, hop, hopLandings, rise } from "@gerak/moves";
 
 drop({ distance: 300 })(atProgress(0.5));
-scene(liveAt(1200), events);
+scene(liveAt(1200), input);
 const ms = elapsedOf(time.clock) ?? 0;
 const turnRate = ((heading(timeAt(time, ms + 8)) - heading(timeAt(time, ms - 8))) * 1000) / 16;
 
@@ -61,14 +61,13 @@ What a move answers:
 
 ```ts
 import { applyPath } from "@gerak/dom";
-import { toCubics } from "@gerak/core";
-import { anticipation, NO_EVENTS } from "@gerak/core";
+import { anticipation, NO_INPUT, toCubics } from "@gerak/core";
 import { overshoot, pulse, rise, rope } from "@gerak/moves";
 
 applyPath(path, toCubics(rope({ ...options, points })(time)));
 rise(options)(reversed(time));
 pulse(options)(repeated(time, 3));
-overshoot({ share, amount })((t) => anticipation({ share, amount })((u) => slide(options)(u))(t, NO_EVENTS))(time);
+overshoot({ share, amount })((t) => anticipation({ share, amount })((u) => slide(options)(u))(t, NO_INPUT))(time);
 ```
 
 `trail`, `follow` and `velocity` take the scene's time, never an eased one (`@gerak/core` owns `ease`, `mix`, `keyframes`, `along`, `combine`, `velocity` and `seeded`).
@@ -78,18 +77,18 @@ import { along, combine, combine3d, inputs, lift2d, mix, mixPoint, mixPose3d, se
 import { follow, react, squashed, squashed3d } from "@gerak/moves";
 
 const tail = trail((t) => body(t).rotation ?? 0, { damping: 10 });
-tail(time, events);
+tail(time, input);
 
 combine([drop(options)(time), { opacity: 0.5 }]);
 combine([slide(options)(time), squashed({ squash: 0.3, anchor: "right" })(hit)]);
-const { pose: smeared, heading } = smear(velocity(ball, time, events), { stretch: 0.2, max: 2 });
+const { pose: smeared, heading } = smear(velocity(ball, time, input), { stretch: 0.2, max: 2 });
 
 const ball = lift2d(hop({ height: 260, bounces: 2 })(time), { unitsPerPx: 0.01 });
 const head = mixPose3d(LOOK_LEFT, LOOK_RIGHT, turn.of(time, ease.cubicInOut).progress);
 const tailTurn = trailTurn((t) => body(t), { damping: 12 });
-tailTurn(time, events);
+tailTurn(time, input);
 combine3d([squashed3d({ squash: 0.3 })(landing), ball]);
-const { pose: pose3d, turn } = smear3d(velocity3d(body, time, events), { stretch: 0.08, max: 1.8 });
+const { pose: pose3d, turn } = smear3d(velocity3d(body, time, input), { stretch: 0.08, max: 1.8 });
 
 const ui = inputs({ values: { lift: { targets: ["card"] } }, triggers: { catch: {} } });
 const lift = follow(value(ui, "lift", "card"));
