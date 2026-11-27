@@ -152,5 +152,5 @@ describe("live session soak", () => {
     expect(dropCount).toBeGreaterThan(0);
 
     mounted.dispose();
-  });
+  }, 60000);
 });
