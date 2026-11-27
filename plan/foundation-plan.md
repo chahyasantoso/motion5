@@ -156,7 +156,8 @@ branch as it stands.
   `snapshot` and `restore`, and `Player.snapshot` and `Player.restore`, are deleted.
 - One `store.ts` helper hands a primitive a cell it may mutate. The six hand-written `ownerEpoch` copies in `state`,
   `changesOf`, `tally`, `springTo`, `easeTo` and `TriggerBeat` use it, and `epochOf` stops being exported.
-- No primitive returns an array it mutates later. `changesOf` returns a list that never changes after it is returned.
+- `changesOf` stays internal to core. Its list grows in place as changes arrive, and its readers read it during the
+  call; a copy-on-write copy slices it once per store epoch, never once per change.
 
 ### 8. Fixes
 
@@ -267,7 +268,7 @@ that turns a pending test green removes its entry and lowers `PENDING_CEILING` b
 | --- | --- | --- |
 | 1 | The cookie builder proof | Same poses at every sample; jar rules in the app; no motion bookkeeping in the app |
 | 2 | Tests first: I1–I10 and the soak test, written against Decision 11 | I1 passes on `main`; the others fail on the branch for the reasons above, and only for those, and sit in `test/pending.json` under the slice that turns them green, which removes them |
-| 3 | Decision 7 without the snapshot deletion: the store helper, the six copies on it, `epochOf` unexported, `changesOf` lists that never change | I1 green; existing tests green |
+| 3 | Decision 7 without the snapshot deletion: the store helper, the six copies on it, `epochOf` unexported | I1 green; existing tests green |
 | 4 | Decisions 1, 2, 5 and 6 (the port and contract, readers, retention, the input-list record) and Decision 7's snapshot deletion; every driver gains `input()` and owns its log, and one handed driver can serve two mounts | I2, I4–I6, I10 and the soak test green |
 | 5 | Decisions 3–4 and 5b (stop listening, `liveClock`, the adapter, the shared clock, pieces moved) | I3, I7, I8 and I9 green; every piece and browser test green |
 | 6 | Decision 8 | Each fix has a test that failed before it |

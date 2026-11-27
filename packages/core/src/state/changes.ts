@@ -36,14 +36,13 @@ interface ChangesCell<V> {
   seenStepRef: readonly unknown[] | undefined;
   start: V;
   list: Change<V>[];
-  returned: boolean;
   listBase: number;
   countedLogical: number;
   last: V;
 }
 
 /** The changes of what `pick` reads from `source`; a step that leaves it `Object.is` the same is none.
- * Isolated per RuntimeStore and compacts settled prefixes safely under live retention. */
+ * The list grows in place, so a reader reads it during the call and keeps none. */
 export function changesOf<S, V = number>(
   source: State<S>,
   pick: (state: S) => V,
@@ -86,23 +85,25 @@ export function changesOf<S, V = number>(
         } else {
           start = pick(source.start);
         }
+        const resetId = (existing?.resetId ?? 0) + 1;
+        const list: Change<V>[] = [];
+        CHANGE_META.set(list, { resetId, base: 0 });
         return {
-          resetId: (existing?.resetId ?? 0) + 1,
+          resetId,
           seenStepResetId: meta?.resetId,
           seenStepRef: now,
           start,
-          list: [],
-          returned: false,
+          list,
           listBase: 0,
           countedLogical: 0,
           last: start,
         };
       },
-      (existing) => ({
-        ...existing,
-        seenStepRef: now,
-        list: existing.returned ? existing.list : existing.list.slice(),
-      }),
+      (existing) => {
+        const list = existing.list.slice();
+        CHANGE_META.set(list, { resetId: existing.resetId, base: existing.listBase });
+        return { ...existing, seenStepRef: now, list };
+      },
     );
     cell.seenStepRef = now;
 
@@ -113,10 +114,6 @@ export function changesOf<S, V = number>(
       if (step === undefined) break;
       const to = pick(step.value);
       if (Object.is(to, cell.last)) continue;
-      if (cell.returned) {
-        cell.list = cell.list.slice();
-        cell.returned = false;
-      }
       cell.list.push({ at: step.at, to });
       cell.last = to;
     }
@@ -130,19 +127,10 @@ export function changesOf<S, V = number>(
       }
       if (trim > 0) {
         cell.start = cell.list[trim - 1]?.to ?? cell.start;
-        if (cell.returned) {
-          cell.list = cell.list.slice(trim);
-          cell.returned = false;
-        } else {
-          cell.list.splice(0, trim);
-        }
+        cell.list.splice(0, trim);
         cell.listBase += trim;
+        CHANGE_META.set(cell.list, { resetId: cell.resetId, base: cell.listBase });
       }
-    }
-
-    if (!cell.returned) {
-      CHANGE_META.set(cell.list, { resetId: cell.resetId, base: cell.listBase });
-      cell.returned = true;
     }
 
     return { start: cell.start, list: cell.list };
