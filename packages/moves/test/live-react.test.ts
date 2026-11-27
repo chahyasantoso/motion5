@@ -60,4 +60,26 @@ describe("react stillMoving and stateless noise1d", () => {
     // Contribution from expiring hit#0 at t=1150 is < 0.015; phase snap of hit#1 from seed=1 to seed=0 would jump > 1.
     expect(Math.abs(justAfterExpire - justBeforeExpire)).toBeLessThan(0.5);
   });
+
+  it("loses no motion for triggers inside the window when an eventLog drops older entries", () => {
+    const dropping = eventLog({ windowMs: 4000 });
+    const full = eventLog();
+    const shake = react({ on: ["hit"], kind: "shake", amplitude: 10, decay: 6, frequency: 4 });
+
+    for (let frame = 0; frame <= 20 * 60; frame += 1) {
+      const at = Math.round((frame * 1000) / 60);
+      const sample = { name: "noise", at, value: frame };
+      dropping.add(sample);
+      full.add(sample);
+      if (frame % 60 === 0 && frame > 0) {
+        const hit = { name: "hit", at };
+        dropping.add(hit);
+        full.add(hit);
+      }
+      if (at >= 16_000) {
+        expect(shake(liveAt(at), dropping.events)).toBeCloseTo(shake(liveAt(at), full.events), 9);
+      }
+    }
+    expect(dropping.events.length).toBeLessThan(full.events.length);
+  });
 });

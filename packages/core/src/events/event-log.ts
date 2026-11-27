@@ -238,11 +238,20 @@ export function derivedEvents(): DerivedEvents {
   };
 }
 
-/** A log of events that only grows. */
-export function eventLog(): EventLog {
+/** A log of events; when given `windowMs`, older entries drop in batches past twice the window except each name-and-target's latest. */
+export function eventLog(options?: { readonly windowMs?: number }): EventLog {
+  const windowMs = options?.windowMs;
+  if (windowMs !== undefined && (!Number.isFinite(windowMs) || windowMs < 0)) {
+    throw new RangeError(`eventLog: windowMs must be a finite number 0 or more, not ${windowMs}.`);
+  }
   const events: MotionEvent[] = [];
   const serials: number[] = [];
   const streamToken = {};
+  const latestByName = new Map<
+    string,
+    Map<string | undefined, { readonly at: number; readonly serial: number }>
+  >();
+  let oldestDroppableAt = Infinity;
   let generation = 0;
   let version = 0;
   let nextSerial = 1;
@@ -280,12 +289,56 @@ export function eventLog(): EventLog {
         events.splice(index, 0, event);
         serials.splice(index, 0, serial);
       }
+      if (windowMs !== undefined) {
+        let byTarget = latestByName.get(event.name);
+        if (byTarget === undefined) {
+          byTarget = new Map();
+          latestByName.set(event.name, byTarget);
+        }
+        const prev = byTarget.get(event.target);
+        if (prev === undefined || event.at >= prev.at) {
+          byTarget.set(event.target, { at: event.at, serial });
+          if (prev !== undefined && prev.at < oldestDroppableAt) oldestDroppableAt = prev.at;
+        } else if (event.at < oldestDroppableAt) {
+          oldestDroppableAt = event.at;
+        }
+        const newestAt = events[events.length - 1]?.at ?? event.at;
+        if (oldestDroppableAt < newestAt - 2 * windowMs) {
+          const cutoff = newestAt - windowMs;
+          let write = 0;
+          let nextOldest = Infinity;
+          let dropped = false;
+          for (let i = 0; i < events.length; i += 1) {
+            const entry = events[i];
+            const entrySerial = serials[i];
+            if (entry === undefined || entrySerial === undefined) continue;
+            const isLatest =
+              latestByName.get(entry.name)?.get(entry.target)?.serial === entrySerial;
+            if (entry.at < cutoff && !isLatest) {
+              dropped = true;
+              continue;
+            }
+            if (!isLatest && entry.at < nextOldest) nextOldest = entry.at;
+            if (write !== i) {
+              events[write] = entry;
+              serials[write] = entrySerial;
+            }
+            write += 1;
+          }
+          events.length = write;
+          serials.length = write;
+          oldestDroppableAt = nextOldest;
+          if (dropped) generation += 1;
+        }
+      }
       bumped();
     },
     clear() {
       changed();
       events.length = 0;
       serials.length = 0;
+      latestByName.clear();
+      oldestDroppableAt = Infinity;
       bumped();
     },
   };

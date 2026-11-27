@@ -243,6 +243,8 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   let pendingPointer: { readonly x: number; readonly y: number; readonly at: number } | undefined;
   let activeChannel: "scroll" | "pointer" | "events" = "events";
 
+  const liveWindowMs =
+    timed === undefined && given === undefined ? Math.max(settleMs, 4000) : undefined;
   const recorder: EventRecorder = eventRecorder(
     () => (given === undefined ? elapsed() : driverMs(given)),
     (at) => {
@@ -266,6 +268,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
         notify();
       }
     },
+    liveWindowMs === undefined ? undefined : { windowMs: liveWindowMs },
   );
 
   const flushPendingInputs = (): void => {

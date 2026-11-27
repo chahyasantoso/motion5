@@ -241,7 +241,9 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
       const eventsFn: unknown = Reflect.get(Object(rawMount), "events");
       const evs =
         typeof eventsFn === "function" ? Reflect.apply(eventsFn, rawMount, []) : undefined;
-      expect(Array.isArray(evs) ? evs.length : 0).toBe(6);
+      expect(Array.isArray(evs) ? evs.map((e) => Reflect.get(Object(e), "at")) : []).toEqual([
+        6000, 8000, 10000,
+      ]);
       const disposeFn: unknown = Reflect.get(Object(rawMount), "dispose");
       if (typeof disposeFn === "function") Reflect.apply(disposeFn, rawMount, []);
     } finally {

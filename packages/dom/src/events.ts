@@ -52,8 +52,11 @@ export interface EventRecorder {
 export function eventRecorder(
   now: () => number,
   onRecord: (at: number) => void = () => undefined,
+  options?: { readonly windowMs?: number },
 ): EventRecorder {
-  const log = eventLog();
+  const log = eventLog(
+    options?.windowMs === undefined ? undefined : { windowMs: options.windowMs },
+  );
   const unwatch = new Set<() => void>();
   const add = (event: Omit<MotionEvent, "at">, explicitAt?: number): void => {
     const at = explicitAt ?? now();
@@ -127,6 +130,7 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
   const frames = options.frames ?? pageFrames();
   const clock = options.clock ?? (() => globalThis.performance.now());
   const settleMs = options.settleMs ?? 2000;
+  const windowMs = Math.max(settleMs, 4000);
   const start = clock();
   const listeners = new Set<() => void>();
   const unwatch = new Set<() => void>();
@@ -144,11 +148,15 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
   const run = (): void => {
     if (handle === undefined && elapsed() < until) handle = frames.requestFrame(frame);
   };
-  const recorder = eventRecorder(elapsed, (at) => {
-    until = Math.max(until, at + settleMs);
-    notify();
-    run();
-  });
+  const recorder = eventRecorder(
+    elapsed,
+    (at) => {
+      until = Math.max(until, at + settleMs);
+      notify();
+      run();
+    },
+    { windowMs },
+  );
   const emit = (name: string, target?: string, point?: Point2d): void =>
     recorder.record(name, target, point);
   const driver: EventDriver = {

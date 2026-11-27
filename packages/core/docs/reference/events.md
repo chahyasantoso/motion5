@@ -9,7 +9,7 @@ An event is something that happened at a moment, such as a hover, a press or a l
 - **`Events`** `type Events = readonly MotionEvent[]`: Every event so far, oldest first; a scene reads it beside its time.
 - **`MotionEvent`** `type MotionEvent = { name: string; at: number; target?: string; x?: number; y?: number; value?: number; point?: EventPoint; other?: string }`: Something that happened at `at` ms on the scene's clock: a hover, a press, a landing, or a sample of a live number; `target` names where.
 - **`derivedEvents`** `(): DerivedEvents`: Creates a cached `Events` merger/filter that avoids rebuilding unchanged windows across frames.
-- **`eventLog`** `(): EventLog`: A log of events that only grows.
+- **`eventLog`** `(options?: { readonly windowMs?: number; }): EventLog`: A log of events; when given `windowMs`, older entries drop in batches past twice the window except each name-and-target's latest.
 - **`eventSerialsOf`** `(events: Events): readonly number[] | undefined`: Monotonic insertion serials aligned with `events` when backed by an `eventLog`.
 - **`generationOf`** `(events: Events): number`: An `eventLog` list's count of changes other than adding at its end, or 0 for a plain array.
 - **`sourceStreamOf`** `(events: Events): object | undefined`: Stream identity token preserved across `derivedEvents` time-window slicing of a single log.
