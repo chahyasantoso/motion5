@@ -45,12 +45,29 @@ export { mix, mixAngle, mixPoint, mixPose } from "./blend/mix";
 export { keyframes, type Key } from "./blend/keyframes";
 export { sequence, type Phase } from "./time/sequence";
 export { seeded } from "./utility/random";
-export { NO_EVENTS } from "./events/event-list";
-export { isMotionEvent, mergeEvents } from "./events/event-list";
-export { type EventPoint, type Events } from "./events/event-list";
-export { type MotionEvent } from "./events/event-list";
-export { eventLog, versionOf, type EventLog } from "./events/event-log";
-export { rawTime, stillMoving, watchClock, watchedTime, type ClockUse } from "./state/clock-watch";
+export { NO_INPUT } from "./events/event-list";
+export { isInputEntry, mergeInput } from "./events/event-list";
+export { type EventPoint, type Input } from "./events/event-list";
+export { type InputEntry } from "./events/event-list";
+export {
+  inputs,
+  pageInputs,
+  type Contract,
+  type InputSpec,
+  type TargetOf,
+} from "./events/contract";
+export {
+  notifyInputUse,
+  rawTime,
+  stillMoving,
+  watchClock,
+  watchedTime,
+  watchInputs,
+  type ClockUse,
+  type InputChannel,
+  type InputRead,
+} from "./state/clock-watch";
+export { stepMetaOf, type StepMeta } from "./state/state";
 export { lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./time/lanes";
 export { CUSTOM_FIELD, POSE_2D_FIELDS, VALUE_FIELDS } from "./fields/pose";
 export {
@@ -115,7 +132,29 @@ export { arc, arc3d, type Arc3dOptions, type ArcBendOptions } from "./principles
 export { exaggerate, exaggerate3d, type ExaggerateOptions } from "./principles/exaggerate";
 export { secondary, secondary3d } from "./principles/secondary";
 export { state, type State, type StateOptions, type Step } from "./state/state";
+export {
+  createStore,
+  storeCell,
+  storeFor,
+  withProbeStore,
+  withStore,
+  type RuntimeStore,
+  type StoreCell,
+} from "./state/store";
+export {
+  derivedInput,
+  generationOf,
+  inputLog,
+  inputSerialsOf,
+  shiftedInput,
+  sourceStreamOf,
+  versionOf,
+  type DerivedInput,
+  type InputLog,
+  type ShiftedInput,
+} from "./events/event-log";
 export { INPUT_EVENTS, pointer, scroll, type PointerState, type ScrollState } from "./state/inputs";
+export { triggers, value, valueAt, type Trigger } from "./state/readers";
 export { springTo, type SpringToOptions } from "./state/spring-to";
 export { easeTo, type EaseToOptions, type UpDown } from "./state/ease-to";
 export { transition, type Transition, type TransitionOptions } from "./state/transition";

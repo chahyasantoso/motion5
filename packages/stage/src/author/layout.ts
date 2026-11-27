@@ -1,4 +1,15 @@
-import type { Ease, Events, Pose2d } from "@gerak/core";
+import type { Ease, Input, Pose2d } from "@gerak/core";
+
+/** How a measured box moves with page scroll: normal flow, viewport-fixed, or sticky inside a pin range. */
+export type BoxPlacement =
+  | { readonly kind: "flow" }
+  | { readonly kind: "fixed" }
+  | {
+      readonly kind: "sticky";
+      readonly minY: number;
+      readonly maxY: number;
+      readonly pinY: number;
+    };
 
 /** Where a member rests once laid out: its centre and size in frame px. */
 export interface Box {
@@ -6,6 +17,7 @@ export interface Box {
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  readonly placement?: BoxPlacement | undefined;
 }
 
 /** Rest boxes by member name. */
@@ -27,6 +39,7 @@ export interface RestReader {
   has(name: string): boolean;
   keys(): readonly string[];
   object(name: string): ObjectBounds3d | undefined;
+  objectKeys(): readonly string[];
 }
 
 /** What a mount measured at `at` ms on its clock. */
@@ -43,7 +56,7 @@ export interface CarryOptions {
   readonly ms: number;
   readonly ease?: Ease | undefined;
   readonly mode?: CarryMode | undefined;
-  readonly target?: ((events: Events, rest: RestReader) => Box) | undefined;
+  readonly target?: ((events: Input, rest: RestReader) => Box) | undefined;
 }
 
 /** Moves `member` from its old rest box to its new one after a re-measure, over `options.ms`. */
@@ -55,12 +68,14 @@ export const ZERO_BOX: Box = Object.freeze({ x: 0, y: 0, width: 0, height: 0 });
 /** A `RestReader` over `rest` and optional 3D `objects`. */
 export function restReader(rest: Rest = {}, objects: ObjectRest = {}): RestReader {
   const keys = Object.freeze(Object.keys(rest));
+  const objectKeys = Object.freeze(Object.keys(objects));
   return Object.freeze({
     get: (name: string): Box => (Object.hasOwn(rest, name) ? (rest[name] ?? ZERO_BOX) : ZERO_BOX),
     has: (name: string): boolean => Object.hasOwn(rest, name),
     keys: (): readonly string[] => keys,
     object: (name: string): ObjectBounds3d | undefined =>
       Object.hasOwn(objects, name) ? objects[name] : undefined,
+    objectKeys: (): readonly string[] => objectKeys,
   });
 }
 

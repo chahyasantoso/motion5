@@ -1,188 +1,5 @@
-import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, sep } from "node:path";
-import ts from "typescript";
 import { syncHtmlCastFile } from "../page/cast-file";
-
-/** A single scanned numeric literal in source code. */
-export interface NumericLiteralSpan {
-  readonly start: number;
-  readonly end: number;
-  readonly text: string;
-  readonly value: number;
-  readonly call?: string;
-  readonly property?: string;
-}
-
-/** Result of resolving a requested scene file path. */
-export type ResolveSceneResult =
-  | { readonly kind: "ok"; readonly path: string }
-  | { readonly kind: "refused"; readonly message: string };
-
-/** Result of attempting a source file edit. */
-export type SourceEditResult =
-  | {
-      readonly kind: "written";
-      readonly source: string;
-      readonly literals: readonly NumericLiteralSpan[];
-    }
-  | {
-      readonly kind: "stale";
-      readonly source: string;
-      readonly literals: readonly NumericLiteralSpan[];
-    }
-  | { readonly kind: "refused"; readonly message: string };
-
-interface EditPayload {
-  readonly file: string;
-  readonly start: number;
-  readonly end: number;
-  readonly oldText: string;
-  readonly newText: string;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isEditPayload(value: unknown): value is EditPayload {
-  if (!isRecord(value)) return false;
-  const file = Reflect.get(value, "file");
-  const start = Reflect.get(value, "start");
-  const end = Reflect.get(value, "end");
-  const oldText = Reflect.get(value, "oldText");
-  const newText = Reflect.get(value, "newText");
-  return (
-    typeof file === "string" &&
-    typeof start === "number" &&
-    typeof end === "number" &&
-    typeof oldText === "string" &&
-    typeof newText === "string"
-  );
-}
-
-function enclosingCallAndProperty(node: ts.Node): {
-  readonly call?: string;
-  readonly property?: string;
-} {
-  const parent = node.parent;
-  if (parent === undefined || !ts.isPropertyAssignment(parent)) {
-    return {};
-  }
-  let property: string | undefined;
-  if (ts.isIdentifier(parent.name) || ts.isStringLiteral(parent.name)) {
-    property = parent.name.text;
-  }
-  const obj = parent.parent;
-  let call: string | undefined;
-  if (obj !== undefined && ts.isObjectLiteralExpression(obj)) {
-    const callNode = obj.parent;
-    if (
-      callNode !== undefined &&
-      ts.isCallExpression(callNode) &&
-      ts.isIdentifier(callNode.expression)
-    ) {
-      call = callNode.expression.text;
-    }
-  }
-  return {
-    ...(call !== undefined ? { call } : {}),
-    ...(property !== undefined ? { property } : {}),
-  };
-}
-
-/** The number a literal, or a minus sign and a literal, stands for, read as the compiler reads it. */
-function numericValue(node: ts.Node): number | undefined {
-  if (ts.isNumericLiteral(node)) return Number(node.text);
-  if (
-    ts.isPrefixUnaryExpression(node) &&
-    node.operator === ts.SyntaxKind.MinusToken &&
-    ts.isNumericLiteral(node.operand)
-  )
-    return -Number(node.operand.text);
-  return undefined;
-}
-
-/** Scans all numeric literals in TypeScript source and their enclosing call and property. */
-export function scanNumericLiterals(source: string): readonly NumericLiteralSpan[] {
-  const sf = ts.createSourceFile(
-    "scene.ts",
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
-  const spans: NumericLiteralSpan[] = [];
-
-  function visit(node: ts.Node): void {
-    const value = numericValue(node);
-    if (value !== undefined) {
-      const start = node.getStart(sf);
-      const end = node.getEnd();
-      const text = source.slice(start, end);
-      const { call, property } = enclosingCallAndProperty(node);
-      spans.push({
-        start,
-        end,
-        text,
-        value,
-        ...(call !== undefined ? { call } : {}),
-        ...(property !== undefined ? { property } : {}),
-      });
-      return;
-    }
-
-    ts.forEachChild(node, visit);
-  }
-
-  visit(sf);
-  return spans;
-}
-
-/** Resolves a scene file path relative to appRoot and verifies it stays inside `appRoot` (and `apps/` when `repoRoot` is set). */
-export function resolveSceneFile(
-  fileParam: string,
-  appRoot: string,
-  repoRoot?: string,
-): ResolveSceneResult {
-  if (!fileParam.endsWith("-scene.ts")) {
-    return { kind: "refused", message: "Path must be a scene file ending in -scene.ts." };
-  }
-  const fullAppRoot = resolve(appRoot);
-  const fullPath = resolve(fullAppRoot, fileParam);
-  if (!fullPath.startsWith(fullAppRoot + sep)) {
-    return { kind: "refused", message: "Path must stay inside the pieces folder." };
-  }
-  if (repoRoot !== undefined && !fullPath.startsWith(resolve(repoRoot, "apps") + sep)) {
-    return { kind: "refused", message: "Path must stay inside apps/." };
-  }
-  return { kind: "ok", path: fullPath };
-}
-
-const NUMBER_TEXT = /^-?\d+(?:\.\d+)?$/;
-
-/** Writes a plain number over a numeric literal that still reads `oldText`; any other span is stale. */
-export function applySourceEdit(
-  filePath: string,
-  edit: {
-    readonly start: number;
-    readonly end: number;
-    readonly oldText: string;
-    readonly newText: string;
-  },
-): SourceEditResult {
-  if (!NUMBER_TEXT.test(edit.newText)) {
-    return { kind: "refused", message: "An edit may only write a plain number." };
-  }
-  const current = readFileSync(filePath, "utf8");
-  const literals = scanNumericLiterals(current);
-  const literal = literals.find((span) => span.start === edit.start && span.end === edit.end);
-  if (literal === undefined || literal.text !== edit.oldText) {
-    return { kind: "stale", source: current, literals };
-  }
-  const next = current.slice(0, edit.start) + edit.newText + current.slice(edit.end);
-  writeFileSync(filePath, next, "utf8");
-  return { kind: "written", source: next, literals: scanNumericLiterals(next) };
-}
 
 /** Returns true only for non-production serve commands. */
 export function canAttachLiveEndpoints(config: {
@@ -198,7 +15,7 @@ function firstHeader(value: string | readonly string[] | undefined): string | un
   return typeof value === "string" ? value : value?.[0];
 }
 
-/** Whether a request comes from a page this server serves, or from no page at all; another site's page is refused. */
+/** Whether a request comes from a page this server serves, or from no page at all. */
 function isOwnRequest(headers: MotionLiveHeaders | undefined): boolean {
   const site = firstHeader(headers?.["sec-fetch-site"]);
   if (site !== undefined) return site === "same-origin" || site === "none";
@@ -206,17 +23,6 @@ function isOwnRequest(headers: MotionLiveHeaders | undefined): boolean {
   if (origin === undefined) return true;
   const host = firstHeader(headers?.["host"]);
   return host !== undefined && URL.canParse(origin) && new URL(origin).host === host;
-}
-
-function statusOf(result: SourceEditResult): number {
-  switch (result.kind) {
-    case "written":
-      return 200;
-    case "stale":
-      return 409;
-    case "refused":
-      return 400;
-  }
 }
 
 export interface MotionLiveRequest {
@@ -259,7 +65,7 @@ export interface MotionLivePlugin {
   configureServer(server: MotionLiveServer): void;
 }
 
-/** What a hot module appends: its stamp, the errors Vite reports, and the update it hands the page. */
+/** What a hot module appends: its stamp, Vite errors, and the update it hands the page. */
 const HOT_SWAP =
   `export const __motionStamp = Number(new URL(import.meta.url).searchParams.get("t") ?? 0);\n` +
   `if (import.meta.hot) {\n` +
@@ -284,7 +90,7 @@ function isStageSource(code: string): boolean {
   return /\bexport\s+default\b/.test(code) && /\bscene\s*\(/.test(code);
 }
 
-/** Provides live HMR scene transform and source/edit endpoints for the live editor. */
+/** Provides live HMR scene transforms and HTML cast sync for dev servers. */
 export function motionLivePlugin(options?: {
   readonly appRoot?: string;
   readonly repoRoot?: string;
@@ -335,73 +141,6 @@ export function motionLivePlugin(options?: {
           res.end(JSON.stringify({ error: "Only this server's own pages may read or edit." }));
           return;
         }
-        if (req.method === "GET" && url.pathname === "/__motion/source") {
-          const file = url.searchParams.get("file") ?? "";
-          const resolved = resolveSceneFile(file, appRoot, options?.repoRoot);
-          if (resolved.kind === "refused") {
-            res.statusCode = 403;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: resolved.message }));
-            return;
-          }
-          try {
-            const source = readFileSync(resolved.path, "utf8");
-            const literals = scanNumericLiterals(source);
-            res.statusCode = 200;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ source, literals }));
-          } catch (err: unknown) {
-            res.statusCode = 500;
-            res.setHeader("Content-Type", "application/json");
-            const message = err instanceof Error ? err.message : String(err);
-            res.end(JSON.stringify({ error: message }));
-          }
-          return;
-        }
-
-        if (req.method === "POST" && url.pathname === "/__motion/edit") {
-          let body = "";
-          req.on("data", (chunk: Buffer | string) => {
-            body += chunk.toString();
-          });
-          req.on("end", () => {
-            try {
-              const parsed: unknown = JSON.parse(body);
-              if (!isEditPayload(parsed)) {
-                res.statusCode = 400;
-                res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({ error: "Invalid edit payload." }));
-                return;
-              }
-              const resolved = resolveSceneFile(parsed.file, appRoot, options?.repoRoot);
-              if (resolved.kind === "refused") {
-                res.statusCode = 403;
-                res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({ error: resolved.message }));
-                return;
-              }
-              const result = applySourceEdit(resolved.path, {
-                start: parsed.start,
-                end: parsed.end,
-                oldText: parsed.oldText,
-                newText: parsed.newText,
-              });
-              if (result.kind === "written") {
-                server.watcher?.emit("change", resolved.path);
-              }
-              res.statusCode = statusOf(result);
-              res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify(result));
-            } catch (err: unknown) {
-              res.statusCode = 500;
-              res.setHeader("Content-Type", "application/json");
-              const message = err instanceof Error ? err.message : String(err);
-              res.end(JSON.stringify({ error: message }));
-            }
-          });
-          return;
-        }
-
         next();
       });
     },

@@ -7,7 +7,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
 ## The loop
 
 1. `npx gerak new <name> --three` writes a page (`<name>.html`), its entry, a React component and `<name>-scene.ts`, a `scene`
-   piece with one `object("box")` and one `box("label")` pinned over it, starting `threeBinder(world, { draw }).start(player, stage)`. To measure and play DOM and 3D together under one cast without repeating renderer/camera boilerplate, use `createStage3d(canvas, lens, { near?, far?, maxPixelRatio?, objects?, fallbackSize? })` (which wires an empty `Scene`, `PerspectiveCamera(lens)`, `WebGLRenderer`, DPR-clamped `resize`, `draw`, `dispose`, and `threeBinder`, adding zero preset lights, materials, tone mapping, or shadows) and pass `stage3d.binder` to `mount(piece, { clock, root, binders })` over `data-cast` elements on the page.
+   piece with one `object("box")` and one `box("label")` pinned over it, starting `threeBinder(world, { draw }).start(player, stage)`. To measure and play DOM and 3D together under one cast without repeating renderer/camera boilerplate, use `createStage3d(canvas, lens, { near?, far?, maxPixelRatio?, objects?, writers?, fallbackSize? })` (which wires an empty `Scene`, `PerspectiveCamera(lens)`, `WebGLRenderer`, DPR-clamped `resize`, `draw`, `dispose`, and `threeBinder`, adding zero preset lights, materials, tone mapping, or shadows) and pass `stage3d.binder` to `mount(piece, { clock, root, binders })` over `data-cast` elements on the page.
 2. Write the piece. An object takes motions that return `Pose3d`: `{ x, y, z, rotation, rotationX, rotationY,
    scale, scaleX, scaleY, scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px. A 2D motion
    on an object, or a 3D one on a box, does not compile.
@@ -31,7 +31,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
   `opacity` never sets `visible`.
 - An object's origin is the `Object3D`'s origin. To turn or squash about another point, place the mesh in a parent `THREE.Group` and pose the parent.
 - Every 2D move works in 3D through `lift2d(pose, { unitsPerPx })`: it scales px to units and flips y.
-- `threeBinder(world, { objects?, resize?, draw? })` matches each scene `object` by `world.getObjectByName(name)` or by the override map `objects[name]`, invokes optional `resize` before initial `measure()` and inside `remeasure()` before measuring DOM and 3D bounds, and measures local `Box3` rest `{ width, height, depth }` per bound `Object3D` via `.measure()`. For an `Object3D`, its position when bound is its rest, and turns and scales are written whole. For `object(name, { parts: true })`, `threeBinder` binds an `Object3D[]` override or the `children` of a named `THREE.Group`, calls the list's `(index, count) => Pose3d` target via `listPose3d`, reports part counts in `.counts()`, and writes per-part bounds `name.<i>` beside `name` in `.measure()`. `objects` also accepts a writer `(pose, visible) => void` for anything not posed whole, such as a bone, or a model whose `custom` numbers drive morph targets
+- `threeBinder(world, { objects?, writers?, resize?, draw? })` matches each scene `object` by `world.getObjectByName(name)` or by the override map `objects[name]`, invokes optional `resize` before initial `measure()` and inside `remeasure()` before measuring DOM and 3D bounds, and measures local `Box3` rest `{ width, height, depth }` per bound `Object3D` via `.measure()`. For an `Object3D`, its full `Rest3d` (`position`, `quaternion`, `scale`, `visible`, rotation order, and baseline material opacity/transparency, cloning shared materials lazily when mutated) is captured on bind and restored on dispose, and turns and scales are applied cleanly relative to rest. On each step, `draw()` runs only when bound 3D poses or visibility changed since the last draw. For `object(name, { parts: true })`, `threeBinder` binds an `Object3D[]` override or the `children` of a named `THREE.Group`, calls the list's `(index, count) => Pose3d` target via `listPose3d`, invokes optional `writers[name](object, pose, index)` each frame a member is written after its transform write, reports part counts in `.counts()`, and writes per-part bounds `name.<i>` beside `name` in `.measure()`. `objects` also accepts a writer `(pose, visible) => void` for anything not posed whole, such as a bone, or a model whose `custom` numbers drive morph targets
   (`(pose) => applyPose3d(model, pose, undefined, morphTargets(model))`). When passed in `mount`'s `binders`, every object must be claimed by exactly one binder or `mount` throws and names it.
 
 ## The principles in 3D
@@ -88,7 +88,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
   `{ Jaw: (pose) => { poses["Jaw"] = pose; } }`, and call `applyBones(skeleton, poses)` in `draw` before rendering.
   Capture before moving or turning the model; place the model by a parent group instead.
 - **Talking:** drive a jaw bone (`{ rotationX: open * 18 }`) or a morph target from
-  `follow({ start: 0, on: { mouthOpen: "value" } })(time, events)`, with the samples (`talk.json`, imported with
+  `follow(value(voice, "mouthOpen"))(time, input)`, with `voice = inputs({ values: { mouthOpen: {} } })` and the `{ kind: "value", name: "mouthOpen", at, value }` samples (`talk.json`, imported with
   `with { type: "json" }`) exported as `cues`. Morph targets are custom numbers: `morphTargets(gltf.scene)` from
   `"@gerak/three"` is the fourth argument to `applyPose3d`, and `pose.custom` names the targets, clamped to `[0, 1]`.
 - **Readiness:** a page that awaits an async asset before calling `mount` registers `ready(bootstrap())` from `"@gerak/dom"`, warming shaders synchronously via `renderer.compile(world, camera)` + `draw()` + `renderer.getContext().finish()` (never `compileAsync` or `requestAnimationFrame`: timer-polled waits stall paused-clock page tools) so the promise settles right after mounting, and rejects from the loader's error callback, so the frame tools fail at once on a missing model instead of timing out.
@@ -133,7 +133,7 @@ sample, review and scrub with everything else.
   (`depth` greater than the object centre's) fades out over a few frames; never pop it.
 - **Drawing on the step:** `threeBinder` calls `draw` once a step, after it writes every object, and once when it
   binds. A free-running `requestAnimationFrame` loop can show the canvas a step behind the labels.
-- **Text from samples:** reveal a caption's words by how much has been said, `tally(...)(time, events) /
+- **Text from samples:** reveal a caption's words by how much has been said, `tally(...)(time, input) /
   total`, from `"@gerak/core"`, and update the text element from `mounted.player.subscribe(...)`.
 - **Reviewing a mixed piece:** the objects' `.limits` hold a jump about a fifth of the subject's size and
   `turn: 30`; the px labels keep the command's defaults. A `custom` number is judged as a ratio.
@@ -167,6 +167,5 @@ sample, review and scrub with everything else.
 - `smear3d`'s `stretch` is a share per unit a second, where `smear` counts per 1000 px a second: a 3D body moves a
   few units a second.
 - Not yet scaffolded: React Three Fiber (`--r3f`).
-- Not yet: pointer events on an object.
-- A pose's `opacity` turns its material transparent and has Three.js rebuild it, so it fades however it was
-  first drawn.
+- Not yet: pointer interactions directly on a 3D object.
+- A pose's `opacity` turns the affected meshes' materials transparent (supporting `Group`s, `Material[]`, and cloning shared materials automatically) and `Rest3d` restoration resets them on dispose.

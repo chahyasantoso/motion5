@@ -1,8 +1,9 @@
 import { spring } from "../ease/spring";
 import { rawTime, stillMoving } from "./clock-watch";
+import { storeCell } from "./store";
 import { elapsedOf } from "../time/time";
 import type { Signal } from "../time/shapes";
-import { changesOf, type Change } from "./changes";
+import { changeMetaOf, changesOf } from "./changes";
 import type { State } from "./state";
 
 /** Settings of a `springTo`: `stiffness` (default 170), `damping` (26) and `rest` (0.001). */
@@ -17,7 +18,7 @@ export interface SpringToOptions {
 
 /** The spring just after the change before `index` set its goal at `since` ms. */
 interface Run {
-  readonly list: readonly Change[];
+  readonly changesResetId: number | undefined;
   index: number;
   goal: number;
   value: number;
@@ -42,17 +43,27 @@ export function springTo<S>(
   if (!(rest > 0 && Number.isFinite(rest)))
     throw new RangeError("springTo: rest must be a finite number above 0.");
   const changes = changesOf(source, pick);
-  let run: Run | undefined;
+  const runSlot = storeCell<Run>();
   return (watched, events) => {
     const time = rawTime(watched);
     const now = elapsedOf(time.clock);
     const { start, list } = changes(time, events);
     if (now === undefined) return list[list.length - 1]?.to ?? start;
-    const kept: Run =
-      run !== undefined && run.list === list
-        ? run
-        : { list, index: 0, goal: start, value: start, speed: 0, since: 0 };
-    run = kept;
+    const meta = changeMetaOf(list);
+
+    const kept = runSlot.own(
+      (existing) => meta?.resetId !== existing.changesResetId,
+      () => ({
+        changesResetId: meta?.resetId,
+        index: 0,
+        goal: start,
+        value: start,
+        speed: 0,
+        since: 0,
+      }),
+      (existing) => ({ ...existing }),
+    );
+
     for (; kept.index < list.length; kept.index += 1) {
       const change = list[kept.index];
       if (change === undefined) break;

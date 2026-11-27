@@ -1,6 +1,6 @@
 import { unreachable } from "@gerak/core";
 
-/** Everything `compileStage`, `check` and stroke resolution can refuse. */
+/** Everything `compileScene`, `check` and stroke resolution can refuse. */
 export type StageError =
   | { readonly kind: "invalid"; readonly field: string; readonly reason: string }
   | { readonly kind: "reserved_dot"; readonly name: string }

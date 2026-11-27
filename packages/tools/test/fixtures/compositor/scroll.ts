@@ -39,7 +39,7 @@ if (typeof Timeline === "function" && plain !== null) {
 
 // The engine's pose of each element now, for the browser test to hold the drawn one against.
 Reflect.set(window, "__expected", () => {
-  const { targets } = frame(stage, { time: mounted.driver.now(), events: mounted.events() });
+  const { targets } = frame(stage, { time: mounted.driver.now(), events: mounted.driver.input() });
   return Object.fromEntries(
     ["bar", "card"].map((name) => {
       const pose = poseOf(targets[name]);

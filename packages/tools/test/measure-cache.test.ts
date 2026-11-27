@@ -69,7 +69,13 @@ describe("the measure cache", () => {
     const read = readMeasureCache(cacheText("abc"));
     if ("reason" in read) throw new Error(read.reason);
     const rest = restOfCache(read);
-    expect(rest.get("card")).toEqual({ x: 50, y: 40, width: 100, height: 80 });
+    expect(rest.get("card")).toEqual({
+      x: 50,
+      y: 40,
+      width: 100,
+      height: 80,
+      placement: { kind: "flow" },
+    });
     expect(rest.keys()).toEqual(["card", "pin"]);
     expect(rest.object("jar")).toBeUndefined();
     expect(readMeasureCache("{}")).toEqual({ reason: "`page` is not a string." });

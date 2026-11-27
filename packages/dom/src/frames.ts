@@ -73,6 +73,9 @@ function isDriver(value: unknown): value is Driver {
     typeof value === "object" &&
     value !== null &&
     typeof Reflect.get(value, "now") === "function" &&
+    typeof Reflect.get(value, "input") === "function" &&
+    typeof Reflect.get(value, "set") === "function" &&
+    typeof Reflect.get(value, "trigger") === "function" &&
     typeof Reflect.get(value, "subscribe") === "function"
   );
 }

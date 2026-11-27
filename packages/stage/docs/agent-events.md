@@ -1,33 +1,41 @@
-# Events
+# App input, values, and triggers
 
-Read this when motion answers page interactions (hover, press, click, focus, scroll into view) or scripted cues. Names are in [the events reference](../../core/docs/reference/events.md).
+Read this when motion answers page interactions (hover, press, click, focus, scroll into view), app state, or scripted cues. Names are in [the events reference](../../core/docs/reference/events.md) and [the state reference](../../core/docs/reference/state.md).
 
-## From the page
+## From the app and page
 
-Give an element `watch: true` and fold its events with core's `state`; a motion reads the result at scene time:
+The app owns interaction rules and all lasting state, and sends **values** (`set`) and **triggers** (`trigger`) through a declared `Contract` (`inputs({ values?, triggers? })`). A page opts into hover, press, focus, and pointer values (`pageInputs`) by attaching [`listen`](../../dom/docs/page.md) to the mount or driver; `mount` itself attaches no user-interaction DOM listeners beyond passive `scroll`. Several mounts can share one `liveClock` via `{ kind: "driver", driver }`.
 
 ```ts
-import { springTo, state } from "@gerak/core";
+// scene
+import { pageInputs, springTo, value } from "@gerak/core";
 import { bind, box, scene } from "@gerak/stage";
 
-const card = box("card", { watch: true });
-const over = state(false, (was, e) => (e.name === "enter" ? true : e.name === "leave" ? false : was), {
-  target: "card",
-});
-const lift = springTo(over, (on) => (on ? -14 : 0));
+const card = box("card");
+const over = value(pageInputs, "hovered", "card");
+const lift = springTo(over, (on) => (on > 0 ? -14 : 0));
 
 export default scene({ length: 900 }, card.moves(bind({ y: lift })));
 ```
 
-With `@gerak/moves`, `follow({ start: 0, on: { enter: -14, leave: 0 }, target: "card" })` is the same spring from an event table.
+```ts
+// <name>-main.ts
+import { listen, mount } from "@gerak/dom";
+import piece from "./piece";
 
-- `events` holds every event up to the current time, oldest first: `{ name, at, target }` in ms, plus pointer `(x, y)` relative to the watched element's top-left corner.
-- Watch a still wrapper element if the moving child leaves under the cursor.
-- Derive answers strictly from `(time, events)` rather than mutable component variables so replays, scrubbing, and `gerak review --action hover:.card-hit@1000` match identically.
+const mounted = mount(piece, { clock: "live" });
+listen(mounted, { elements: ["card"] });
+```
+
+With `@gerak/moves`, `follow(goalState)` springs towards any `State<number>` (such as `value(contract, "lift", "card")`), `react(triggers(contract, "hit"))` plays on triggers, and `valueAt(contract, "choice", trigger)` reads the value held when `trigger` arrived.
+
+- `input` holds `InputEntry` records up to the current time, oldest first: `{ kind, name, at, value, target?, other?, point? }` in ms (`liveClock` keeps `max(settleMs ?? 2000, 4000)` ms plus each name-and-target's latest entry).
+- Attach `listen` (or React handlers calling `mounted.set` / `mounted.trigger`) on a still wrapper element if the moving child leaves under the cursor.
+- Derive motion strictly from `(time, input)` via `value`, `valueAt`, and `triggers` rather than mutable scene variables so replays, scrubbing, and `gerak review --action hover:.card-hit@1000` match identically.
 
 ## Inside the scene (`cues`)
 
-Pass deterministic scripted events in the scene's `cues` option:
+Pass deterministic scripted `InputEntry` records in the scene's `cues` option:
 
 ```ts
 import { drop, DROP_LANDING } from "@gerak/moves";
@@ -37,7 +45,7 @@ const fall = beat("fall", 800);
 const HIT_MS = fall.from + DROP_LANDING * (fall.to - fall.from);
 
 export default scene(
-  { length: 1400, cues: [{ name: "hit", at: HIT_MS, target: "box" }] },
+  { length: 1400, cues: [{ kind: "trigger", name: "hit", at: HIT_MS, value: 1, target: "box" }] },
   box("box").moves(drop({ distance: 120, squash: 0.15 }).in(fall)),
 );
 ```

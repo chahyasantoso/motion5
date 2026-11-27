@@ -38,8 +38,7 @@
     "test:comments": "node scripts/comment-scan.mjs && vitest run test/repo/comment-scan.test.ts",
     "benchmark": "node performance/graph-benchmark.mjs",
     "test:frames": "node packages/tools/bin/motion-frames-check.mjs",
-    "test:watch": "vitest",
-    "dev": "node packages/tools/bin/gerak.mjs studio open saved --root apps/pieces"
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

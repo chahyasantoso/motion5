@@ -1,12 +1,14 @@
 import {
   INPUT_EVENTS,
   ease,
-  eventLog,
+  inputLog,
   motion,
+  pageInputs,
   pointer,
   scroll,
   springTo,
-  type Events,
+  type Input,
+  type InputEntry,
   type Pose2d,
   type Time,
 } from "@gerak/core";
@@ -43,11 +45,11 @@ function compiled(piece: Scene): Stage {
   return result.stage;
 }
 
-function eventsUpTo(events: Events, ms: number): Events {
+function eventsUpTo(events: Input, ms: number): Input {
   return events.filter((event) => event.at <= ms);
 }
 
-function poseAt(piece: Scene, name: string, ms: number, events: Events = []): Pose2d | undefined {
+function poseAt(piece: Scene, name: string, ms: number, events: Input = []): Pose2d | undefined {
   const stage = compiled(piece);
   return poseOf(
     frame(stage, { time: at(ms, stage.durationMs), events: eventsUpTo(events, ms) }).targets[name],
@@ -150,12 +152,12 @@ describe("scroll beats", () => {
 
   it("holds before from, maps 0 to 1 across the window, and holds after to", () => {
     const chain = scene({ length: 2000 }, makeCard().moves(slideX(100).in(range)));
-    const scrollEvents: Events = [
-      { name: INPUT_EVENTS.scroll, at: 100, value: 100 },
-      { name: INPUT_EVENTS.scroll, at: 200, value: 200 },
-      { name: INPUT_EVENTS.scroll, at: 300, value: 400 },
-      { name: INPUT_EVENTS.scroll, at: 400, value: 600 },
-      { name: INPUT_EVENTS.scroll, at: 500, value: 900 },
+    const scrollEvents: Input = [
+      { kind: "value", name: INPUT_EVENTS.scroll, at: 100, value: 100 },
+      { kind: "value", name: INPUT_EVENTS.scroll, at: 200, value: 200 },
+      { kind: "value", name: INPUT_EVENTS.scroll, at: 300, value: 400 },
+      { kind: "value", name: INPUT_EVENTS.scroll, at: 400, value: 600 },
+      { kind: "value", name: INPUT_EVENTS.scroll, at: 500, value: 900 },
     ];
     expect(poseAt(chain, "card", 0, scrollEvents)?.x).toBe(0);
     expect(poseAt(chain, "card", 100, scrollEvents)?.x).toBe(0);
@@ -171,7 +173,7 @@ describe("scroll beats", () => {
       smooth: true,
     });
     const piece = scene({ length: 3000 }, makeCard().moves(slideX(100).in(smooth)));
-    const jump: Events = [{ name: INPUT_EVENTS.scroll, at: 100, value: 400 }];
+    const jump: Input = [{ kind: "value", name: INPUT_EVENTS.scroll, at: 100, value: 400 }];
     const stage = compiled(piece);
     const xAt = (ms: number) =>
       poseOf(frame(stage, { time: at(ms, 3000), events: jump }).targets["card"])?.x ?? 0;
@@ -195,7 +197,9 @@ describe("scroll beats", () => {
   it("applies ease, supports take, and works with stagger and springTo", () => {
     const eased = scene({ length: 2000 }, makeCard().moves(slideX(100).in(range, ease.quadIn)));
     expect(
-      poseAt(eased, "card", 300, [{ name: INPUT_EVENTS.scroll, at: 300, value: 400 }])?.x,
+      poseAt(eased, "card", 300, [
+        { kind: "value", name: INPUT_EVENTS.scroll, at: 300, value: 400 },
+      ])?.x,
     ).toBeCloseTo(25, 9);
 
     const taken = scene(
@@ -203,10 +207,14 @@ describe("scroll beats", () => {
       makeCard().moves(slideX(10), slideX(80).in(range).take()),
     );
     expect(
-      poseAt(taken, "card", 100, [{ name: INPUT_EVENTS.scroll, at: 100, value: 100 }])?.x,
+      poseAt(taken, "card", 100, [
+        { kind: "value", name: INPUT_EVENTS.scroll, at: 100, value: 100 },
+      ])?.x,
     ).toBe(0.5);
     expect(
-      poseAt(taken, "card", 100, [{ name: INPUT_EVENTS.scroll, at: 100, value: 400 }])?.x,
+      poseAt(taken, "card", 100, [
+        { kind: "value", name: INPUT_EVENTS.scroll, at: 100, value: 400 },
+      ])?.x,
     ).toBe(40);
 
     const makeWord = () => text("word", { split: "letters" });
@@ -215,7 +223,7 @@ describe("scroll beats", () => {
     );
     const outOuter = frame(staggeredOuter, {
       time: at(500, 2000),
-      events: [{ name: INPUT_EVENTS.scroll, at: 500, value: 400 }],
+      events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 500, value: 400 }],
     }).targets["word"];
     expect([0, 1, 2].map((index) => listPose(outOuter, index, 3)?.x)).toEqual([100, 50, 0]);
 
@@ -224,7 +232,7 @@ describe("scroll beats", () => {
     );
     const outInner = frame(staggeredInner, {
       time: at(500, 2000),
-      events: [{ name: INPUT_EVENTS.scroll, at: 500, value: 400 }],
+      events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 500, value: 400 }],
     }).targets["word"];
     expect([0, 1, 2].map((index) => listPose(outInner, index, 3)?.x)).toEqual([100, 50, 0]);
 
@@ -236,7 +244,7 @@ describe("scroll beats", () => {
     );
     const outEased = frame(staggeredEased, {
       time: at(500, 2000),
-      events: [{ name: INPUT_EVENTS.scroll, at: 500, value: 400 }],
+      events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 500, value: 400 }],
     }).targets["word"];
     expect([0, 1, 2].map((index) => listPose(outEased, index, 3)?.x)).toEqual([100, 25, 0]);
 
@@ -250,7 +258,7 @@ describe("scroll beats", () => {
       { length: 4000 },
       makeCard().moves(bind({ y: springTo(scroll.y, (y) => y) })),
     );
-    const smoothEvents: Events = [{ name: INPUT_EVENTS.scroll, at: 500, value: 200 }];
+    const smoothEvents: Input = [{ kind: "value", name: INPUT_EVENTS.scroll, at: 500, value: 200 }];
     expect(poseAt(smoothed, "card", 400, smoothEvents)?.y).toBe(0);
     const midY = poseAt(smoothed, "card", 550, smoothEvents)?.y ?? 0;
     expect(midY).toBeGreaterThan(0);
@@ -262,10 +270,10 @@ describe("scroll beats", () => {
 describe("trigger beats", () => {
   const triggerPoint = scrollPoint(400);
   const makeCard = () => box("card");
-  const session: Events = [
-    { name: INPUT_EVENTS.scroll, at: 500, value: 450 },
-    { name: INPUT_EVENTS.scroll, at: 1200, value: 200 },
-    { name: INPUT_EVENTS.scroll, at: 1800, value: 500 },
+  const session: Input = [
+    { kind: "value", name: INPUT_EVENTS.scroll, at: 500, value: 450 },
+    { kind: "value", name: INPUT_EVENTS.scroll, at: 1200, value: 200 },
+    { kind: "value", name: INPUT_EVENTS.scroll, at: 1800, value: 500 },
   ];
 
   it("handles back: 'stay' without reverting or replaying", () => {
@@ -278,9 +286,9 @@ describe("trigger beats", () => {
     expect(poseAt(chain, "card", 1300, session)?.x).toBe(100);
     expect(poseAt(chain, "card", 1900, session)?.x).toBe(100);
 
-    const earlyReturn: Events = [
-      { name: INPUT_EVENTS.scroll, at: 500, value: 450 },
-      { name: INPUT_EVENTS.scroll, at: 600, value: 200 },
+    const earlyReturn: Input = [
+      { kind: "value", name: INPUT_EVENTS.scroll, at: 500, value: 450 },
+      { kind: "value", name: INPUT_EVENTS.scroll, at: 600, value: 200 },
     ];
     expect(poseAt(chain, "card", 700, earlyReturn)?.x).toBeCloseTo(50, 9);
     expect(poseAt(chain, "card", 900, earlyReturn)?.x).toBe(100);
@@ -299,9 +307,9 @@ describe("trigger beats", () => {
     expect(poseAt(chain, "card", 2000, session)?.x).toBeCloseTo(50, 9);
     expect(poseAt(chain, "card", 2200, session)?.x).toBe(100);
 
-    const midReturn: Events = [
-      { name: INPUT_EVENTS.scroll, at: 500, value: 450 },
-      { name: INPUT_EVENTS.scroll, at: 700, value: 200 },
+    const midReturn: Input = [
+      { kind: "value", name: INPUT_EVENTS.scroll, at: 500, value: 450 },
+      { kind: "value", name: INPUT_EVENTS.scroll, at: 700, value: 200 },
     ];
     expect(poseAt(chain, "card", 700, midReturn)?.x).toBeCloseTo(50, 9);
     expect(poseAt(chain, "card", 800, midReturn)?.x).toBeCloseTo(25, 9);
@@ -396,9 +404,9 @@ describe("trigger beats", () => {
 
 describe("recorded session replay and beat names", () => {
   it("replays pointer.x identically from recorded cues across runs and seeks", () => {
-    const cues: Events = [
-      { name: INPUT_EVENTS.pointerX, at: 100, value: 0.25 },
-      { name: INPUT_EVENTS.pointerX, at: 400, value: 0.9 },
+    const cues: Input = [
+      { kind: "value", name: INPUT_EVENTS.pointerX, at: 100, value: 0.25 },
+      { kind: "value", name: INPUT_EVENTS.pointerX, at: 400, value: 0.9 },
     ];
     const dot = box("dot");
     const piece = scene(
@@ -461,7 +469,7 @@ describe("trigger beats over a long session", () => {
   const threshold = 500;
   const ms = 400;
 
-  function expected(back: Back, events: Events, now: number): number {
+  function expected(back: Back, events: Input, now: number): number {
     let y = 0;
     let reached = false;
     let started: number | undefined;
@@ -510,9 +518,12 @@ describe("trigger beats over a long session", () => {
         seed = (seed * 16807) % 2147483647;
         return seed / 2147483647;
       };
-      const events: { name: string; at: number; value: number }[] = [];
+      let events: InputEntry[] = [];
       for (let at = 10; at < 6000; at += 10 + Math.floor(random() * 40)) {
-        events.push({ name: INPUT_EVENTS.scroll, at, value: Math.round(random() * 1000) });
+        events = [
+          ...events,
+          { kind: "value", name: INPUT_EVENTS.scroll, at, value: Math.round(random() * 1000) },
+        ];
         const now = at + Math.floor(random() * 30);
         const x = poseOf(
           frame(stage, { time: { progress: 0, clock: { kind: "live", elapsed: now } }, events })
@@ -530,14 +541,14 @@ describe("trigger beats over a long session", () => {
 
   it("costs about the same per frame after many scroll steps as after a few", () => {
     const stage = sceneFor("reverse");
-    const log = eventLog();
+    const log = inputLog();
     const frames = (from: number, count: number): number => {
       const started = performance.now();
       for (let index = from; index < from + count; index += 1) {
-        log.add({ name: INPUT_EVENTS.scroll, at: index, value: index % 2 === 0 ? 0 : 1000 });
+        log.set(index, pageInputs, "scroll", index % 2 === 0 ? 0 : 1000);
         frame(stage, {
           time: { progress: 0, clock: { kind: "live", elapsed: index } },
-          events: log.events,
+          events: log.input,
         });
       }
       return performance.now() - started;
@@ -580,7 +591,7 @@ describe("scroll-window .shows()", () => {
       const out = frame(stage, {
         time: at(ms, 1000),
         rest,
-        events: y === 0 ? [] : [{ name: INPUT_EVENTS.scroll, at: 0, value: y }],
+        events: y === 0 ? [] : [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: y }],
       });
       expect(frameVisible(out.targets)).toEqual(out.visible);
       expect(Object.keys(out.targets)).not.toContain("frameVisible");
@@ -643,7 +654,7 @@ describe("scroll-window .shows()", () => {
       frame(combined, {
         time: at(250, 500),
         rest,
-        events: [{ name: INPUT_EVENTS.scroll, at: 0, value: 250 }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: 250 }],
       }).visible["prop"],
     ).toBe(true);
 

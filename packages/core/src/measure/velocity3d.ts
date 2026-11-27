@@ -1,4 +1,4 @@
-import type { Events } from "../events/event-list";
+import type { Input } from "../events/event-list";
 import type { Pose3d } from "../fields/pose3d";
 import { speedOf } from "./speed-of";
 import type { Signal } from "../time/shapes";
@@ -8,7 +8,7 @@ import type { Time } from "../time/time";
 export function velocity3d(
   signal: Signal<Pose3d>,
   time: Time,
-  events: Events,
+  events: Input,
   stepMs = 16,
 ): { readonly vx: number; readonly vy: number; readonly vz: number } {
   const [vx = 0, vy = 0, vz = 0] = speedOf(signal, ["x", "y", "z"], time, events, stepMs);

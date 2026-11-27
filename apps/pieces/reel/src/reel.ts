@@ -2,12 +2,15 @@ import {
   aim,
   ease,
   easeTo,
-  mergeEvents,
+  inputLog,
+  inputs,
+  isInputEntry,
   mix,
   motion,
   orbit,
   span,
-  state,
+  triggers,
+  value,
   type Lens3d,
   type Pose2d,
   type Pose3d,
@@ -54,13 +57,33 @@ const wordRise = motion(
   }),
 );
 
+const reelInputs = inputs({
+  values: { word: {} },
+  triggers: { beat: {} },
+});
+const cueLog = inputLog();
+for (const cue of musicCues) {
+  if (isInputEntry(cue) && cue.kind === "trigger" && cue.name === "beat") {
+    cueLog.trigger(cue.at, reelInputs, "beat", cue.value);
+  }
+}
+for (const cue of captionCues) {
+  if (isInputEntry(cue) && cue.kind === "value" && cue.name === "word") {
+    cueLog.set(cue.at, reelInputs, "word", cue.value);
+  }
+}
+
 // Shot 1: kinetic title hook (0..2500 ms).
 const hookEnter = beat("enter", 520, { at: 0 });
 const hookWords = beat("words", 900, { at: 60 });
 const hookRuleIn = beat("ruleIn", 540, { at: 260 });
 const hookRingIn = beat("ringIn", 480, { at: 320 });
 const hookDissolve = beat("dissolve", 400, { at: 2100 });
-const hookBeatScale = react({ on: ["beat"], kind: "recoil", amplitude: 0.14, decay: 10 });
+const hookBeatScale = react(triggers(reelInputs, "beat"), {
+  kind: "recoil",
+  amplitude: 0.14,
+  decay: 10,
+});
 
 const hookScene = scene(
   { name: "hook" },
@@ -163,9 +186,7 @@ const revealScene = scene(
 const proofBgIn = beat("bgIn", 400, { at: 0 });
 const proofLabelIn = beat("labelIn", 460, { at: 320 });
 const proofFadeOut = beat("out", 400, { at: 3000 });
-const wordCount = state(0, (cur, ev) =>
-  ev.name === "word" && typeof ev.value === "number" ? ev.value : cur,
-);
+const wordCount = value(reelInputs, "word");
 const wordReveals = captionWords.map((_, index) =>
   easeTo(wordCount, (count) => (index < count ? 1 : 0), {
     ms: 160,
@@ -173,7 +194,11 @@ const wordReveals = captionWords.map((_, index) =>
     ease: ease.cubicOut,
   }),
 );
-const barPulse = react({ on: ["beat"], kind: "recoil", amplitude: 0.55, decay: 11 });
+const barPulse = react(triggers(reelInputs, "beat"), {
+  kind: "recoil",
+  amplitude: 0.55,
+  decay: 11,
+});
 
 const proofScene = scene(
   { name: "proof" },
@@ -231,7 +256,10 @@ const ctaScene = scene(
 );
 
 export default scene(
-  { name: "reel", cues: mergeEvents(musicCues, captionCues) },
+  {
+    name: "reel",
+    cues: cueLog.input,
+  },
   shot(hookScene, { name: "hook", until: beatAt(5) }),
   shot(revealScene, { name: "reveal", overlap: 400, until: beatAt(13) }),
   shot(proofScene, { name: "proof", overlap: 400, until: beatAt(19) }),

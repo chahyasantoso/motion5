@@ -477,6 +477,20 @@ function checkPureSource(workspace, file, specifiers, violations, pure) {
   );
   if (!inside) violations.push(`${file}: pure package import outside the pure layer`);
 }
+const DOM_SRC = "packages/dom/src/";
+const DOM_ADAPTER = "packages/dom/src/adapter";
+const DOM_INDEX = "packages/dom/src/index.ts";
+/** No motion file in `packages/dom/src` imports the opt-in adapter; only `index.ts` and `adapter/` do. */
+function checkDomAdapterBoundary(file, specifiers, violations) {
+  if (!file.startsWith(DOM_SRC) || file === DOM_INDEX || file.startsWith(`${DOM_ADAPTER}/`)) return;
+  for (const specifier of specifiers) {
+    if (!specifier.startsWith(".")) continue;
+    const resolved = posix.normalize(posix.join(posix.dirname(file), specifier));
+    if (resolved === DOM_ADAPTER || resolved.startsWith(`${DOM_ADAPTER}/`)) {
+      violations.push(`${file}: motion file imports the adapter ${specifier}`);
+    }
+  }
+}
 export async function scan(scanRoot = root) {
   const violations = [];
   const workspaces = await discoverConsumerWorkspaces(scanRoot);
@@ -497,6 +511,7 @@ export async function scan(scanRoot = root) {
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
       if (file.startsWith(PAGE_TOOLS)) checkPageTools(file, specifiers, violations);
+      checkDomAdapterBoundary(file, specifiers, violations);
       const isPureSource = pure.folders.has(workspace);
       if (isPureSource) checkPureSource(workspace, file, specifiers, violations, pure);
       checkAppBoundary(

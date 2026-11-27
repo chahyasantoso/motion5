@@ -20,14 +20,14 @@ describe("recorded presets", () => {
   it("round-trips events sorted by time", () => {
     const root = temp();
     const path = writePreset(root, "cookie", "take-1", [
-      { name: "click", at: 900, target: "a" },
-      { name: "scroll", at: 100, value: 40 },
+      { kind: "trigger", name: "click", at: 900, value: 1, target: "a" },
+      { kind: "value", name: "scroll", at: 100, value: 40 },
     ]);
     expect(path).toBe(presetPath(root, "cookie", "take-1"));
     expect(path.replaceAll("\\", "/")).toContain(".gerak/presets/cookie/take-1.json");
     expect(readPreset(root, "cookie", "take-1")).toEqual([
-      { name: "scroll", at: 100, value: 40 },
-      { name: "click", at: 900, target: "a" },
+      { kind: "value", name: "scroll", at: 100, value: 40 },
+      { kind: "trigger", name: "click", at: 900, value: 1, target: "a" },
     ]);
   });
 

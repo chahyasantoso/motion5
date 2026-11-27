@@ -3,12 +3,12 @@
 Who is on stage, when each member shows, and how scenes compile and evaluate cleanly. Pages for specialized topics are listed below.
 
 - [stage.md](./stage.md): read whole before making a piece — `scene`, elements, beats, motions, and checking.
-- [Events](./agent-events.md), [layout](./agent-layout.md) and [live inputs](./agent-inputs.md).
+- [App input](./agent-events.md), [layout](./agent-layout.md) and [live inputs](./agent-inputs.md).
 - [Reference](./reference/README.md): every export of `@gerak/stage`, `@gerak/stage/render` and `@gerak/stage/dom` with its signature, one page per reader.
 
 | The brief has | Read |
 | --- | --- |
-| Hover, press, click, scroll into view, or one target answering another's moment | [events](./agent-events.md) |
+| Hover, press, click, scroll into view, app state, or cues | [app input](./agent-events.md) |
 | Many bodies, collisions, a pile, things thrown and falling | [physics](../../physics/docs/agent-physics.md) |
 | An arm, a leg, a figure: bones that reach | [rigs](../../rig/docs/agent-rigs.md) |
 | Weight, life, character or polish: anticipation, arcs, follow-through, settle | [principles](../../moves/docs/agent-principles.md) |

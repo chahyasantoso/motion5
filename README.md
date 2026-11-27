@@ -1,6 +1,6 @@
 # gerak
 
-gerak makes motion for web pages from code. A **scene** is a pure function from time, and the events so far, to one
+gerak makes motion for web pages from code. The app owns rules and lasting state; a **scene** is a pure function from time, and the input so far, to one
 value per target. `@gerak/player` plays it on a clock, the page's scroll or by hand, and `@gerak/dom`,
 `@gerak/react` and `@gerak/three` write the values onto elements and Three.js objects.
 
@@ -16,16 +16,16 @@ value per target. `@gerak/player` plays it on a clock, the page's scroll or by h
 
 A value that is a function of time can be sampled at any moment, sought backwards, tested without a browser, and read
 back by a tool. So every number of motion lives in the scene: moves such as `drop`, `hop`, `wipe` and `along`, eases,
-springs, rigs with FK and IK, and seekable physics. Drivers only report time and events, and renderers only write.
+springs, rigs with FK and IK, and seekable physics. Drivers only report time and typed input, and renderers only write.
 
 ## Packages
 
 | Package | Group | Holds |
 | --- | --- | --- |
-| `@gerak/core` | core | fields, poses (2D and 3D), time, blends, eases, envelopes, geometry, paths, measures, events |
+| `@gerak/core` | core | fields, poses (2D and 3D), time, blends, eases, envelopes, geometry, paths, measures, inputs & state |
 | `@gerak/stage` | core | cast, story, skins, layouts, `carried` |
 | `@gerak/player` | core | plays a scene on a driver |
-| `@gerak/dom` | core | CSS writes and the page drivers: clock, scroll, events |
+| `@gerak/dom` | core | CSS writes, `liveClock`/`clockDriver`/`scrollDriver`, and opt-in `listen` |
 | `@gerak/react` | core | `usePlayer`, `useTarget`, `useValue` |
 | `@gerak/three` | core | writes a pose on a Three.js object |
 | `@gerak/tools` | core | the `gerak` command: `init`, `new`, `sample`, `review`, `render` |

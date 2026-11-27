@@ -4,7 +4,7 @@ import {
   mix,
   unreachable,
   type Ease,
-  type Events,
+  type Input,
   type Pose2d,
   type Time,
 } from "@gerak/core";
@@ -63,18 +63,30 @@ function poseFor(own: Box, given: Box, target: Box, progress: number, mode: Carr
 }
 
 function restAt(fallback: RestReader, measures: readonly RestAt[], ms: number): RestReader {
-  let current = measures[0]?.rest ?? fallback;
-  for (const entry of measures) {
-    if (entry.at <= ms) current = entry.rest;
-    else break;
+  if (measures.length === 0) return fallback;
+  let low = 0;
+  let high = measures.length - 1;
+  let hit = -1;
+  while (low <= high) {
+    const mid = (low + high) >>> 1;
+    if ((measures[mid]?.at ?? Infinity) <= ms) {
+      hit = mid;
+      low = mid + 1;
+    } else high = mid - 1;
   }
-  return current;
+  return hit >= 0 ? (measures[hit]?.rest ?? fallback) : (measures[0]?.rest ?? fallback);
 }
 
-function eventsUpTo(events: Events, ms: number): Events {
-  let count = 0;
-  while (count < events.length && (events[count]?.at ?? Infinity) <= ms) count += 1;
-  return count === events.length ? events : events.slice(0, count);
+function eventsUpTo(events: Input, ms: number): Input {
+  if (events.length === 0 || (events[events.length - 1]?.at ?? 0) <= ms) return events;
+  let low = 0;
+  let high = events.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if ((events[mid]?.at ?? 0) <= ms) low = mid + 1;
+    else high = mid;
+  }
+  return low === events.length ? events : events.slice(0, low);
 }
 
 function carried(
@@ -126,16 +138,24 @@ function carried(
 export function carryFor(
   rest: RestReader,
   measures: readonly RestAt[],
-  events: Events,
+  events: Input,
   time: Time,
 ): Carry {
+  const now = elapsedOf(time.clock);
+  const stamps = new Set<number>([0]);
+  for (const entry of measures) if (now === undefined || entry.at <= now) stamps.add(entry.at);
+  const measurePoints = [...stamps].sort((a, b) => a - b);
+  let targetPoints: readonly number[] | undefined;
+  const pointsFor = (hasTarget: boolean): readonly number[] => {
+    if (!hasTarget) return measurePoints;
+    if (targetPoints === undefined) {
+      const merged = new Set<number>(measurePoints);
+      for (const event of events) if (now === undefined || event.at <= now) merged.add(event.at);
+      targetPoints = [...merged].sort((a, b) => a - b);
+    }
+    return targetPoints;
+  };
   return (member, options) => {
-    const now = elapsedOf(time.clock);
-    const stamps = new Set<number>([0]);
-    for (const entry of measures) if (now === undefined || entry.at <= now) stamps.add(entry.at);
-    if (options.target !== undefined)
-      for (const event of events) if (now === undefined || event.at <= now) stamps.add(event.at);
-    const points = [...stamps].sort((a, b) => a - b);
     const at = (ms: number): Box => {
       const reader = restAt(rest, measures, ms);
       return options.target === undefined
@@ -143,6 +163,14 @@ export function carryFor(
         : options.target(eventsUpTo(events, ms), reader);
     };
     const ease = options.ease ?? ((progress: number) => progress);
-    return carried(rest.get(member), at, points, time, options.ms, ease, options.mode ?? "scale");
+    return carried(
+      rest.get(member),
+      at,
+      pointsFor(options.target !== undefined),
+      time,
+      options.ms,
+      ease,
+      options.mode ?? "scale",
+    );
   };
 }

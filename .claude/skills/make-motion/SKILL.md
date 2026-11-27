@@ -18,7 +18,7 @@ A piece starts from its brief, not from a piece that already exists.
    your own beside the scene.
 4. Do not open any other piece in `<pieces>/*/src`, whether a stage module, a scene file or a component. They are
    tests of the runtime, and a piece begun from one comes out as its copy.
-5. Read a page that `@gerak/stage`'s `docs/README.md` table names (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
+5. Read a page that `@gerak/stage`'s `docs/README.md` table names (app input, physics, rigs, 3D, layout, artwork, live inputs and more) only
    when the brief needs it and that package is installed; the pages of each installed package are listed in its `docs/README.md`.
 6. Find any function or type by searching `docs/reference/` of the package that exports it, and any command in
    `docs/commands.md` of `@gerak/tools`, for its name; do not read package source, and do not read a package's docs

@@ -1,6 +1,7 @@
 import { arch } from "../envelope/envelopes";
 import type { Pose2d } from "../fields/pose";
 import type { Pose3d } from "../fields/pose3d";
+import { withProbeStore } from "../state/store";
 import type { Signal } from "../time/shapes";
 import { withProgress } from "../time/time";
 
@@ -21,8 +22,10 @@ export function arc(options: ArcBendOptions): (signal: Signal<Pose2d>) => Signal
   if (!Number.isFinite(bend)) throw new RangeError("arc: bend must be a number.");
   return (signal) => (time, events) => {
     const pose = signal(time, events);
-    const first = signal(withProgress(time, 0), events);
-    const last = signal(withProgress(time, 1), events);
+    const [first, last] = withProbeStore(() => [
+      signal(withProgress(time, 0), events),
+      signal(withProgress(time, 1), events),
+    ]);
     const dx = (last.x ?? 0) - (first.x ?? 0);
     const dy = (last.y ?? 0) - (first.y ?? 0);
     const length = Math.hypot(dx, dy);

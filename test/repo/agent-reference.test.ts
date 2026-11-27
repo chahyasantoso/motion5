@@ -110,8 +110,10 @@ describe("agent reference", () => {
     const three = referenceOf("three");
     expect(three).toContain("**`applyPose2d`** `(object: Object3D, pose: Pose2d, rest?: Point2d");
     expect(three).toContain("**`applyPose3d`** `(object: Object3D, pose: Pose3d, rest?: Point3d");
-    expect(referenceOf("dom")).toContain(
-      "emit: (name: string, target?: string, point?: Point2d) => void",
+    const domRef = referenceOf("dom");
+    expect(domRef).toContain("**`liveClock`** `(options?: LiveClockOptions): LiveClock`:");
+    expect(domRef).toContain(
+      "**`LiveClockOptions`** `type LiveClockOptions = { introMs?: number; settleMs?: number; now?: () => number; frames?: FrameSource }`",
     );
     expect(referenceOf("rig")).toContain(
       "posedJoints3d`** `<const Table extends JointTable3d>(table: Table, bones: Readonly<Partial<Record<string, BonePose3d>>>, root?: BonePose3d): Readonly<Record<keyof Table & string, Point3d>>`",

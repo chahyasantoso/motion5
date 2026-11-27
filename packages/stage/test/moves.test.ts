@@ -1,8 +1,8 @@
 import {
-  INPUT_EVENTS,
   elapsedOf,
-  eventLog,
+  inputLog,
   motion,
+  pageInputs,
   pointer,
   springTo,
   type Pose2d,
@@ -68,11 +68,11 @@ describe("what a frame reports as moving with time alone", () => {
         ),
       ),
     );
-    const log = eventLog();
-    log.add({ name: INPUT_EVENTS.scroll, at: 100, value: 300 });
-    expect(movesAt(stage, 150, log.events).has("plain")).toBe(false);
-    expect(movesAt(stage, 150, log.events).get("smoothed")).toBe("time");
-    expect(movesAt(stage, 5000, log.events).has("smoothed")).toBe(false);
+    const log = inputLog();
+    log.set(100, pageInputs, "scroll", 300);
+    expect(movesAt(stage, 150, log.input).has("plain")).toBe(false);
+    expect(movesAt(stage, 150, log.input).get("smoothed")).toBe("time");
+    expect(movesAt(stage, 5000, log.input).has("smoothed")).toBe(false);
   });
 
   it("a trigger while its clock part runs, for each way back", () => {
@@ -85,11 +85,11 @@ describe("what a frame reports as moving with time alone", () => {
           ),
         ),
       );
-      const log = eventLog();
-      expect(movesAt(stage, 50, log.events).has("revealed")).toBe(false);
-      log.add({ name: INPUT_EVENTS.scroll, at: 100, value: 300 });
-      expect(movesAt(stage, 200, log.events).get("revealed")).toBe("time");
-      expect(movesAt(stage, 800, log.events).has("revealed")).toBe(false);
+      const log = inputLog();
+      expect(movesAt(stage, 50, log.input).has("revealed")).toBe(false);
+      log.set(100, pageInputs, "scroll", 300);
+      expect(movesAt(stage, 200, log.input).get("revealed")).toBe("time");
+      expect(movesAt(stage, 800, log.input).has("revealed")).toBe(false);
     }
   });
 
@@ -119,16 +119,16 @@ describe("what a frame reports as moving with time alone", () => {
         ),
       ),
     );
-    const log = eventLog();
-    log.add({ name: INPUT_EVENTS.pointerX, at: 1000, value: 0.9 });
-    const settling = movesAt(stage, 1050, log.events);
+    const log = inputLog();
+    log.set(1000, pageInputs, "pointer-x", 0.9);
+    const settling = movesAt(stage, 1050, log.input);
     expect(settling.has("pointed")).toBe(false);
     expect(settling.get("sprung")).toBe("time");
     expect(settling.get("ticking")).toBe("maybe");
     expect(settling.get("clocked")).toBe("maybe");
     expect(settling.get("follower")).toBe("maybe");
     expect(settling.has("leader")).toBe(false);
-    expect(movesAt(stage, 9000, log.events).has("sprung")).toBe(false);
+    expect(movesAt(stage, 9000, log.input).has("sprung")).toBe(false);
   });
 
   it("a travel with no window as moving only with input", () => {

@@ -1,6 +1,6 @@
 {
  "page": "overlay3d.html",
- "digest": "d6773ed8311cc178",
+ "digest": "61e4a0a791eb0cf0",
  "frame": {
   "width": 1280,
   "height": 720
@@ -35,5 +35,12 @@
   }
  },
  "lines": {},
- "parents": {}
+ "parents": {},
+ "objects": {
+  "object": {
+   "width": 1.6700000122189522,
+   "height": 3.1000000134110453,
+   "depth": 1.6700000122189522
+  }
+ }
 }

@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, type Events } from "@gerak/core";
+import { inputLog, liveAt, pageInputs, type Input } from "@gerak/core";
 import { scene } from "../card/src/card-scene";
 
-const pointer = (...steps: readonly [string, number][]): Events =>
-  steps.map(([name, at]) => ({ name, at, target: "card" }));
+const pointer = (...steps: readonly ["hovered" | "pressed", number, number][]): Input => {
+  const log = inputLog();
+  for (const [name, value, at] of steps) {
+    log.set(at, pageInputs, name, value, "card");
+  }
+  return log.input;
+};
 
 describe("the hover card scene", () => {
   it("drops in, then rests until the pointer comes", () => {
@@ -13,8 +18,8 @@ describe("the hover card scene", () => {
   });
 
   it("lifts on hover and settles back down after a leave half way, with no jump", () => {
-    const hover = pointer(["enter", 1000]);
-    const leftEarly = pointer(["enter", 1000], ["leave", 1080]);
+    const hover = pointer(["hovered", 1, 1000]);
+    const leftEarly = pointer(["hovered", 1, 1000], ["hovered", 0, 1080]);
     expect(scene(liveAt(1080), leftEarly).card.y).toBeCloseTo(
       scene(liveAt(1080), hover).card.y ?? NaN,
       9,
@@ -25,10 +30,11 @@ describe("the hover card scene", () => {
 
   it("sinks while pressed and comes back on release", () => {
     expect(
-      scene(liveAt(1300), pointer(["enter", 1000], ["down", 1200])).card.scale ?? 1,
+      scene(liveAt(1300), pointer(["hovered", 1, 1000], ["pressed", 1, 1200])).card.scale ?? 1,
     ).toBeLessThan(0.97);
     expect(
-      scene(liveAt(3000), pointer(["enter", 1000], ["down", 1200], ["up", 1300])).card.scale,
+      scene(liveAt(3000), pointer(["hovered", 1, 1000], ["pressed", 1, 1200], ["pressed", 0, 1300]))
+        .card.scale,
     ).toBeCloseTo(1, 4);
   });
 });

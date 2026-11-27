@@ -3,13 +3,14 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
   type RefCallback,
 } from "react";
-import { applyValue, type EventDriver, type RenderTarget } from "@gerak/dom";
-import { NO_EVENTS, elapsedOf, type Events, type Pose2d, type Signal } from "@gerak/core";
+import { applyValue, type RenderTarget } from "@gerak/dom";
+import { NO_INPUT, elapsedOf, type Input, type Pose2d, type Signal } from "@gerak/core";
 import { play, type Driver, type Player } from "@gerak/player";
 
 /** A driver a component owns, released when the component leaves. */
@@ -140,7 +141,7 @@ interface Shown<T extends object, D extends OwnedDriver> {
   readonly playing: Playing<T, D>;
   readonly scene: Signal<T>;
   readonly createDriver: () => D;
-  readonly cues: Events;
+  readonly cues: Input;
 }
 
 /** Plays `scene` on a driver from `createDriver` with `cues`; define all three outside the component.
@@ -148,7 +149,7 @@ interface Shown<T extends object, D extends OwnedDriver> {
 export function usePlayer<T extends object, D extends OwnedDriver>(
   scene: Signal<T>,
   createDriver: () => D,
-  cues: Events = NO_EVENTS,
+  cues: Input = NO_INPUT,
 ): Playing<T, D> | undefined {
   const host = useContext(HostContext);
   const adopt = host.createDriver;
@@ -258,30 +259,60 @@ export function useValue<T extends object, K extends keyof T, V>(
   );
 }
 
+function readSignal<T extends object, V>(player: Player<T>, signal: Signal<V>): V | undefined {
+  let seeded: { readonly value: V } | undefined;
+  const stop = player.observe(signal, (value) => {
+    seeded = { value };
+  });
+  stop();
+  return seeded?.value;
+}
+
 /** Reads a signal over the player's time and events into a render, again only when it changes by `Object.is`.
  * Define the signal outside the component; `undefined` before the player exists. */
 export function useSignal<T extends object, V>(
   player: Player<T> | undefined,
   signal: Signal<V>,
 ): V | undefined {
-  const [held, setHeld] = useState<
+  const committed = useRef<
     { readonly player: Player<T>; readonly signal: Signal<V>; readonly value: V } | undefined
   >(undefined);
-  useEffect(() => {
+  const initial = useMemo(
+    () => (player === undefined ? undefined : readSignal(player, signal)),
+    [player, signal],
+  );
+  const subscribe = useCallback(
+    (onStoreChange: () => void): (() => void) => {
+      if (player === undefined) return () => undefined;
+      let subscribed = false;
+      let entry:
+        | { readonly player: Player<T>; readonly signal: Signal<V>; readonly value: V }
+        | undefined;
+      const stop = player.observe(signal, (value) => {
+        const prev = entry;
+        entry = { player, signal, value };
+        committed.current = entry;
+        if (subscribed && (prev === undefined || !Object.is(prev.value, value))) {
+          onStoreChange();
+        }
+      });
+      subscribed = true;
+      return () => {
+        stop();
+        if (committed.current === entry) committed.current = undefined;
+      };
+    },
+    [player, signal],
+  );
+  const getSnapshot = (): V | undefined => {
     if (player === undefined) return undefined;
-    return player.observe(signal, (value) => setHeld({ player, signal, value }));
-  }, [player, signal]);
-  return held !== undefined && held.player === player && held.signal === signal
-    ? held.value
-    : undefined;
-}
-
-/** Logs the events of the element the ref lands on to `driver` as `target`'s; put it on an element that stays still. */
-export function useWatch(driver: EventDriver | undefined, target: string): RefCallback<Element> {
-  const [element, setElement] = useState<Element | null>(null);
-  useEffect(() => {
-    if (driver === undefined || element === null) return undefined;
-    return driver.watch(target, element);
-  }, [driver, element, target]);
-  return useCallback((next: Element | null) => setElement(next), []);
+    const held = committed.current;
+    if (held !== undefined && held.player === player && held.signal === signal) return held.value;
+    return initial;
+  };
+  return useSyncExternalStore(
+    player === undefined ? NO_SUBSCRIPTION : subscribe,
+    getSnapshot,
+    getSnapshot,
+  );
 }

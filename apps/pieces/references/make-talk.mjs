@@ -74,8 +74,8 @@ function makeTalk() {
   const events = [];
   for (let index = 0; index < FRAMES; index += 1) {
     const at = Math.round((index * 1000) / FPS);
-    events.push({ name: "mouthOpen", at, value: round3(mouthAt(list, at)) });
-    events.push({ name: "blink", at, value: round3(blinkAt(starts, index)) });
+    events.push({ kind: "value", name: "mouthOpen", at, value: round3(mouthAt(list, at)) });
+    events.push({ kind: "value", name: "blink", at, value: round3(blinkAt(starts, index)) });
   }
   return events;
 }

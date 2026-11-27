@@ -31,7 +31,7 @@ function drivesAt(stage: Stage, y: number): ReadonlyMap<string, Drive["kind"]> {
   const drives = new Map<string, Drive>();
   const { targets } = frame(stage, {
     time: live(1000),
-    events: [{ name: INPUT_EVENTS.scroll, at: 0, value: y }],
+    events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: y }],
     drives,
   });
   // A list's parts run when its answer is asked for each part.

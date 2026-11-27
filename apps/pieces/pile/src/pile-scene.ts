@@ -1,5 +1,13 @@
 import { clockDriver } from "@gerak/dom";
-import { mergeEvents, seeded, type Events, type Pose2d, type Time } from "@gerak/core";
+import {
+  inputs,
+  mergeInput,
+  seeded,
+  triggers,
+  type Input,
+  type Pose2d,
+  type Time,
+} from "@gerak/core";
 import { react } from "@gerak/moves";
 import { builtinWorld, simulate } from "@gerak/physics";
 
@@ -27,14 +35,21 @@ const sim = simulate(builtinWorld(), (world) => {
     world.addBody({ ...start, shape: { kind: "box", ...SIZE }, restitution: 0.25, friction: 0.7 });
 });
 
+const pileInputs = inputs({ triggers: { contact: {} } });
+
 /** Each letter squashes on every contact it starts, harder than it springs back. */
 const squash = STARTS.map(({ id }) =>
-  react({ on: ["contact"], target: id, kind: "recoil", amplitude: 0.14, decay: 11, frequency: 3 }),
+  react(triggers(pileInputs, "contact", id), {
+    kind: "recoil",
+    amplitude: 0.14,
+    decay: 11,
+    frequency: 3,
+  }),
 );
 
 /** Each letter's box moves and turns around its centre; its glyph squashes from its foot inside it. */
-export const scene = (time: Time, events: Events) => {
-  const all = mergeEvents(events, sim.events(time));
+export const scene = (time: Time, events: Input) => {
+  const all = mergeInput(events, sim.events(time));
   return {
     letters: STARTS.map(({ id }): Pose2d => sim.pose(id, time)),
     glyphs: STARTS.map((_, index): Pose2d => {

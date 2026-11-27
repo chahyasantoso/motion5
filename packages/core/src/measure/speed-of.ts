@@ -1,4 +1,5 @@
-import type { Events } from "../events/event-list";
+import type { Input } from "../events/event-list";
+import { withProbeStore } from "../state/store";
 import type { Signal } from "../time/shapes";
 import type { Time } from "../time/time";
 import { timeAt } from "../time/time-at";
@@ -8,7 +9,7 @@ function between<K extends string>(
   signal: Signal<{ readonly [F in K]?: number }>,
   fields: readonly K[],
   time: Time,
-  events: Events,
+  events: Input,
   stepMs: number,
   now: number,
   end: number,
@@ -16,10 +17,12 @@ function between<K extends string>(
   const before = Math.max(0, Math.min(end, now) - stepMs / 2);
   const after = Math.min(end, before + stepMs);
   if (!(after > before)) return fields.map(() => 0);
-  const a = signal(timeAt(time, before), events);
-  const b = signal(timeAt(time, after), events);
-  const seconds = (after - before) / 1000;
-  return fields.map((field) => ((b[field] ?? 0) - (a[field] ?? 0)) / seconds);
+  return withProbeStore(() => {
+    const a = signal(timeAt(time, before), events);
+    const b = signal(timeAt(time, after), events);
+    const seconds = (after - before) / 1000;
+    return fields.map((field) => ((b[field] ?? 0) - (a[field] ?? 0)) / seconds);
+  });
 }
 
 /** Per second, in `fields` order, how fast each field of a signal moves at `time`, kept inside the clock. */
@@ -27,7 +30,7 @@ export function speedOf<K extends string>(
   signal: Signal<{ readonly [F in K]?: number }>,
   fields: readonly K[],
   time: Time,
-  events: Events,
+  events: Input,
   stepMs: number,
 ): readonly number[] {
   const clock = time.clock;

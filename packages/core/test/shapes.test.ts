@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
-  NO_EVENTS,
+  NO_INPUT,
   along,
   along3d,
   arch,
@@ -31,11 +31,11 @@ describe("core shapes", () => {
     const timeOnly = (time: Time): Pose2d => ({ x: time.progress * 100 });
     const signal: Signal = timeOnly;
     expectTypeOf(timeOnly).toMatchTypeOf<Signal>();
-    expect(signal(timed, NO_EVENTS)).toEqual({ x: 50 });
-    expect(velocity(signal, timed, NO_EVENTS).vx).toBeCloseTo(100, 9);
+    expect(signal(timed, NO_INPUT)).toEqual({ x: 50 });
+    expect(velocity(signal, timed, NO_INPUT).vx).toBeCloseTo(100, 9);
 
     const signal3d: Signal<Pose3d> = (time) => ({ z: time.progress * 10 });
-    expect(velocity3d(signal3d, timed, NO_EVENTS).vz).toBeCloseTo(10, 9);
+    expect(velocity3d(signal3d, timed, NO_INPUT).vz).toBeCloseTo(10, 9);
   });
 
   it("builds every curve with settings from its settings and matches pre-change samples", () => {

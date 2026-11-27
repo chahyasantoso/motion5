@@ -1,5 +1,7 @@
-import type { Events } from "../events/event-list";
+import type { Input } from "../events/event-list";
 import { spring, springMemory } from "../ease/spring";
+import { rawTime, stillMoving } from "../state/clock-watch";
+import { withProbeStore } from "../state/store";
 import { elapsedOf, type Time } from "../time/time";
 import { timeAt } from "../time/time-at";
 
@@ -66,26 +68,31 @@ export function trailStart(now: number, settings: TrailSettings): number {
 /** A value chasing `signal(time, events)` on a spring, for follow-through and drag. Pass the scene's
  * time: the signal applies its own spans and eases. */
 export function trail(
-  signal: (time: Time, events: Events) => number,
+  signal: (time: Time, events: Input) => number,
   options: TrailOptions,
-): (time: Time, events: Events) => number {
+): (time: Time, events: Input) => number {
   const settings = trailSettings(options, "trail");
   return (time, events) => {
-    const now = elapsedOf(time.clock);
+    const raw = rawTime(time);
+    const now = elapsedOf(raw.clock);
     if (now === undefined) return signal(time, events);
-    let at = trailStart(now, settings);
-    let value = signal(timeAt(time, at), events);
-    let speed = 0;
-    let goal = value;
-    while (at < now) {
-      goal = signal(timeAt(time, at), events);
-      const dt = Math.min(settings.stepMs, now - at);
-      const moved = spring(value - goal, speed, dt / 1000, settings.spring);
-      value = goal + moved.offset;
-      speed = moved.speed;
-      at += dt;
-    }
-    const resting = Math.abs(value - goal) < settings.rest && Math.abs(speed) < 10 * settings.rest;
-    return resting ? goal : value;
+    return withProbeStore(() => {
+      let at = trailStart(now, settings);
+      let value = signal(timeAt(raw, at), events);
+      let speed = 0;
+      while (at < now) {
+        const goal = signal(timeAt(raw, at), events);
+        const dt = Math.min(settings.stepMs, now - at);
+        const moved = spring(value - goal, speed, dt / 1000, settings.spring);
+        value = goal + moved.offset;
+        speed = moved.speed;
+        at += dt;
+      }
+      const goalNow = signal(timeAt(raw, now), events);
+      const resting =
+        Math.abs(value - goalNow) < settings.rest && Math.abs(speed) < 10 * settings.rest;
+      if (!resting) stillMoving();
+      return resting ? goalNow : value;
+    });
   };
 }

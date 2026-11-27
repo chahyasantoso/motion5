@@ -1,7 +1,10 @@
+import { inputs } from "@gerak/core";
 import { mount } from "@gerak/dom";
 import { loadPieceMarkup, pageOfPiece } from "./piece-markup";
 import { pieceLookup, type ModuleGlob } from "./stage-module";
 import { levelOf, rms } from "../audio/levels";
+
+const talkInputs = inputs({ values: { mouthOpen: {} } });
 
 const MIN_STEP_MS = 1000 / 30;
 
@@ -48,10 +51,16 @@ export async function talkPage(pieces: ModuleGlob, components: ModuleGlob): Prom
     saveButton.hidden = true;
     return;
   }
-  const stage = mount(loaded.stage, { clock: "timed", frame: "fit", root: frame });
+  const stage = mount(loaded.stage, {
+    clock: "live",
+    frame: "fit",
+    root: frame,
+  });
 
   saveButton.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(stage.events(), null, 1)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(stage.driver.input(), null, 1)], {
+      type: "application/json",
+    });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "talk-session.json";
@@ -73,7 +82,7 @@ export async function talkPage(pieces: ModuleGlob, components: ModuleGlob): Prom
         if (now - last >= MIN_STEP_MS) {
           last = now;
           analyser.getFloatTimeDomainData(samples);
-          stage.send("mouthOpen", levelOf(rms(samples)));
+          stage.set(talkInputs, "mouthOpen", levelOf(rms(samples)));
         }
         requestAnimationFrame(frame);
       };

@@ -1,4 +1,4 @@
-import { mergeEvents, type Events, type MotionEvent, type Time } from "@gerak/core";
+import { mergeInput, type Input, type InputEntry, type Time } from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import { restReader, type Box, type RestAt } from "../src";
 import { carryFor } from "../src/run/carry";
@@ -13,7 +13,7 @@ const WIDE = restReader({
   slotA: { x: 500, y: 200, width: 100, height: 50 },
   slotB: { x: 100, y: 100, width: 200, height: 100 },
 });
-const flip = (at: number): MotionEvent => ({ name: "flip", at });
+const flip = (at: number): InputEntry => ({ kind: "trigger", name: "flip", at, value: 1 });
 const time = (ms: number): Time => ({
   progress: ms / 1000,
   clock: { kind: "timed", elapsed: ms, length: 1000 },
@@ -52,8 +52,8 @@ describe("carry", () => {
 
   it("follows a target box of the author's choosing and refuses a length of 0", () => {
     const measures: readonly RestAt[] = [{ at: 0, rest: WIDE }];
-    const carry = carryFor(WIDE, measures, mergeEvents([flip(100)]), time(200));
-    const target = (past: Events, reader: { get(name: string): Box }): Box =>
+    const carry = carryFor(WIDE, measures, mergeInput([flip(100)]), time(200));
+    const target = (past: Input, reader: { get(name: string): Box }): Box =>
       reader.get(past.some(({ name }) => name === "flip") ? "slotB" : "slotA");
     expect(carry("slotA", { ms: 200, target })).toMatchObject({ x: -200, y: -50 });
     expect(() => carry("card", { ms: 0 })).toThrow(RangeError);

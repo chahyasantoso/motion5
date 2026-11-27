@@ -1,8 +1,8 @@
 # Getting started
 
-gerak makes motion from code. A **scene** is a function from time, and the events so far, to one value per target.
-A **player** runs a scene on a **driver** (a clock, the page's scroll, or your hand), and a renderer writes each value
-onto an element or a Three.js object.
+gerak makes motion from code. The app owns rules and lasting state; a **scene** only describes how things move, as a pure function from time and the input so far to one value per target.
+A **player** runs a scene on a **driver** (`liveClock`, `clockDriver`, `scrollDriver`, or `manualDriver`), which owns an `inputLog` with typed `set` and `trigger` writers checked against a declared `Contract` (`inputs({ values?, triggers? })`), and a renderer writes each value
+onto an element or a Three.js object. Scenes read `value`, `valueAt`, and `triggers`, a page opts into DOM hover/press/focus/pointer with `listen`, and several sections can share one `liveClock`.
 
 ## A scene on a plain page
 
@@ -30,20 +30,28 @@ if (title !== null) player.subscribe("title", (pose) => applyValue(title, pose))
 ## In React
 
 ```tsx
-import { clockDriver } from "@gerak/dom";
-import { usePlayer, useTarget } from "@gerak/react";
+import { useRef } from "react";
+import { clockDriver, liveClock } from "@gerak/dom";
+import { useMount, usePlayer, useTarget } from "@gerak/react";
 
 const clock = () => clockDriver({ duration: durationMs });
+const live = liveClock();
 
 export function Title() {
   const playing = usePlayer(scene, clock);
   const title = useTarget(playing?.player, "title");
   return <h1 ref={title}>Hello</h1>;
 }
+
+export function PieceFrame() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useMount(rootRef, stageScene, { clock: { kind: "driver", driver: live } });
+  return <div ref={rootRef}><h1 data-cast="title">Hello</h1></div>;
+}
 ```
 
-Define `scene` and `clock` outside the component, or `usePlayer` restarts. `useTarget` writes the pose every frame
-with no render.
+Define `scene`, `clock`, and shared `liveClock` outside the component, or `usePlayer` restarts. Several `useMount` sections can share one `liveClock` via `{ clock: { kind: "driver", driver: live } }` so they share one clock, frame loop, and `inputLog`, and a page opts into hover/press/focus/pointer with `listen` (`@gerak/dom`). `useTarget` writes the pose every frame
+with no render, `useSignal` follows scene state synchronously, `useMount` mounts compiled stage scenes onto a React ref with zero wrapper nodes, and `<Stage>` renders a container `<div>` around its children.
 
 ## Seeking by hand
 
@@ -62,6 +70,6 @@ with no browser.
 ## Where next
 
 - [Core](../../packages/core/docs/core.md) and [stage](../../packages/stage/docs/stage.md): read whole before making motion; the loop is in the second.
-- [3D scenes](../../packages/three/docs/agent-3d.md), [rigs](../../packages/rig/docs/agent-rigs.md), [events](../../packages/stage/docs/agent-events.md), [physics](../../packages/physics/docs/agent-physics.md)
+- [3D scenes](../../packages/three/docs/agent-3d.md), [rigs](../../packages/rig/docs/agent-rigs.md), [app input](../../packages/stage/docs/agent-events.md), [physics](../../packages/physics/docs/agent-physics.md)
   and [motion principles](../../packages/moves/docs/agent-principles.md) when a brief needs them.
-- [The Studio](../../packages/studio/docs/studio.md) and [every command](../../packages/tools/docs/commands.md).
+- [Every command](../../packages/tools/docs/commands.md).

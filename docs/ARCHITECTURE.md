@@ -5,10 +5,10 @@ lives is in [MAP.md](./MAP.md).
 
 ## 1. The one invariant
 
-**Motion is a pure function.** A scene maps time, and the events so far, to one value per target. The same time and
-events always give the same values, so a scene can be sampled, sought, tested and reviewed with no browser and no
+**Motion is a pure function.** A scene maps time, and the input so far, to one value per target. The same time and
+input always give the same values, so a scene can be sampled, sought, tested and reviewed with no browser and no
 clock. Everything else in this document follows from keeping that true: a scene owns every number of motion, a
-driver owns only time, a player owns only playback, and a renderer owns only writing.
+driver owns time and its typed `inputLog`, a player owns playback, and a renderer owns writing.
 
 ## 2. Layers
 
@@ -40,7 +40,7 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | 3. Moves | a named behaviour: parts coupled on fields inside one progress, a function from options to a function of time | `packages/moves/src/moves/`; a brief's own in `apps/pieces/<brief>/src/moves/` |
 | 4. Arranging time | moves placed in time and across targets: spans, phases, lanes, loops, chains, reshaped time; the piece format | `packages/core/src/time/`; `@gerak/stage` |
 | 5. Pieces | one brief's motion, as content | `apps/pieces/<brief>/` |
-| 6. Logic | what happens because of what a person did | the event log, `react`, `tally` in `@gerak/core`, and `follow`/`react` in `@gerak/moves` today; rules, score and state wait for a brief |
+| 6. Logic | what happens because of what a person did | the app owns rules and lasting state, sending `set`/`trigger` against a `Contract`; scenes read `value`/`valueAt`/`triggers`, and `@gerak/moves` provides `follow`/`react` |
 | 7. App | the thing that ships | the web overlay, the instrument, video, and later a game or a quiz |
 
 - A lower layer never knows a higher one: a spring does not know it is in a game. The boundary scan's pure layer holds
@@ -48,9 +48,9 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 - A move exists where parts couple inside one progress; parts merely side by side are arranged in time, not a move.
 - A move outside `@gerak/moves` imports only `@gerak/core`, `@gerak/moves` and its own `src/parts/`, so it can travel
   to another project as it is.
-- Logic is a fold over the event log, never state changed in place. Score, position and collisions are worked out
-  from the events so far, as physics is replayed from snapshots, so a piece with logic can still be sought, reviewed,
-  edited live and rendered frame-exact.
+- Rules and lasting state live in the app, never inside gerak. The app sends current values (`set`) and discrete triggers
+  (`trigger`) through a typed `Contract` (`inputs`), while physics replays from checkpoints so timed pieces stay seekable,
+  reviewed, edited live and rendered frame-exact.
 - A move written for one brief lives in that brief's `src/moves/` and moves into `@gerak/moves` when a second brief
   imports it. Any agent may write a part or a move.
 
@@ -64,12 +64,12 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | Named moves, couplings and signal parts | `@gerak/moves` |
 | Bones, chains, FK, IK and frames, 2D and 3D | `@gerak/rig`, bound to Three.js skeletons by `@gerak/rig-three` |
 | Bodies, contacts and a seekable simulation | `@gerak/physics`, backed by `@gerak/rapier` |
-| Which moment is shown, and who hears a value or a cue | `@gerak/player` |
-| Where time comes from on a page: a clock, scroll, events | the drivers in `@gerak/dom` |
+| Which moment is shown, its `RuntimeStore`, and who hears a value or a cue | `@gerak/player` |
+| Where time comes from on a page: `liveClock` (with bounded input window), `clockDriver`, `scrollDriver`, and opt-in `listen` | `@gerak/dom` |
 | The CSS a pose becomes | `@gerak/dom` |
 | A pose on a Three.js object and opt-in `createStage3d` rig | `@gerak/three` |
-| Binding a player to React | `@gerak/react` (and `@gerak/three/react`) |
-| Reading, checking, editing live and photographing motion | `@gerak/tools` |
+| Binding a player or compiled stage to React | `@gerak/react` (and `@gerak/three/react`) |
+| Reading, checking, measuring, live-reloading and photographing motion | `@gerak/tools` |
 
 One owner per question. A second place that answers one of these is the defect to fix, not a convenience to keep.
 
@@ -77,7 +77,7 @@ One owner per question. A second place that answers one of these is the defect t
 
 1. A scene is pure: no `Date`, no randomness without a seed, no DOM reads. A value the page measures reaches a scene
    through an object the scene reads and `player.refresh()`.
-2. A driver reports time and events only; it never changes a value.
+2. A driver reports time and typed input only; it never changes a pose.
 3. A move ends at its rest pose, the element's layout position, so the page's layout is the final frame.
 4. A renderer writes what a value says and nothing else, and owns every CSS string it writes.
 5. Physics is seekable: `simulate` replays from the start to any time, so a physics scene stays a function of time.

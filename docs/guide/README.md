@@ -9,16 +9,14 @@ not listed there, treat it as internal even when a workspace checkout lets you i
 ## Read in this order
 
 1. [Getting started](./getting-started.md): a scene, a player, a driver and a renderer, on a plain page and in React.
-2. [The Studio](../../packages/studio/docs/studio.md): a piece as connected cards.
-3. [Core](../../packages/core/docs/core.md) and [stage](../../packages/stage/docs/stage.md): the two pages to read whole before making motion; the second holds the loop.
-4. The docs of the package a brief needs:
+2. [Core](../../packages/core/docs/core.md) and [stage](../../packages/stage/docs/stage.md): the two pages to read whole before making motion; the second holds the loop.
+3. The docs of the package a brief needs:
    [core](../../packages/core/docs/README.md), [stage](../../packages/stage/docs/README.md),
    [player](../../packages/player/docs/README.md), [dom](../../packages/dom/docs/README.md),
    [react](../../packages/react/docs/README.md), [three](../../packages/three/docs/README.md),
    [rig](../../packages/rig/docs/README.md), [rig-three](../../packages/rig-three/docs/README.md),
    [physics](../../packages/physics/docs/README.md), [rapier](../../packages/rapier/docs/README.md),
-   [moves](../../packages/moves/docs/README.md), [tools](../../packages/tools/docs/README.md) and
-   [studio](../../packages/studio/docs/README.md).
+   [moves](../../packages/moves/docs/README.md) and [tools](../../packages/tools/docs/README.md).
 
 ## Status of this guide
 

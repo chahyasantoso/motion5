@@ -1,5 +1,4 @@
-import type { Events, Pose2d, Pose3d, Span, Time } from "@gerak/core";
-import type { CastBuilder, Members } from "./cast";
+import type { Input, Pose2d, Pose3d, Span, Time } from "@gerak/core";
 import type { ScrollBeat, TriggerBeat } from "./beat";
 import type { Carry, RestReader } from "./layout";
 
@@ -9,35 +8,21 @@ export type ListPose = (index: number, count: number) => Pose2d;
 /** A 3D list's pose in the scene: the 3D pose of item `index` of `count`. */
 export type ListPose3d = (index: number, count: number) => Pose3d;
 
-/** What the scene returns: a pose per actor, a `ListPose` per list, a `Pose3d` per object. */
-export type Targets<M> = string extends keyof M
-  ? Readonly<Record<string, Pose2d | Pose3d | ListPose | ListPose3d | undefined>>
-  : {
-      readonly [K in keyof M & string]?: M[K] extends { readonly kind: "list" }
-        ? ListPose
-        : M[K] extends { readonly kind: "object"; readonly parts: true }
-          ? ListPose3d
-          : M[K] extends { readonly kind: "object" }
-            ? Pose3d
-            : Pose2d;
-    };
-
-/** A list pose from per-item data: item `index` takes `pose(items[index], index)`, one past the data none. */
-export function each<T>(items: readonly T[], pose: (item: T, index: number) => Pose2d): ListPose {
-  return (index) => {
-    const item = items[index];
-    return item === undefined ? {} : pose(item, index);
-  };
-}
-
 /** Beats by name, each a `Span`: `beats.enter.of(time)` is time inside it. */
 export type Beats<B extends string = string> = Readonly<Record<B, Span>>;
+
+/** Which dynamic input streams an element or frame depends on. */
+export interface InputNeed {
+  readonly scroll: boolean;
+  readonly pointer: boolean;
+  readonly events: boolean;
+}
 
 /** What the scene reads each frame. */
 export interface SceneContext<B extends string = string> {
   readonly time: Time;
   readonly beats: Beats<B>;
-  readonly events: Events;
+  readonly events: Input;
   /** Measured rest boxes. */
   readonly rest: RestReader;
   readonly carry: Carry;
@@ -51,6 +36,8 @@ export interface SceneContext<B extends string = string> {
   readonly moves?: Map<string, Moves> | undefined;
   /** Filled as elements run: what drives each, besides its windows' time and the measured boxes. */
   readonly drives?: Map<string, Drive> | undefined;
+  /** Filled as elements run: which dynamic input channels each element read. */
+  readonly inputs?: Map<string, InputNeed> | undefined;
 }
 
 /** What drives an element: only scroll, through scroll beats without `smooth`; only one trigger
@@ -69,9 +56,10 @@ export interface Limits {
   readonly jump?: number | undefined;
   readonly turn?: number | undefined;
   readonly ratio?: number | undefined;
+  /** Custom fields that change in whole steps, such as an index; review skips their ratio check. */
+  readonly steps?: readonly string[] | undefined;
 }
 
-/** A piece as written: beats in ms, a cast, and a scene from time to poses. */
 /** One shot of a scene made with `shot`: its name, place in order, and its ms on the scene's clock. */
 export interface ShotSummary {
   readonly name: string;
@@ -79,38 +67,4 @@ export interface ShotSummary {
   readonly from: number;
   readonly to: number;
   readonly overlap: number;
-}
-
-export interface StageOptions<B extends string, M extends Members<B>> {
-  readonly beats: Readonly<Record<B, readonly [number, number]>>;
-  /** Defaults to the last beat's end; longer holds the end. */
-  readonly durationMs?: number | undefined;
-  readonly cast: (m: CastBuilder<NoInfer<B>>) => M;
-  readonly cues?: Events | undefined;
-  readonly limits?: Readonly<Record<string, Limits>> | undefined;
-  /** Minimum ms a page clock stays alive after an input event for triggers and springs to settle. */
-  readonly settleMs?: number | undefined;
-  /** The shots made with `shot`, in order. */
-  readonly shots?: readonly ShotSummary[] | undefined;
-  readonly scene: (context: SceneContext<NoInfer<B>>) => Targets<NoInfer<M>>;
-}
-
-/** A piece as `defineStage` returns it, before `compileStage` checks it. */
-export interface StageDefinition<B extends string = string, M extends Members<B> = Members<B>>
-  extends StageOptions<B, M> {
-  readonly kind: "stage-definition";
-}
-
-/** Declares a piece; its beat names type the cast's `on` and the scene's context. */
-export function defineStage<const B extends string, M extends Members<B>>(
-  options: StageOptions<B, M>,
-): StageDefinition<B, M> {
-  return Object.freeze({ ...options, kind: "stage-definition" });
-}
-
-/** Whether `value` reads as what `defineStage` returns: `kind` only, so a second copy of the package passes. */
-export function isStageDefinition(value: unknown): value is StageDefinition {
-  return (
-    typeof value === "object" && value !== null && Reflect.get(value, "kind") === "stage-definition"
-  );
 }

@@ -75,8 +75,8 @@ describe("runCues end-to-end", () => {
       if (result.kind !== "cues") return;
 
       expect(JSON.parse(readFileSync(result.path, "utf8"))).toEqual([
-        { name: "word", at: 200, value: 2 },
-        { name: "word", at: 1200, value: 5 },
+        { kind: "value", name: "word", at: 200, value: 2 },
+        { kind: "value", name: "word", at: 1200, value: 5 },
       ]);
       expect(JSON.parse(readFileSync(result.words, "utf8"))).toEqual([
         "Ship",
@@ -120,8 +120,8 @@ describe("runCues end-to-end", () => {
       if (result.kind !== "cues") return;
 
       expect(JSON.parse(readFileSync(result.path, "utf8"))).toEqual([
-        { name: "spoken", at: 250, value: 1 },
-        { name: "spoken", at: 600, value: 2 },
+        { kind: "value", name: "spoken", at: 250, value: 1 },
+        { kind: "value", name: "spoken", at: 600, value: 2 },
       ]);
       expect(JSON.parse(readFileSync(result.words, "utf8"))).toEqual(["Go", "fast"]);
     } finally {

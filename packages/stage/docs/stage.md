@@ -33,16 +33,16 @@ export default scene(
 
 ## Elements
 
-Each is a value with a unique name, made once. Multi-file pieces can import `{ cast }` directly from `<name>.cast.ts` (overriding only options like `{ split }` or `{ watch: true }` via `text(cast.x.name, ...)`, `box(cast.x.name, ...)`, `shape(cast.x.name, ...)`), or pass `<DomCast>` / `<ObjectCast>` to `box`, `text`, `shape`, and `object`.
+Each is a value with a unique name, made once. Multi-file pieces can import `{ cast }` directly from `<name>.cast.ts` (overriding options like `{ split }` via `text(cast.x.name, ...)`, `box(cast.x.name, ...)`, `shape(cast.x.name, ...)`), or pass `<DomCast>` / `<ObjectCast>` to `box`, `text`, `shape`, and `object`.
 
-- `box(name, { parts?, watch?, media? })`: a page element. With `parts: true`, it binds all matched `[data-cast="<name>"]` nodes (`1..N`) directly as numbered parts `<name>.<index>`. With `media: true` (not combined with `parts: true`), it binds a `<video>` or `<audio>` whose playhead the scene owns at `max(0, ms − from)` since its first `.shows` window opened (0 with no window), which `@gerak/dom` plays on a running clock and seeks on a held one.
-- `text(name, { split?, watch? })`: text whose string lives in the markup; `split: "letters" | "words"` gives one part per letter or word. `text(name, (time) => string, { watch? })` writes a readout string each frame.
-- `shape(name, path, { watch? })`: an SVG `<path>` whose `d` attribute is drawn from `path` in frame px (`path` may also be a function of measured `rest` boxes). `shape(name, { base, targets })` is a morph: pose `shape` 0 is the base, 1 the first target, 1.5 halfway to the second, and so on.
+- `box(name, { parts?, media? })`: a page element. With `parts: true`, it binds all matched `[data-cast="<name>"]` nodes (`1..N`) directly as numbered parts `<name>.<index>`. With `media: true` (not combined with `parts: true`), it binds a `<video>` or `<audio>` whose playhead the scene owns at `max(0, ms − from)` since its first `.shows` window opened (0 with no window), which `@gerak/dom` plays on a running clock and seeks on a held one.
+- `text(name, { split? })`: text whose string lives in the markup; `split: "letters" | "words"` gives one part per letter or word. `text(name, (time) => string)` writes a readout string each frame.
+- `shape(name, path)`: an SVG `<path>` whose `d` attribute is drawn from `path` in frame px (`path` may also be a function of measured `rest` boxes). `shape(name, { base, targets })` is a morph: pose `shape` 0 is the base, 1 the first target, 1.5 halfway to the second, and so on.
 - `object(name, { parts?, view? })`: a Three.js object (`Object3D` or writer) posed in `Pose3d` world units — or with `{ parts: true }`, an `Object3D[]` or `Group.children` list posed by `(index, count) => Pose3d` — drawn by `threeBinder` in `mount`'s `binders`, never by a DOM renderer. [3D scenes](../../three/docs/agent-3d.md) say how it is written, bound, reviewed and sent onto a page slot.
 
-A part is `<name>.<index>`. Setting `watch: true` streams pointer events to the scene. On a [page mount](../../dom/docs/page.md), an element binds `[data-cast="<name>"]` inside `root` (or the overrides in `options.nodes`).
+A part is `<name>.<index>`. On a [page mount](../../dom/docs/page.md), an element binds `[data-cast="<name>"]` inside `root` (or the overrides in `options.nodes`).
 
-An element is bound once, in one scene: `scene` refuses an element bound twice, directly or through a sub-scene, while read-only geometry references (`view.canvas`, `travel.to`, edge points, `stayWith`) may be shared across sub-scenes. `RestReader.object(name)` reads measured `ObjectBounds3d` (`{ width, height, depth }`) alongside 2D rest boxes (`rest.get(name)`).
+An element is bound once per compiled scene: `scene` refuses an element bound twice within the same scene or across its merged sub-scenes, while sequential `shot(...)` sub-scenes and independent scenes can reuse element definitions and read-only geometry references (`view.canvas`, `travel.to`, edge points, `stayWith`) can be shared across sub-scenes. `RestReader.object(name)` reads measured `ObjectBounds3d` (`{ width, height, depth }`) alongside 2D rest boxes (`rest.get(name)`).
 
 ## Beats
 
@@ -62,18 +62,27 @@ Scenes can share beats, states and signals. A scene passed to `scene(...)` as an
 - an element with no motion, such as a slot or a section another motion reads;
 - another scene, merged onto this one's clock;
 - `shot(scene, { name?, length?, until?, overlap? })`: a scene written from 0 that plays after the shot before it. Its
-  beats become `<shot>.<beat>` on the scene's clock, its length is its last beat's end (or `length`, or `until` a scene
-  ms), and `overlap` starts it early. Inside it, time starts at 0 and it sees only the events from its start on (each `at` moved back by its start), and `context.read(x, { time })` takes a time
-  on the shot's clock; its members show only during it unless they show wider. A shot holds no scroll or trigger beats
+  beats become `<shot>.<beat>` on the scene's clock, its length is its `length`, `until`, or last beat's end, and `overlap` starts it early. Inside it, time starts at 0 and it sees only the input from its start on (each `at` and scene cue shifted back by its start), and `context.read(x, { time })` takes a time
+  on the shot's clock without mutating forward cursor state; its members show only during it unless they show wider. A shot holds no scroll or trigger beats
   and no shots; a scene holding shots may join another scene only before that one's shots. `stage.shots` lists each shot's `{ name, index, from, to, overlap }`.
 
 On an element, and on each binding it returns:
 
 - `.moves(...)` appends motions to its list; `.modifies(principle)` wraps every motion written before it.
 - `.shows(beat | scrollBeat | [from, to] | { from } | { until })` shows it only then: during a clock or scroll beat, across two beats or `scrollPoint`s, from a beat or scroll point on, or until one ends; hidden, it and its DOM descendants are hidden and may jump.
-- `.limits({ jump, turn, ratio })` sets its review limits; each field once.
+- `.limits({ jump, turn, ratio, steps })` sets its review limits; each field once. `steps` names custom fields that change in whole steps, such as an index, which review does not judge as a ratio.
 
 Each call returns a new binding and never changes the element, so a list spreads: `scene(options, ...cards.map((card) => card.moves(rise)))`. Only the order of `.moves` and `.modifies` matters.
+
+## App input
+
+The app owns rules and every state that lasts (what is selected, what a click means); a scene only describes motion from two kinds of input declared once in a typed `Contract` via `inputs({ values?, triggers? })`:
+
+- **Values** (`value(contract, name, target?)`): how something is now, as a `State<number>` starting at 0 (`springTo`, `easeTo`, `transition`, and `follow` take it). `valueAt(contract, name, trigger, target?)` reads the value as it was when `trigger` arrived.
+- **Triggers** (`triggers(contract, name, target?)`): discrete moments with `at <= now` in arrival order (kept for the live clock's window, or all of them on a timed clock), which `react` plays on.
+- **Sending from the app:** `mounted.set(contract, name, value, target?)` and `mounted.trigger(contract, name, value?, target?)` forward to `mounted.driver` and record into its `inputLog`, read back via `mounted.driver.input()`.
+- **DOM listening and shared clocks:** `mount` attaches no user-interaction listeners beyond passive `scroll`; a page opts into hover, press, focus, and pointer (`pageInputs`) with `listen`, and several mounts can share one `liveClock` via `{ kind: "driver", driver }` — see [page mount](../../dom/docs/page.md).
+- `state` and `tally` stay as folds for timed scenes and cues; on a live page a fold sees only each name-and-target's latest entry and the live window.
 
 ## Motions
 
@@ -103,9 +112,9 @@ Two elements that react to one thing share one signal; wrap it in `shared` when 
 - **Strokes:** `drawn` and `drawnFrom` dash a `<path>` by length. A dash of a few px is barely visible; `stroke-linecap: round` in CSS shows it as a dot.
 - More on layout, order, text spacing and CSS values: [drawing](../../dom/docs/drawing.md).
 
-## Events and re-measure
+## Input and re-measure
 
-- An element with `watch: true` streams pointer events (`enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`). Fold them with core's `state`; `cues` in `scene`'s options script them.
+- Read app values and opt-in `listen` values (`hovered`, `pressed`, `focused`, `pointer-x`, `pointer-y` on `pageInputs`) with `value(contract, name, target?)`, `valueAt(contract, name, trigger, target?)`, and `triggers(contract, name, target?)`; `cues` in `scene`'s options script them for timed playback.
 - When page CSS or viewport changes and the mount re-measures (`ResizeObserver`, `resize`, font load, or `mounted.remeasure()`), `carry` transitions any element whose rest box moved from its old box to its new one.
 
 ## Checking

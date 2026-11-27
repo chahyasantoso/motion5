@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, type Events, type MotionEvent } from "@gerak/core";
+import { liveAt, type Input, type InputEntry } from "@gerak/core";
 import { simulate, type PhysicsWorld3d, type Spawner3d } from "@gerak/physics";
 import { rapierEngine, rapierEngine3d } from "@gerak/rapier";
 import { matrixFromEuler3d, matrixFromQuaternion, quaternionFromEuler3d } from "@gerak/core";
@@ -169,14 +169,14 @@ describe("Rapier 3D behind PhysicsWorld3d", () => {
 
   it("spawns 3D bodies on cue events and rewinds cleanly when earlier events arrive", () => {
     const options = {
-      spawn: (event: MotionEvent, world: Spawner3d) => {
+      spawn: (event: InputEntry, world: Spawner3d) => {
         if (event.name === "drop") {
           world.addBody({
             id: `ball@${event.at}`,
             shape: { kind: "sphere", radius: 0.3 },
-            x: event.x ?? 0,
+            x: event.point?.x ?? 0,
             y: 3,
-            z: event.y ?? 0,
+            z: event.point?.y ?? 0,
             restitution: 0.3,
           });
         }
@@ -186,9 +186,9 @@ describe("Rapier 3D behind PhysicsWorld3d", () => {
       world.setGravity(0, -9.81, 0);
       world.addCollider("floor", { kind: "floor", y: 0 });
     };
-    const drops: Events = [
-      { name: "drop", at: 400, x: -0.5, y: 0.2 },
-      { name: "drop", at: 900, x: 0.8, y: -0.4 },
+    const drops: Input = [
+      { kind: "trigger", name: "drop", at: 400, value: 1, point: { x: -0.5, y: 0.2 } },
+      { kind: "trigger", name: "drop", at: 900, value: 1, point: { x: 0.8, y: -0.4 } },
     ];
     const sim = simulate(create(), build, options);
     expect(sim.bodies(liveAt(300), drops)).toEqual([]);
@@ -197,14 +197,17 @@ describe("Rapier 3D behind PhysicsWorld3d", () => {
     expect(Object.keys(settled)).toEqual(["ball@400", "ball@900"]);
     expect(settled["ball@400"]?.y ?? 0).toBeCloseTo(0.3, 1);
 
-    const earlier: Events = [{ name: "drop", at: 200, x: 0, y: 0 }, ...drops];
+    const earlier: Input = [
+      { kind: "trigger", name: "drop", at: 200, value: 1, point: { x: 0, y: 0 } },
+      ...drops,
+    ];
     const fresh = simulate(create(), build, options);
     expect(sim.at(liveAt(2400), earlier)).toEqual(fresh.at(liveAt(2400), earlier));
   });
 
   it("answers a spawned body's pose from where the engine put it, exactly 0 when spawned, across seeks", () => {
     const options = {
-      spawn: (event: MotionEvent, world: Spawner3d) => {
+      spawn: (event: InputEntry, world: Spawner3d) => {
         world.addBody({
           id: `box@${event.at}`,
           shape: { kind: "box", width: 0.2, height: 0.2, depth: 0.2 },
@@ -218,14 +221,14 @@ describe("Rapier 3D behind PhysicsWorld3d", () => {
       world.setGravity(0, -9.81, 0);
       world.addCollider("floor", { kind: "floor", y: 0 });
     };
-    const drops: Events = [{ name: "drop", at: 400 }];
+    const drops: Input = [{ kind: "trigger", name: "drop", at: 400, value: 1 }];
     const sim = simulate(create(), build, options);
     const spawned = sim.pose("box@400", liveAt(420), drops);
     expect([spawned.x, spawned.z]).toEqual([0, 0]);
     expect(Object.keys(bodyPose3d(spawned))).toEqual(["y"]);
 
     const fell = sim.pose("box@400", liveAt(1500), drops);
-    const earlier: Events = [{ name: "drop", at: 100 }, ...drops];
+    const earlier: Input = [{ kind: "trigger", name: "drop", at: 100, value: 1 }, ...drops];
     sim.pose("box@100", liveAt(2000), earlier);
     expect(sim.pose("box@400", liveAt(1500), drops)).toEqual(fell);
     const fresh = simulate(create(), build, options);
@@ -376,12 +379,12 @@ describe("one snapshot format", () => {
 
   it("fast-forwards a late 3D spawn at 120 s to match a 0 ms spawn and rewinds cleanly", () => {
     const options = {
-      spawn: (event: MotionEvent, world: Spawner3d) => {
+      spawn: (event: InputEntry, world: Spawner3d) => {
         if (event.name === "drop") {
           world.addBody({
             id: `ball@${event.at}`,
             shape: { kind: "sphere", radius: 0.4 },
-            x: event.x ?? 0,
+            x: event.point?.x ?? 0,
             y: 2,
             z: 0,
             restitution: 0.4,
@@ -393,12 +396,14 @@ describe("one snapshot format", () => {
       world.setGravity(0, -9.81, 0);
       world.addCollider("floor", { kind: "floor", y: 0 });
     };
-    const late: Events = [
-      { name: "scroll", at: 10_000, value: 200 },
-      { name: "scroll", at: 50_000, value: 600 },
-      { name: "drop", at: 120_000, x: 0.5 },
+    const late: Input = [
+      { kind: "value", name: "scroll", at: 10_000, value: 200 },
+      { kind: "value", name: "scroll", at: 50_000, value: 600 },
+      { kind: "trigger", name: "drop", at: 120_000, value: 1, point: { x: 0.5, y: 0 } },
     ];
-    const zero: Events = [{ name: "drop", at: 0, x: 0.5 }];
+    const zero: Input = [
+      { kind: "trigger", name: "drop", at: 0, value: 1, point: { x: 0.5, y: 0 } },
+    ];
     const sim = simulate(create(), build, options);
     const zeroSim = simulate(create(), build, options);
 
@@ -425,7 +430,10 @@ describe("one snapshot format", () => {
       zeroSim.at(liveAt(100), zero)["ball@0"],
     );
     expect(sim.at(liveAt(121_500), late)).toEqual(at1500);
-    const earlier: Events = [{ name: "drop", at: 60_000, x: -0.5 }, ...late];
+    const earlier: Input = [
+      { kind: "trigger", name: "drop", at: 60_000, value: 1, point: { x: -0.5, y: 0 } },
+      ...late,
+    ];
     const fresh = simulate(create(), build, options);
     expect(sim.at(liveAt(121_500), earlier)).toEqual(fresh.at(liveAt(121_500), earlier));
     expect(sim.events(liveAt(121_500), earlier)).toEqual(fresh.events(liveAt(121_500), earlier));

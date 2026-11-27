@@ -2,12 +2,14 @@ import { clockDriver } from "@gerak/dom";
 import {
   aim,
   ease,
+  inputs,
   mix,
   motion,
   orbit,
   project3d,
   span,
-  type Events,
+  value,
+  type Input,
   type Lens3d,
   type Pose3d,
   type Time,
@@ -47,7 +49,8 @@ const REVEAL_FROM = 1000;
 const REVEAL_EVERY = 350;
 
 /** One sample per word, each carrying how many words should show by then. */
-export const cues: Events = CAPTION.map((_word, index) => ({
+export const cues: Input = CAPTION.map((_word, index) => ({
+  kind: "value",
   name: "words",
   at: REVEAL_FROM + index * REVEAL_EVERY,
   value: index + 1,
@@ -62,7 +65,8 @@ const turn = span(0, 4400);
 const lean = span(500, 3300);
 const curl = span(900, 4000);
 
-const revealed = follow({ start: 0, on: { words: "value" }, stiffness: 170, damping: 26 });
+const captionInputs = inputs({ values: { words: {} } });
+const revealed = follow(value(captionInputs, "words"), { stiffness: 170, damping: 26 });
 
 /** How many caption words show for a `words` number from the scene. */
 export function wordsShown(value: number): number {

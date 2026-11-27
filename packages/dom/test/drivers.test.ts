@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { inputs, value } from "@gerak/core";
 import { play } from "@gerak/player";
-import {
-  clockDriver,
-  scrollDriver,
-  type EventSource,
-  type FrameSource,
-  type PointerLike,
-} from "@gerak/dom";
+import { clockDriver, scrollDriver, type FrameSource } from "@gerak/dom";
 
 function frames(): FrameSource & { run(at: number): void; readonly waiting: number } {
   let queued = new Map<number, (time: number) => void>();
@@ -276,136 +271,104 @@ describe("scrollDriver", () => {
     expect(listeners.size).toBe(0);
   });
 
-  it("reports a timed clock when it is given a length", () => {
+  it("reports a timed clock when it is given a length, and records inputs at its elapsed ms or 0", () => {
     const page = { scrollY: 150, addEventListener() {}, removeEventListener() {} };
-    const driver = scrollDriver({ target: page, start: 100, end: 300, length: 2000 });
-    expect(driver.now()).toEqual({
+    const timed = scrollDriver({ target: page, start: 100, end: 300, length: 2000 });
+    expect(timed.now()).toEqual({
       progress: 0.25,
       clock: { kind: "timed", elapsed: 500, length: 2000 },
     });
+    const contract = inputs({ values: { level: {} }, triggers: { ping: {} } });
+    timed.set(contract, "level", 3);
+    timed.trigger(contract, "ping");
+    expect(timed.input()).toEqual([
+      { kind: "value", name: "level", at: 500, value: 3 },
+      { kind: "trigger", name: "ping", at: 500, value: 1 },
+    ]);
+
+    const untimed = scrollDriver({ target: page, start: 100, end: 300 });
+    untimed.set(contract, "level", 7);
+    expect(untimed.input()).toEqual([{ kind: "value", name: "level", at: 0, value: 7 }]);
   });
 });
 
-function hoverable(): EventSource & { fire(type: string): void; readonly listening: number } {
-  const listeners = new Map<string, Set<(event: PointerLike) => void>>();
-  return {
-    addEventListener(type, listener) {
-      listeners.set(type, (listeners.get(type) ?? new Set()).add(listener));
-    },
-    removeEventListener(type, listener) {
-      listeners.get(type)?.delete(listener);
-    },
-    fire(type) {
-      for (const listener of [...(listeners.get(type) ?? [])]) listener({});
-    },
-    get listening() {
-      return [...listeners.values()].reduce((total, set) => total + set.size, 0);
-    },
-  };
-}
-
-describe("clockDriver watch", () => {
+describe("clockDriver input port", () => {
+  const voice = inputs({
+    values: { mouthOpen: {}, blink: {} },
+    triggers: { click: { targets: ["card"] }, enter: { targets: ["card"] } },
+  });
   const seen = (driver: ReturnType<typeof clockDriver>) =>
     play((_time, events) => ({ names: events.map(({ name }) => name) }), driver).values.names;
 
-  it("keeps a hover across a seek, shows it only from its ms, and forgets it on replay", () => {
+  it("keeps inputs across a seek, shows them only from their ms, and forgets them on replay", () => {
     const source = frames();
     const driver = clockDriver({ duration: 2000, frames: source, autoplay: false });
-    const card = hoverable();
-    driver.watch("card", card);
     driver.seek(0.5);
-    card.fire("pointerenter");
-    expect(driver.events()).toEqual([{ name: "enter", at: 1000, target: "card" }]);
+    driver.trigger(voice, "enter", 1, "card");
+    expect(driver.input()).toEqual([
+      { kind: "trigger", name: "enter", at: 1000, value: 1, target: "card" },
+    ]);
     driver.seek(0.75);
     expect(seen(driver)).toEqual(["enter"]);
     driver.seek(0.25);
     expect(seen(driver)).toEqual([]);
-    expect(driver.events()).toHaveLength(1);
+    expect(driver.input()).toHaveLength(1);
     driver.seek(0.75);
     expect(seen(driver)).toEqual(["enter"]);
     driver.replay();
     driver.pause();
     driver.seek(0.75);
-    expect(driver.events()).toEqual([]);
+    expect(driver.input()).toEqual([]);
     expect(seen(driver)).toEqual([]);
   });
 
-  it("runs on past its end while it watches, so a hover there plays out", () => {
-    const source = frames();
-    const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
-    const card = hoverable();
-    driver.watch("card", card);
-    source.run(0);
-    source.run(1000);
-    source.run(1500);
-    card.fire("pointerenter");
-    source.run(1800);
-    const time = driver.now();
-    expect(time.progress).toBe(1);
-    expect(time.clock).toEqual({ kind: "timed", elapsed: 1800, length: 1000 });
-    expect(driver.events()).toEqual([{ name: "enter", at: 1500, target: "card" }]);
-    expect(driver.playing()).toBe(true);
-    driver.seek(0.5);
-    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 500, length: 1000 });
-  });
-
-  it("resumes past its end on play, and forgets a hover when it starts again or loops", () => {
-    const source = frames();
-    const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
-    const card = hoverable();
-    driver.watch("card", card);
-    source.run(0);
-    source.run(1000);
-    source.run(1500);
-    card.fire("click");
-    driver.pause();
-    driver.play();
-    source.run(1600);
-    source.run(1700);
-    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 1600, length: 1000 });
-    expect(driver.events()).toHaveLength(1);
-
+  it("forgets its log when a loop wraps and notifies forgets listeners", () => {
     const looping = frames();
     const loop = clockDriver({ duration: 1000, frames: looping, repeat: 3, reducedMotion: "play" });
-    loop.watch("card", card);
+    let forgotten = 0;
+    const stop = loop.forgets(() => {
+      forgotten += 1;
+    });
     looping.run(0);
     looping.run(600);
-    card.fire("click");
-    expect(loop.events()).toHaveLength(1);
+    loop.trigger(voice, "click", 1, "card");
+    expect(loop.input()).toHaveLength(1);
     looping.run(1200);
-    expect(loop.events()).toEqual([]);
+    expect(loop.input()).toEqual([]);
+    expect(forgotten).toBe(1);
+    stop();
   });
 
-  it("logs a sample at its ms and runs on past its end until it settles", () => {
+  it("logs a value at its ms and runs on past its end until it settles", () => {
     const source = frames();
     const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
     source.run(0);
     source.run(1200);
     expect(driver.playing()).toBe(false);
-    driver.send("mouthOpen", 0.6);
-    expect(driver.events()).toEqual([{ name: "mouthOpen", at: 1000, value: 0.6 }]);
+    driver.set(voice, "mouthOpen", 0.6);
+    expect(driver.input()).toEqual([{ kind: "value", name: "mouthOpen", at: 1000, value: 0.6 }]);
     expect(driver.playing()).toBe(true);
     source.run(2000);
     source.run(2500);
     expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 1500, length: 1000 });
     source.run(4100);
     expect(driver.playing()).toBe(false);
-    expect(() => driver.send("mouthOpen", Number.NaN)).toThrow(/finite/);
+    expect(() => driver.set(voice, "mouthOpen", Number.NaN)).toThrow(/finite/);
   });
 
-  it("forgets its samples on replay, and stops at the end of the next run", () => {
+  it("forgets its values on replay, and stops at the end of the next run", () => {
     const source = frames();
     const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
     source.run(0);
-    driver.send("blink", 1);
+    driver.set(voice, "blink", 1);
     driver.replay();
-    expect(driver.events()).toEqual([]);
+    expect(driver.input()).toEqual([]);
     source.run(5000);
     source.run(6100);
     expect(driver.playing()).toBe(false);
   });
 
-  it("stops at its end when it watches nothing", () => {
+  it("stops at its end when no input arrived", () => {
     const source = frames();
     const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
     source.run(0);
@@ -413,15 +376,91 @@ describe("clockDriver watch", () => {
     expect(driver.playing()).toBe(false);
   });
 
-  it("tells subscribers of a recorded event, and unwatches on dispose", () => {
+  it("tells subscribers when an input is recorded", () => {
     const driver = clockDriver({ duration: 2000, frames: frames(), autoplay: false });
-    const card = hoverable();
-    driver.watch("card", card);
     let heard = 0;
     driver.subscribe(() => (heard += 1));
-    card.fire("click");
+    driver.trigger(voice, "click", 1, "card");
     expect(heard).toBe(1);
     driver.dispose();
-    expect(card.listening).toBe(0);
+  });
+
+  it("delivers a set made inside a player.on callback during seek on a paused clockDriver without a frame tick", () => {
+    const contract = inputs({ values: { level: {} } });
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, autoplay: false, frames: source });
+    const player = play(
+      (time, input) => ({ level: value(contract, "level")(time, input) }),
+      driver,
+      { cues: [{ kind: "trigger", name: "cue", at: 300, value: 1 }] },
+    );
+    player.on("cue", () => {
+      driver.set(contract, "level", 99);
+    });
+    driver.seek(0.5);
+    expect(source.waiting).toBe(0);
+    expect(player.values.level).toBe(99);
+  });
+
+  it("throws past the pass cap when a clockDriver listener writes on every pass", () => {
+    const contract = inputs({ values: { count: {} } });
+    const driver = clockDriver({ duration: 1000, autoplay: false, frames: frames() });
+    let n = 0;
+    driver.subscribe(() => {
+      n += 1;
+      driver.set(contract, "count", n);
+    });
+    expect(() => driver.seek(0.5)).toThrow(/pass/i);
+  });
+});
+
+describe("scrollDriver re-entrant notifications", () => {
+  it("delivers a set made by a subscriber during a scroll pass without a frame tick", () => {
+    const listeners = new Set<() => void>();
+    const page = {
+      scrollY: 0,
+      addEventListener(_: "scroll", listener: () => void) {
+        listeners.add(listener);
+      },
+      removeEventListener(_: "scroll", listener: () => void) {
+        listeners.delete(listener);
+      },
+    };
+    const contract = inputs({ values: { level: {} } });
+    const driver = scrollDriver({ target: page, start: 0, end: 100 });
+    const player = play(
+      (time, input) => ({ level: value(contract, "level")(time, input) }),
+      driver,
+    );
+    driver.subscribe(() => {
+      if (driver.now().progress >= 0.5) driver.set(contract, "level", 77);
+    });
+    page.scrollY = 50;
+    for (const listener of [...listeners]) listener();
+    expect(player.values.level).toBe(77);
+  });
+
+  it("throws past the pass cap when a scrollDriver listener writes on every pass", () => {
+    const listeners = new Set<() => void>();
+    const page = {
+      scrollY: 0,
+      addEventListener(_: "scroll", listener: () => void) {
+        listeners.add(listener);
+      },
+      removeEventListener(_: "scroll", listener: () => void) {
+        listeners.delete(listener);
+      },
+    };
+    const contract = inputs({ values: { count: {} } });
+    const driver = scrollDriver({ target: page, start: 0, end: 100 });
+    let n = 0;
+    driver.subscribe(() => {
+      n += 1;
+      driver.set(contract, "count", n);
+    });
+    page.scrollY = 50;
+    expect(() => {
+      for (const listener of [...listeners]) listener();
+    }).toThrow(/pass/i);
   });
 });

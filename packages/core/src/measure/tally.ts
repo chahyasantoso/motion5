@@ -1,6 +1,7 @@
+import type { Input, InputEntry } from "../events/event-list";
+import { buildState, stepMetaOf } from "../state/state";
+import { storeCell } from "../state/store";
 import { atProgress, elapsedOf, type Time } from "../time/time";
-import type { Events, MotionEvent } from "../events/event-list";
-import { state, type Step } from "../state/state";
 
 /** Settings of a `tally`: `start`, `on` (a held value by event name, or `"value"` for the event's own)
  * and `target`. */
@@ -8,17 +9,17 @@ export interface TallyOptions {
   /** The value held before any event. */
   readonly start: number;
   /** The value each event's name holds until the next, or `"value"` for the event's own value; events not
-   * named here, and `"value"` events with no value, are ignored. */
+   * named here are ignored. */
   readonly on: Readonly<Record<string, number | "value">>;
   /** Only events with this target count; with none, events count whatever their target. */
   readonly target?: string;
 }
 
-/** The area under held samples so far, in value-seconds: `total(events)` is the whole stream's, up to its
+/** The area under held samples so far, in value-seconds: `total(input)` is the whole stream's, up to its
  * last counted event, so `tally / total` is how far through it the stream is. */
 export interface Tally {
-  (time: Time, events: Events): number;
-  total(events: Events): number;
+  (time: Time, input: Input): number;
+  total(input: Input): number;
 }
 
 /** What is held since a counted event; a new one for each, so every counted event is a step. */
@@ -26,9 +27,10 @@ interface Held {
   readonly value: number;
 }
 
-/** Counted events of one list: their times, held values, and the area before each, oldest first. */
+/** Counted events of one list: times, held values, and cumulative area before each. */
 interface Table {
-  readonly source: readonly Step<Held>[];
+  readonly sourceResetId: number | undefined;
+  count: number;
   readonly times: number[];
   readonly values: number[];
   readonly areas: number[];
@@ -37,29 +39,44 @@ interface Table {
 /** The area under held samples up to any time, each held until the next: an integral over the steps of a
  * state of the held value, extended as a list grows by appending. */
 export function tally(options: TallyOptions): Tally {
-  const valueOf = (event: MotionEvent): number | undefined => {
-    const held = options.on[event.name];
-    if (held === "value") return event.value;
+  const valueOf = (entry: InputEntry): number | undefined => {
+    const held = options.on[entry.name];
+    if (held === "value") return entry.value;
     return held;
   };
-  const held = state<Held>(
+  const held = buildState<Held>(
     { value: options.start },
-    (current, event) => {
-      const value = valueOf(event);
+    (current, entry) => {
+      const value = valueOf(entry);
       return value === undefined ? current : { value };
     },
     options.target === undefined ? {} : { target: options.target },
   );
-  let table: Table | undefined;
-  const tableOf = (events: Events): Table => {
+  const tableSlot = storeCell<Table>();
+
+  const tableOf = (events: Input): Table => {
     const steps = held.steps(atProgress(0), events);
-    const kept: Table =
-      table !== undefined && table.source === steps
-        ? table
-        : { source: steps, times: [], values: [], areas: [] };
-    table = kept;
-    for (let index = kept.times.length; index < steps.length; index += 1) {
-      const step = steps[index];
+    const meta = stepMetaOf(steps);
+
+    const kept = tableSlot.own(
+      (existing) => meta?.resetId !== existing.sourceResetId,
+      () => ({
+        sourceResetId: meta?.resetId,
+        count: 0,
+        times: [],
+        values: [],
+        areas: [],
+      }),
+      (existing) => ({
+        ...existing,
+        times: existing.times.slice(),
+        values: existing.values.slice(),
+        areas: existing.areas.slice(),
+      }),
+    );
+
+    for (; kept.count < steps.length; kept.count += 1) {
+      const step = steps[kept.count];
       if (step === undefined) break;
       const count = kept.times.length;
       const since = count === 0 ? 0 : (kept.times[count - 1] ?? 0);
@@ -73,13 +90,15 @@ export function tally(options: TallyOptions): Tally {
       kept.values.push(step.value.value);
       kept.areas.push(area + (before * (step.at - since)) / 1000);
     }
+
     return kept;
   };
-  const total = (events: Events): number => {
-    const { areas } = tableOf(events);
-    return areas[areas.length - 1] ?? 0;
+
+  const total = (events: Input): number => {
+    const table = tableOf(events);
+    return table.areas.length > 0 ? (table.areas[table.areas.length - 1] ?? 0) : 0;
   };
-  const at = (time: Time, events: Events): number => {
+  const at = (time: Time, events: Input): number => {
     const now = elapsedOf(time.clock);
     if (now === undefined) return total(events);
     const { times, values, areas } = tableOf(events);

@@ -1,8 +1,17 @@
-import { unreachable, type Pose3d } from "@gerak/core";
+import { POSE_3D_NUMBERS, unreachable, type Pose3d } from "@gerak/core";
 import type { Player } from "@gerak/player";
 import { frameVisible, listPose3d, pose3dOf, type ObjectBounds3d, type Stage } from "@gerak/stage";
 import { Box3, Matrix4, Mesh, Object3D, Vector3 } from "three";
-import { applyPose3d } from "./pose3d";
+import { createMaterialStore, findSharedMaterials } from "./materials";
+import {
+  applyPose3dWithStore,
+  captureRest3dWithStore,
+  restoreRest3dWithStore,
+  type Rest3d,
+} from "./pose3d";
+
+/** Writer invoked for each member of a `parts: true` object list after its transform write. */
+export type ObjectListWriter3d = (object: Object3D, pose: Pose3d, index: number) => void;
 
 /** Where a scene's object goes: an `Object3D`, an array of `Object3D`s for a `parts: true` list, or
  * a writer `(pose, visible) => void` such as one handing bone poses to `applyBones`. */
@@ -11,9 +20,10 @@ export type ObjectTarget3d =
   | readonly Object3D[]
   | ((pose: Pose3d, visible: boolean) => void);
 
-/** Settings of `threeBinder`: target overrides, optional viewport resize callback, and draw callback. */
+/** Settings of `threeBinder`: target overrides, list member writers, optional viewport resize, and draw callback. */
 export interface ThreeBinderOptions {
   readonly objects?: Readonly<Record<string, ObjectTarget3d>>;
+  readonly writers?: Readonly<Record<string, ObjectListWriter3d>>;
   readonly resize?: () => void;
   readonly draw?: () => void;
 }
@@ -96,9 +106,24 @@ function measureList(
   });
 }
 
+function samePose3d(a: Pose3d | undefined, b: Pose3d | undefined): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return false;
+  for (const key of POSE_3D_NUMBERS) {
+    if (!Object.is(a[key], b[key])) return false;
+  }
+  const ca = a.custom;
+  const cb = b.custom;
+  if (ca === cb) return true;
+  if (ca === undefined || cb === undefined) return false;
+  const keys = Object.keys(ca);
+  if (keys.length !== Object.keys(cb).length) return false;
+  return keys.every((key) => Object.is(ca[key], cb[key]));
+}
+
 /** Binds a scene's object elements to the `Object3D` of the same name under `root`, or to `objects[name]`. */
 export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): ThreeBinder {
-  const { objects = {}, resize, draw = () => undefined } = options;
+  const { objects = {}, writers = {}, resize, draw = () => undefined } = options;
   const targetOf = (name: string): ObjectTarget3d | undefined =>
     (Object.hasOwn(objects, name) ? objects[name] : undefined) ?? root.getObjectByName(name);
   const discoveredNames = (): readonly string[] => {
@@ -140,7 +165,14 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
       }
       return Object.freeze(out);
     },
-    ...(resize === undefined ? {} : { resize }),
+    ...(resize === undefined
+      ? {}
+      : {
+          resize: (): void => {
+            resize();
+            if (started) draw();
+          },
+        }),
     counts(names?: readonly string[]): Readonly<Record<string, number>> {
       const candidates =
         names !== undefined ? names : started ? [...boundListNames] : discoveredNames();
@@ -196,9 +228,30 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
       return Object.freeze(out);
     },
     start(player, stage) {
+      const extraRoots: Object3D[] = [root];
+      for (const name of Object.keys(objects)) {
+        const target = objects[name];
+        if (target === undefined) continue;
+        const classified = classifyTarget(target);
+        switch (classified.kind) {
+          case "node":
+            extraRoots.push(classified.node);
+            break;
+          case "list":
+            extraRoots.push(...classified.items);
+            break;
+          case "writer":
+            break;
+          default:
+            unreachable(classified);
+        }
+      }
+      const materialStore = createMaterialStore({ isolate: true });
+      const sharedMaterials = findSharedMaterials(extraRoots);
+      const restores: (() => void)[] = [];
       const bound: {
         readonly name: string;
-        readonly write: (raw: unknown, visible: boolean) => void;
+        readonly write: (raw: unknown, visible: boolean, force: boolean) => boolean;
       }[] = [];
       const nextListNames = new Set<string>();
       for (const member of stage.members)
@@ -224,42 +277,92 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
                 default:
                   return unreachable(classified);
               }
-              const rests = items.map((item) => ({
-                x: item.position.x,
-                y: item.position.y,
-                z: item.position.z,
-              }));
+              const listWriter = Object.hasOwn(writers, member.name)
+                ? writers[member.name]
+                : undefined;
+              const rests: Rest3d[] = items.map((item) => {
+                const rest = captureRest3dWithStore(item, sharedMaterials, materialStore);
+                restores.push(() => restoreRest3dWithStore(item, rest, materialStore));
+                return rest;
+              });
+              const prevPoses: (Pose3d | undefined)[] = items.map(() => undefined);
+              let prevVisible: boolean | undefined;
               bound.push({
                 name: member.name,
-                write: (raw, visible) => {
+                write: (raw, visible, force) => {
+                  let dirty = force || prevVisible !== visible;
+                  prevVisible = visible;
                   const count = items.length;
                   items.forEach((item, index) => {
-                    item.visible = visible;
+                    if (force || item.visible !== visible) {
+                      item.visible = visible;
+                      dirty = true;
+                    }
                     if (!visible || raw === undefined) return;
                     const pose = listPose3d(raw, index, count);
                     const rest = rests[index];
-                    if (pose !== undefined && rest !== undefined) applyPose3d(item, pose, rest);
+                    if (pose === undefined || rest === undefined) return;
+                    if (!force && samePose3d(prevPoses[index], pose)) return;
+                    prevPoses[index] = {
+                      ...pose,
+                      ...(pose.custom === undefined ? {} : { custom: { ...pose.custom } }),
+                    };
+                    applyPose3dWithStore(item, pose, rest, undefined, materialStore);
+                    listWriter?.(item, pose, index);
+                    dirty = true;
                   });
+                  return dirty;
                 },
               });
               break;
             }
             switch (classified.kind) {
-              case "writer":
+              case "writer": {
+                let prevPose: Pose3d | undefined;
+                let prevVisible: boolean | undefined;
                 bound.push({
                   name: member.name,
-                  write: (raw, visible) => classified.write(pose3dOf(raw) ?? {}, visible),
+                  write: (raw, visible, force) => {
+                    const pose = pose3dOf(raw) ?? {};
+                    if (!force && prevVisible === visible && samePose3d(prevPose, pose)) {
+                      return false;
+                    }
+                    prevVisible = visible;
+                    prevPose = {
+                      ...pose,
+                      ...(pose.custom === undefined ? {} : { custom: { ...pose.custom } }),
+                    };
+                    classified.write(pose, visible);
+                    return true;
+                  },
                 });
                 break;
+              }
               case "node": {
                 const { node } = classified;
-                const rest = { x: node.position.x, y: node.position.y, z: node.position.z };
+                const rest = captureRest3dWithStore(node, sharedMaterials, materialStore);
+                restores.push(() => restoreRest3dWithStore(node, rest, materialStore));
+                let prevPose: Pose3d | undefined;
+                let prevVisible: boolean | undefined;
                 bound.push({
                   name: member.name,
-                  write: (raw, visible) => {
-                    node.visible = visible;
+                  write: (raw, visible, force) => {
+                    let dirty = force || prevVisible !== visible;
+                    prevVisible = visible;
+                    if (force || node.visible !== visible) {
+                      node.visible = visible;
+                      dirty = true;
+                    }
                     const pose = pose3dOf(raw);
-                    if (pose !== undefined) applyPose3d(node, pose, rest);
+                    if (pose !== undefined && (force || !samePose3d(prevPose, pose))) {
+                      prevPose = {
+                        ...pose,
+                        ...(pose.custom === undefined ? {} : { custom: { ...pose.custom } }),
+                      };
+                      applyPose3dWithStore(node, pose, rest, undefined, materialStore);
+                      dirty = true;
+                    }
+                    return dirty;
                   },
                 });
                 break;
@@ -282,16 +385,25 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
       started = true;
       boundNames = bound.map((entry) => entry.name);
       boundListNames = nextListNames;
-      const write = (): void => {
-        const visible = frameVisible(player.values);
-        for (const { name, write } of bound) write(player.values[name], visible?.[name] ?? true);
+      if (bound.length === 0) {
         draw();
+        return () => undefined;
+      }
+      let initial = true;
+      const write = (values: Readonly<Record<string, unknown>>): void => {
+        const visible = frameVisible(values);
+        let dirty = initial;
+        for (const entry of bound) {
+          if (entry.write(values[entry.name], visible?.[entry.name] ?? true, initial)) dirty = true;
+        }
+        initial = false;
+        if (dirty) draw();
       };
-      const first = bound[0];
-      // One listener per step: the first object's carries every object's write and the one draw.
-      if (first !== undefined) return player.subscribe(first.name, write);
-      draw();
-      return () => undefined;
+      const stopObserve = player.observe(() => player.values, write);
+      return () => {
+        stopObserve();
+        for (const restore of restores) restore();
+      };
     },
   };
 }

@@ -1,4 +1,4 @@
-import { NO_EVENTS, elapsedOf, type Events, type MotionEvent, type Time } from "@gerak/core";
+import { NO_INPUT, elapsedOf, type Input, type InputEntry, type Time } from "@gerak/core";
 import type {
   BodySpec,
   BodySpec3d,
@@ -36,7 +36,7 @@ export interface SimulateOptions {
   /** Past this many snapshots, every other one goes and the gap doubles, so memory stays bounded; default 32. */
   readonly maxCheckpoints?: number;
   /** Adds bodies when an event happens, such as confetti on a click; ids must be new, and the same for the same event. */
-  readonly spawn?: (event: MotionEvent, world: Spawner) => void;
+  readonly spawn?: (event: InputEntry, world: Spawner) => void;
 }
 
 /** Settings of 3D `simulate`: `dt` seconds a step (default 1/120), `checkpointMs` (250), `maxCheckpoints`
@@ -51,7 +51,7 @@ export interface SimulateOptions3d {
   /** Past this many snapshots, every other one goes and the gap doubles, so memory stays bounded; default 32. */
   readonly maxCheckpoints?: number;
   /** Adds 3D bodies when an event happens; ids must be new, and the same for the same event. */
-  readonly spawn?: (event: MotionEvent, world: Spawner3d) => void;
+  readonly spawn?: (event: InputEntry, world: Spawner3d) => void;
 }
 
 /** Where a body is for an element laid out centred on the stage's top left corner, and whether it exists yet. */
@@ -65,54 +65,53 @@ export interface Placed {
 /** A world played from time 0, seekable to any time, the same at the same time and events whatever came before. */
 export interface Simulation {
   /** Every body there at `time`, its centre and speed; pass the scene's events when a spawn reads them. */
-  at(time: Time, events?: Events): Readonly<Record<string, BodyState>>;
+  at(time: Time, events?: Input): Readonly<Record<string, BodyState>>;
   /** The ids of the bodies there at `time`, in the order they were added. */
-  bodies(time: Time, events?: Events): readonly string[];
+  bodies(time: Time, events?: Input): readonly string[];
   /** How far a body has moved from where it started, and its turn: the pose for an element laid out at its start. */
   pose(
     id: string,
     time: Time,
-    events?: Events,
+    events?: Input,
   ): { readonly x: number; readonly y: number; readonly rotation: number };
   /** Where a body is on the stage, with opacity 0 until it exists: the pose for an element centred on the corner. */
-  place(id: string, time: Time, events?: Events): Placed;
-  /** A `contact` event per body for every contact that started up to `time`, oldest first. */
-  events(time: Time, events?: Events): Events;
+  place(id: string, time: Time, events?: Input): Placed;
+  /** A `contact` trigger entry per body for every contact that started up to `time`, oldest first. */
+  events(time: Time, events?: Input): Input;
 }
 
 /** A 3D world played from time 0, seekable to any time, deterministic across seeks. */
 export interface Simulation3d {
   /** Every 3D body state at `time`; pass the scene's events when a spawn reads them. */
-  at(time: Time, events?: Events): Readonly<Record<string, BodyState3d>>;
+  at(time: Time, events?: Input): Readonly<Record<string, BodyState3d>>;
   /** The ids of the 3D bodies present at `time`, in the order they were added. */
-  bodies(time: Time, events?: Events): readonly string[];
+  bodies(time: Time, events?: Input): readonly string[];
   /** How far a body has moved from where it spawned, and its absolute turn: the pose for an element laid out at its start. */
   pose(
     id: string,
     time: Time,
-    events?: Events,
+    events?: Input,
   ): {
     readonly x: number;
     readonly y: number;
     readonly z: number;
     readonly rotation: Quaternion3d;
   };
-  /** A `contact` event per body for every contact that started up to `time`, oldest first. */
-  events(time: Time, events?: Events): Events;
+  /** A `contact` trigger entry per body for every contact that started up to `time`, oldest first. */
+  events(time: Time, events?: Input): Input;
 }
 
 const NOWHERE: Placed = Object.freeze({ x: 0, y: 0, rotation: 0, opacity: 0 });
 
-function sameEvent(a: MotionEvent | undefined, b: MotionEvent | undefined): boolean {
+function sameEvent(a: InputEntry | undefined, b: InputEntry | undefined): boolean {
   return (
     a !== undefined &&
     b !== undefined &&
+    a.kind === b.kind &&
     a.name === b.name &&
     a.at === b.at &&
-    a.target === b.target &&
-    a.x === b.x &&
-    a.y === b.y &&
     a.value === b.value &&
+    a.target === b.target &&
     a.other === b.other &&
     a.point?.x === b.point?.x &&
     a.point?.y === b.point?.y &&
@@ -199,14 +198,14 @@ export function simulate<
     readonly checkpointMs?: number;
     readonly durationMs?: number;
     readonly maxCheckpoints?: number;
-    readonly spawn?: (event: MotionEvent, world: { addBody(body: Spec): void }) => void;
+    readonly spawn?: (event: InputEntry, world: { addBody(body: Spec): void }) => void;
   } = {},
 ): {
-  at(time: Time, events?: Events): Readonly<Record<string, State>>;
-  bodies(time: Time, events?: Events): readonly string[];
-  pose(id: string, time: Time, events?: Events): Moved;
-  place?(id: string, time: Time, events?: Events): Placed;
-  events(time: Time, events?: Events): Events;
+  at(time: Time, events?: Input): Readonly<Record<string, State>>;
+  bodies(time: Time, events?: Input): readonly string[];
+  pose(id: string, time: Time, events?: Input): Moved;
+  place?(id: string, time: Time, events?: Input): Placed;
+  events(time: Time, events?: Input): Input;
 } {
   const dt = options.dt ?? 1 / 120;
   const stepMs = dt * 1000;
@@ -233,8 +232,8 @@ export function simulate<
   });
   world.drainContacts();
   const checkpoints = new Map<number, Uint8Array>([[0, world.snapshot()]]);
-  const recorded: MotionEvent[] = [];
-  let known: Events = NO_EVENTS;
+  const recorded: InputEntry[] = [];
+  let known: Input = NO_INPUT;
   let head = 0;
   let reached = 0;
   let stale = false;
@@ -245,7 +244,7 @@ export function simulate<
     return Math.max(0, Math.floor(ms / stepMs + 1e-9));
   };
   /** Takes the scene's events; one that changes the past rewinds to before it, so the next seek replays it. */
-  const learn = (events: Events): void => {
+  const learn = (events: Input): void => {
     if (options.spawn === undefined || events === known) return;
     let same = 0;
     while (same < known.length && sameEvent(known[same], events[same])) same += 1;
@@ -287,7 +286,7 @@ export function simulate<
         reached = Math.max(reached, head);
         states = undefined;
       } else {
-        const byStep = new Map<number, MotionEvent[]>();
+        const byStep = new Map<number, InputEntry[]>();
         for (const event of known) {
           const step = Math.floor(event.at / stepMs + 1e-9);
           if (step < head || step >= target) continue;
@@ -332,8 +331,10 @@ export function simulate<
           ] as const)
             if (starts.has(target))
               recorded.push({
+                kind: "trigger",
                 name: "contact",
                 at,
+                value: 1,
                 target,
                 other,
                 point: { x: contact.x, y: contact.y, ...z },
@@ -351,7 +352,7 @@ export function simulate<
     }
   };
   const built = new Set(starts.keys());
-  const at = (time: Time, events: Events = known): Readonly<Record<string, State>> => {
+  const at = (time: Time, events: Input = known): Readonly<Record<string, State>> => {
     learn(events);
     seek(stepOf(time));
     states ??= Object.fromEntries([...starts.keys()].map((id) => [id, world.body(id)]));

@@ -16,13 +16,13 @@ Public: `.`
 - `src/blend/`: mixes between two values, keyframes
 - `src/ease/`: eases and springs
 - `src/envelope/`: envelopes and waves
-- `src/events/`: the event list
+- `src/events/`: input contract, input log and records
 - `src/fields/`: what can change: the value table, poses, combine
 - `src/geometry/`: points, curves, path parsing and shapes, lenses, rotation maths
 - `src/measure/`: velocity, speed, tally
 - `src/path/`: travel along throws and curves
 - `src/principles/`: the motion principles: squash and stretch, anticipation, follow-through, overlap, arc, exaggerate, secondary
-- `src/state/`: state from events: state, springTo, easeTo
+- `src/state/`: value, valueAt, triggers, state, springTo, easeTo
 - `src/time/`: time, spans, sequence, lanes, reversed, repeated
 - `src/utility/`: seeded numbers, clamp, unreachable
 
@@ -31,6 +31,7 @@ Public: `.`
 Public: `.`
 
 - `src/`: DOM and SVG renderer
+- `src/adapter/`: opt-in DOM interaction adapter
 
 ## packages/moves
 
@@ -40,7 +41,7 @@ Public: `.`
 - `src/moves/`: the built-in moves and modifiers, each a function from options to a function of time
 - `src/parts/coupling/`: poses from an amount or a speed: squashes
 - `src/parts/oscillation/`: the private shake
-- `src/parts/signal/`: values from time and events: follow, noise
+- `src/parts/signal/`: values from time and input: follow, react, noise
 
 ## packages/physics
 
@@ -93,14 +94,6 @@ Public: `.`, `./render`, `./dom`, `./provenance`
 - `src/provenance/`: where members and beats come from, for the Studio
 - `src/render/`: strokes and morphs for renderers
 - `src/run/`: compile, frame, check, visibility, carry
-
-## packages/studio
-
-Public: `.`
-
-- `src/`: Studio graph, sources and gerak studio
-- `src/canvas/`: the canvas page
-- `src/server/`: the Studio dev server
 
 ## packages/three
 

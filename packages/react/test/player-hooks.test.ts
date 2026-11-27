@@ -1,8 +1,8 @@
-import { createElement, type FC } from "react";
+import { StrictMode, Suspense, createElement, startTransition, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { clockDriver, type RenderTarget } from "@gerak/dom";
-import { eventLog, state, type Time } from "@gerak/core";
+import { inputLog, inputs, state, type Time } from "@gerak/core";
 import { drop } from "@gerak/moves";
 import { manualDriver, type ManualDriver } from "@gerak/player";
 import {
@@ -100,8 +100,9 @@ describe("player hooks", () => {
 
 describe("useSignal", () => {
   it("renders a signal's value at once and again only when an event changes it", async () => {
-    const log = eventLog();
-    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    const tapInputs = inputs({ triggers: { tap: {} } });
+    const log = inputLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), input: () => log.input };
     const createDriver = () => driver;
     const taps = state(0, (count, event) => (event.name === "tap" ? count + 1 : count));
     const seen: (number | undefined)[] = [];
@@ -117,36 +118,137 @@ describe("useSignal", () => {
     const settled = seen.length;
     await act(() => driver.seekMs(200));
     expect(seen.length).toBe(settled);
-    log.add({ name: "tap", at: 300 });
+    log.trigger(300, tapInputs, "tap");
     await act(() => driver.seekMs(400));
     expect(seen.at(-1)).toBe(1);
     await act(() => driver.seekMs(100));
     expect(seen.at(-1)).toBe(0);
   });
-});
 
-describe("useWatch", () => {
-  it("logs the events of the element its ref lands on, and stops when the component leaves", async () => {
-    const { eventDriver } = await import("@gerak/dom");
-    const { useWatch } = await import("@gerak/react");
-    const driver = eventDriver({
-      clock: () => 0,
-      frames: { requestFrame: () => 1, cancelFrame: () => undefined },
-    });
-    const listeners = new Map<string, () => void>();
-    const node = {
-      addEventListener: (type: string, listener: () => void) => listeners.set(type, listener),
-      removeEventListener: (type: string) => listeners.delete(type),
+  it("renders a bounded number of times when changing the signal to one that returns a new object each call", async () => {
+    const driver = manualDriver({ durationMs: 1000 });
+    const createDriver = () => driver;
+    const sigA = () => ({ kind: "a" });
+    let bCalls = 0;
+    const sigB = () => {
+      bCalls += 1;
+      return { kind: "b", n: bCalls };
     };
-    const Card: FC = () => createElement("div", { ref: useWatch(driver, "card") });
+    const seen: ({ readonly kind: string; readonly n?: number } | undefined)[] = [];
+    let renders = 0;
+    const Probe: FC<{ readonly signal: () => { readonly kind: string; readonly n?: number } }> = ({
+      signal,
+    }) => {
+      renders += 1;
+      const playing = usePlayer(scene, createDriver);
+      seen.push(useSignal(playing?.player, signal));
+      return null;
+    };
+
     let renderer: ReturnType<typeof create> | undefined;
     await act(() => {
-      renderer = create(createElement(Card), { createNodeMock: () => node });
+      renderer = create(createElement(StrictMode, null, createElement(Probe, { signal: sigA })));
     });
-    listeners.get("pointerenter")?.();
-    expect(driver.events?.()).toEqual([{ name: "enter", at: 0, target: "card" }]);
+    expect(seen.at(-1)).toEqual({ kind: "a" });
+    const beforeSwap = renders;
+
+    await act(() => {
+      renderer?.update(createElement(StrictMode, null, createElement(Probe, { signal: sigB })));
+    });
+    expect(seen.at(-1)?.kind).toBe("b");
+    expect(renders - beforeSwap).toBeLessThanOrEqual(4);
+
     await act(() => renderer?.unmount());
-    expect(listeners.size).toBe(0);
+  });
+
+  it("does not let a render thrown away under startTransition change what the committed subscription returns", async () => {
+    const driver = manualDriver({ durationMs: 1000 });
+    const createDriver = () => driver;
+    let aCalls = 0;
+    const sigA = () => {
+      aCalls += 1;
+      return { kind: "a", call: aCalls };
+    };
+    const sigB = () => ({ kind: "b", call: 999 });
+    const never = new Promise<never>(() => undefined);
+
+    const seen: ({ readonly kind: string; readonly call: number } | undefined)[] = [];
+    const SuspendWhen: FC<{ readonly suspend: boolean }> = ({ suspend }) => {
+      if (suspend) throw never;
+      return null;
+    };
+    const Probe: FC<{ readonly useB: boolean; readonly tick: number }> = ({ useB }) => {
+      const playing = usePlayer(scene, createDriver);
+      seen.push(useSignal(playing?.player, useB ? sigB : sigA));
+      return createElement(SuspendWhen, { suspend: useB });
+    };
+
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(
+        createElement(Suspense, { fallback: null }, createElement(Probe, { useB: false, tick: 0 })),
+      );
+    });
+    const committedBefore = seen.at(-1);
+    expect(committedBefore?.kind).toBe("a");
+
+    // A transition rendering sigB suspends and is discarded; the committed sigA tree stays active.
+    await act(() => {
+      startTransition(() => {
+        renderer?.update(
+          createElement(
+            Suspense,
+            { fallback: null },
+            createElement(Probe, { useB: true, tick: 1 }),
+          ),
+        );
+      });
+    });
+
+    // Re-rendering the committed sigA tree must still return the committed subscription's snapshot.
+    await act(() => {
+      renderer?.update(
+        createElement(Suspense, { fallback: null }, createElement(Probe, { useB: false, tick: 2 })),
+      );
+    });
+    expect(seen.at(-1)).toBe(committedBefore);
+    await act(() => renderer?.unmount());
+  });
+});
+
+describe("usePlayer with liveClock", () => {
+  it("runs a liveClock driver and disposes it when the component leaves", async () => {
+    const { liveClock } = await import("@gerak/dom");
+    const queued = new Map<number, (time: number) => void>();
+    let next = 1;
+    let ms = 0;
+    const frames = {
+      requestFrame(listener: (time: number) => void) {
+        queued.set(next, listener);
+        return next++;
+      },
+      cancelFrame(handle: number) {
+        queued.delete(handle);
+      },
+    };
+    const tap = inputs({ triggers: { ping: {} } });
+    const createClock = () => liveClock({ now: () => ms, frames, settleMs: 300 });
+    let captured: ReturnType<typeof createClock> | undefined;
+    const Card: FC = () => {
+      const playing = usePlayer(scene, createClock);
+      captured = playing?.driver;
+      return null;
+    };
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(createElement(Card));
+    });
+    expect(captured).toBeDefined();
+    ms = 50;
+    captured?.trigger(tap, "ping");
+    expect(queued.size).toBe(1);
+    await act(() => renderer?.unmount());
+    expect(queued.size).toBe(0);
   });
 });
 
@@ -160,7 +262,7 @@ describe("a page host", () => {
     return {
       scene,
       clock: () => manualDriver({ durationMs }),
-      cues: [{ name: "hit", at: cue }],
+      cues: [{ kind: "trigger" as const, name: "hit", at: cue, value: 1 }],
     };
   }
 

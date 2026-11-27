@@ -20,14 +20,7 @@ export {
   type ScrollTarget,
 } from "./drivers";
 export type { FrameSource } from "./frames";
-export {
-  eventDriver,
-  WATCHED,
-  type EventDriver,
-  type EventDriverOptions,
-  type EventSource,
-  type PointerLike,
-} from "./events";
+export { liveClock, type LiveClock, type LiveClockOptions } from "./live-clock";
 export {
   BINDER_CASTS,
   mount,
@@ -49,4 +42,5 @@ export {
   type PageScrollTarget,
   type PageStyle,
 } from "./mount";
+export { listen, type ListenOptions } from "./adapter";
 export { ready } from "./ready";

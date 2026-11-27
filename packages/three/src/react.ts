@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useState, type RefCallback } from "react";
 import type { Pose3d } from "@gerak/core";
 import type { Player } from "@gerak/player";
+import { listPose3d } from "@gerak/stage";
 import type { Object3D } from "three";
-import { applyPose3d } from "./pose3d";
+import { createMaterialStore } from "./materials";
+import { applyPose3dWithStore, captureRest3dWithStore, restoreRest3dWithStore } from "./pose3d";
 
+type Pose3dListValue = readonly Pose3d[] | ((index: number, count: number) => Pose3d);
 type Pose3dTargets<T> = { [K in keyof T]: T[K] extends Pose3d ? K : never }[keyof T];
 type Pose3dListTargets<T> = {
-  [K in keyof T]: T[K] extends readonly Pose3d[] ? K : never;
+  [K in keyof T]: T[K] extends Pose3dListValue ? K : never;
 }[keyof T];
 
 function isPose(value: unknown): value is Pose3d {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Writes a 3D pose target on the object the ref lands on, every step, with no render; its position then is its rest. */
+/** Writes a 3D pose target on the object the ref lands on, every step, with no render; its transform then is its rest and is restored on cleanup. */
 export function useTarget3d<T extends object, K extends Pose3dTargets<T>>(
   player: Player<T> | undefined,
   target: K,
@@ -23,27 +26,43 @@ export function useTarget3d<T extends object, K extends Pose3dTargets<T>>(
 export function useTarget3d<T extends object, K extends Pose3dListTargets<T>>(
   player: Player<T> | undefined,
   target: K,
-  options: { readonly invalidate?: () => void; readonly at: number },
+  options: { readonly invalidate?: () => void; readonly at: number; readonly count?: number },
 ): RefCallback<Object3D>;
 export function useTarget3d<T extends object>(
   player: Player<T> | undefined,
   target: keyof T,
-  options: { readonly invalidate?: () => void; readonly at?: number } = {},
+  options: { readonly invalidate?: () => void; readonly at?: number; readonly count?: number } = {},
 ): RefCallback<Object3D> {
   const [object, setObject] = useState<Object3D | null>(null);
-  const { invalidate, at } = options;
+  const { invalidate, at, count } = options;
   if (at !== undefined && (!Number.isInteger(at) || at < 0)) {
     throw new RangeError(`useTarget3d: at must be a non-negative integer, got ${at}.`);
   }
+  if (count !== undefined && (!Number.isInteger(count) || count < 1)) {
+    throw new RangeError(`useTarget3d: count must be a positive integer, got ${count}.`);
+  }
   useEffect(() => {
     if (player === undefined || object === null) return undefined;
-    const rest = { x: object.position.x, y: object.position.y, z: object.position.z };
-    return player.subscribe(target, (value: unknown) => {
-      const pose = at === undefined ? value : Array.isArray(value) ? value[at] : undefined;
-      if (!isPose(pose)) return;
-      applyPose3d(object, pose, rest);
+    const store = createMaterialStore({ isolate: true });
+    const rest = captureRest3dWithStore(object, undefined, store);
+    const unsubscribe = player.subscribe(target, (value: unknown) => {
+      let pose: Pose3d | undefined;
+      if (at === undefined) {
+        pose = isPose(value) ? value : undefined;
+      } else if (Array.isArray(value)) {
+        const candidate: unknown = value[at];
+        pose = isPose(candidate) ? candidate : undefined;
+      } else {
+        pose = listPose3d(value, at, count ?? at + 1);
+      }
+      if (pose === undefined) return;
+      applyPose3dWithStore(object, pose, rest, undefined, store);
       invalidate?.();
     });
-  }, [player, object, target, invalidate, at]);
+    return () => {
+      unsubscribe();
+      restoreRest3dWithStore(object, rest, store);
+    };
+  }, [player, object, target, invalidate, at, count]);
   return useCallback((next: Object3D | null) => setObject(next), []);
 }

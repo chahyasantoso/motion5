@@ -1,16 +1,16 @@
 import {
-  NO_EVENTS,
+  NO_INPUT,
   elapsedOf,
   scroll,
   unreachable,
-  type Events,
+  type Input,
   type Pose2d,
   type Pose3d,
   type Time,
 } from "@gerak/core";
 import type { ScrollWindow } from "../author/cast";
 import { NO_REST, type RestAt, type RestReader } from "../author/layout";
-import type { Drive, Moves } from "../author/stage";
+import type { Drive, InputNeed, Moves } from "../author/stage";
 import { carryFor } from "./carry";
 import { isPlainRecord, type Member, type Stage } from "./compile";
 import type { StageError } from "./errors";
@@ -18,7 +18,7 @@ import type { StageError } from "./errors";
 /** One frame's inputs: the time, events, measured rest boxes, and re-measure history. */
 export interface FrameInput {
   readonly time: Time;
-  readonly events?: Events | undefined;
+  readonly events?: Input | undefined;
   readonly rest?: RestReader | undefined;
   /** Each measurement in time order, so `carry` can move a member after a re-measure. */
   readonly measures?: readonly RestAt[] | undefined;
@@ -32,6 +32,8 @@ export interface FrameInput {
   readonly moves?: Map<string, Moves> | undefined;
   /** Filled as elements run, list parts included: what drives each besides its windows' time and boxes. */
   readonly drives?: Map<string, Drive> | undefined;
+  /** Filled as elements run, list parts included: which dynamic input channels each read. */
+  readonly inputs?: Map<string, InputNeed> | undefined;
 }
 
 /** One frame: who shows, and the scene's output as returned. */
@@ -74,7 +76,17 @@ export function listPose3d(value: unknown, index: number, count: number): Pose3d
     : undefined;
 }
 
-/** Each list member's part count from `<name>.<index>` boxes in `rest`, or `lines` when unboxed. */
+function indexedMax(keys: readonly string[], prefix: string, initial: number): number {
+  let count = initial;
+  for (const key of keys) {
+    if (!key.startsWith(prefix)) continue;
+    const index = Number(key.slice(prefix.length));
+    if (Number.isInteger(index) && index >= 0 && index + 1 > count) count = index + 1;
+  }
+  return count;
+}
+
+/** Each list member's part count (2D list or 3D object parts) from `rest` or `lines` when unboxed. */
 export function partCounts(
   stage: Stage,
   rest: RestReader,
@@ -82,14 +94,23 @@ export function partCounts(
 ): Readonly<Record<string, number>> {
   const counts: Record<string, number> = {};
   for (const member of stage.members) {
-    if (member.kind !== "list") continue;
-    let count = lines?.[member.name]?.length ?? 0;
-    for (const key of rest.keys()) {
-      if (!key.startsWith(`${member.name}.`)) continue;
-      const index = Number(key.slice(member.name.length + 1));
-      if (Number.isInteger(index) && index >= 0 && index + 1 > count) count = index + 1;
+    switch (member.kind) {
+      case "list": {
+        const count = indexedMax(rest.keys(), `${member.name}.`, lines?.[member.name]?.length ?? 0);
+        if (count > 0) counts[member.name] = count;
+        break;
+      }
+      case "object": {
+        if (member.parts !== true) break;
+        const count = indexedMax(rest.objectKeys(), `${member.name}.`, 0);
+        if (count > 0) counts[member.name] = count;
+        break;
+      }
+      case "actor":
+        break;
+      default:
+        return unreachable(member);
     }
-    if (count > 0) counts[member.name] = count;
   }
   return Object.freeze(counts);
 }
@@ -141,7 +162,7 @@ export function mediaMs(member: Member, ms: number): number {
 
 /** Runs the scene once; single owner of `visible` across clock stretches and scroll windows. */
 export function frame(stage: Stage, input: FrameInput): FrameOutput {
-  const events = input.events ?? NO_EVENTS;
+  const events = input.events ?? NO_INPUT;
   const measures = input.measures ?? [];
   const rest = input.rest ?? measures.at(-1)?.rest ?? NO_REST;
   const time = input.time;
@@ -156,6 +177,7 @@ export function frame(stage: Stage, input: FrameInput): FrameOutput {
     ...(input.only === undefined ? {} : { only: input.only }),
     ...(input.moves === undefined ? {} : { moves: input.moves }),
     ...(input.drives === undefined ? {} : { drives: input.drives }),
+    ...(input.inputs === undefined ? {} : { inputs: input.inputs }),
   });
   if (!isPlainRecord(targets))
     throw new TypeError("scene must return an object of member names to poses.");

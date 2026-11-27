@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, seeded, type MotionEvent } from "@gerak/core";
+import { liveAt, seeded, type InputEntry } from "@gerak/core";
 import { builtinWorld, simulate, type PhysicsWorld } from "@gerak/physics";
 import { conformance } from "./conformance";
 
@@ -54,15 +54,19 @@ describe("simulate's checkpoints", () => {
             world.addBody({
               id: "ball",
               shape: { kind: "circle", radius: 10 },
-              x: event.value ?? 0,
+              x: event.value,
               y: 0,
             });
           }
         },
       },
     );
-    expect(sim.at(liveAt(100), [{ name: "drop", at: 0, value: 10 }]).ball?.x).toBe(10);
-    expect(sim.at(liveAt(100), [{ name: "drop", at: 0, value: 40 }]).ball?.x).toBe(40);
+    expect(sim.at(liveAt(100), [{ kind: "trigger", name: "drop", at: 0, value: 10 }]).ball?.x).toBe(
+      10,
+    );
+    expect(sim.at(liveAt(100), [{ kind: "trigger", name: "drop", at: 0, value: 40 }]).ball?.x).toBe(
+      40,
+    );
   });
 
   it("fast-forwards idle pre-spawn steps without stepping or checkpointing an empty world", () => {
@@ -70,7 +74,7 @@ describe("simulate's checkpoints", () => {
       world.setGravity(0, 1500);
       world.addCollider("floor", { kind: "floor", y: 600 });
     };
-    const spawn = (event: MotionEvent, world: { addBody: PhysicsWorld["addBody"] }) => {
+    const spawn = (event: InputEntry, world: { addBody: PhysicsWorld["addBody"] }) => {
       if (event.name !== "drop") return;
       world.addBody({
         id: "ball",
@@ -101,18 +105,20 @@ describe("simulate's checkpoints", () => {
     };
     const sim = simulate(counted, build, { dt: 1 / 120, spawn });
     const zeroSim = simulate(builtinWorld(), build, { dt: 1 / 120, spawn });
-    const events: MotionEvent[] = [
-      { name: "scroll", at: 10_000, value: 100 },
-      { name: "scroll", at: 50_000, value: 400 },
-      { name: "scroll", at: 90_000, value: 800 },
-      { name: "drop", at: 120_000 },
+    const events: InputEntry[] = [
+      { kind: "value", name: "scroll", at: 10_000, value: 100 },
+      { kind: "value", name: "scroll", at: 50_000, value: 400 },
+      { kind: "value", name: "scroll", at: 90_000, value: 800 },
+      { kind: "trigger", name: "drop", at: 120_000, value: 1 },
     ];
     const began = performance.now();
     const state = sim.at(liveAt(120_500), events);
     const took = performance.now() - began;
     expect(steps).toBe(60);
     expect(snapshots).toBeLessThanOrEqual(4);
-    expect(state).toEqual(zeroSim.at(liveAt(500), [{ name: "drop", at: 0 }]));
+    expect(state).toEqual(
+      zeroSim.at(liveAt(500), [{ kind: "trigger", name: "drop", at: 0, value: 1 }]),
+    );
     expect(took).toBeLessThan(50);
   });
 });

@@ -1,4 +1,4 @@
-import { circlePath, motion, span, timeAt, type Events, type Pose2d, type Time } from "@gerak/core";
+import { circlePath, motion, span, timeAt, type Input, type Pose2d, type Time } from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   beat,
@@ -71,7 +71,7 @@ describe("elements", () => {
   it("refuse a string on text, or split on a readout", () => {
     // @ts-expect-error the markup holds a text element's string
     expect(() => text("t", "hi")).toThrow(TypeError);
-    // @ts-expect-error a readout takes ElementOptions, not split
+    // @ts-expect-error a readout takes no options
     expect(() => text("t", () => "x", { split: "letters" })).toThrow(TypeError);
   });
 
@@ -116,7 +116,7 @@ describe("elements", () => {
 
 describe("scene: what a chain compiles to", () => {
   const dot = shape("dot", circlePath({ cx: 0, cy: 0, r: 5 }));
-  const card = box("card", { watch: true });
+  const card = box("card");
   const word = text("word", { split: "letters" });
   const chain = scene(
     card.moves(slideX(100).in(enter)).shows(enter, hold).limits({ jump: 50 }),
@@ -138,7 +138,6 @@ describe("scene: what a chain compiles to", () => {
       ["word", "list", "ambient"],
     ]);
     const cardMember = stage.members[0];
-    expect(cardMember?.watch).toBe(true);
     expect(cardMember?.on).toEqual([
       [0, 400],
       [500, Number.POSITIVE_INFINITY],
@@ -172,11 +171,13 @@ describe("scene: what a chain compiles to", () => {
   });
 
   it("takes cues from the builder", () => {
-    const cues: Events = [{ name: "tap", at: 100, target: "card" }];
+    const cues: Input = [{ kind: "trigger", name: "tap", at: 100, value: 1, target: "card" }];
     const compiled = compileScene(scene({ cues }, box("card").shows(enter)));
     if (!compiled.ok) throw new Error("did not compile");
     const stage = compiled.stage;
-    expect(stage.cues.map(({ name, at, target }) => ({ name, at, target }))).toEqual(cues);
+    expect(
+      stage.cues.map(({ kind, name, at, value, target }) => ({ kind, name, at, value, target })),
+    ).toEqual(cues);
   });
 });
 

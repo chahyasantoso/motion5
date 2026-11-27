@@ -1,19 +1,21 @@
 import {
-  NO_EVENTS,
+  NO_INPUT,
   UNTIMED,
   clamp,
   elapsedOf,
   scroll,
   span,
   springTo,
+  stepMetaOf,
+  storeCell,
   unreachable,
+  watchClock,
   type Ease,
-  type Events,
+  type Input,
   type MotionWindow,
   type Signal,
   type Span,
   type SpringToOptions,
-  type Step,
   type Time,
 } from "@gerak/core";
 import { NO_REST, type RestReader } from "./layout";
@@ -28,7 +30,7 @@ export type BeatPlace = { readonly at?: number } | { readonly after: Beat; reado
 
 /** Context a scroll or trigger beat reads when mapping time: events so far and measured rests. */
 export interface BeatContext {
-  readonly events?: Events | undefined;
+  readonly events?: Input | undefined;
   readonly rest?: RestReader | undefined;
 }
 
@@ -170,19 +172,19 @@ function isRestReader(value: unknown): value is RestReader {
   );
 }
 
-function isEvents(value: unknown): value is Events {
+function isEvents(value: unknown): value is Input {
   return Array.isArray(value);
 }
 
 /** Where a motion's context keeps its events for its window to read, so that read is not counted as the motion's. */
 export const WINDOW_EVENTS = Symbol.for("@gerak/stage/window-events");
 
-function readContext(context: unknown): { readonly events: Events; readonly rest: RestReader } {
-  if (typeof context !== "object" || context === null) return { events: NO_EVENTS, rest: NO_REST };
+function readContext(context: unknown): { readonly events: Input; readonly rest: RestReader } {
+  if (typeof context !== "object" || context === null) return { events: NO_INPUT, rest: NO_REST };
   const rawEvents: unknown = Reflect.get(context, WINDOW_EVENTS) ?? Reflect.get(context, "events");
   const rawRest: unknown = Reflect.get(context, "rest");
   return {
-    events: isEvents(rawEvents) ? rawEvents : NO_EVENTS,
+    events: isEvents(rawEvents) ? rawEvents : NO_INPUT,
     rest: isRestReader(rawRest) ? rawRest : NO_REST,
   };
 }
@@ -257,14 +259,21 @@ function makeScrollBeat(
     moving(time: Time, context?: BeatContext): boolean {
       if (smooth === undefined) return false;
       const { events } = readContext(context);
-      return position(time, events) !== scroll.y(time, events);
+      let active = false;
+      watchClock(
+        (use) => {
+          if (use === "time") active = true;
+        },
+        () => position(time, events),
+      );
+      return active;
     },
   });
 }
 
 type TriggerFold = (
   time: Time,
-  events: Events,
+  events: Input,
   threshold: number,
 ) => {
   readonly raw: number;
@@ -273,54 +282,66 @@ type TriggerFold = (
   readonly heading: -1 | 0 | 1;
 };
 
-/** One trigger's reading of `scroll.y`: it folds each scroll step once, and starts again when the
- * state's step list or the threshold changes. */
+interface TriggerCell {
+  readonly resetId: number | undefined;
+  limit: number;
+  done: number;
+  reached: boolean;
+  started: number | undefined;
+  progress: number;
+  since: number;
+  active: boolean;
+}
+
+/** One trigger's reading of `scroll.y` stored per `RuntimeStore`, folding new scroll steps incrementally. */
 function triggerFold(ms: number, back: TriggerBack): TriggerFold {
-  let list: readonly Step<number>[] | undefined;
-  let limit = Number.NaN;
-  let done = 0;
-  let reached = false;
-  let started: number | undefined;
-  let progress = 0;
-  let since = 0;
-  let active = false;
+  const cellSlot = storeCell<TriggerCell>();
   return (time, events, threshold) => {
     const now = elapsedOf(time.clock);
     const steps = scroll.y.steps(time, events);
-    if (steps !== list || threshold !== limit || steps.length < done) {
-      const initial = scroll.y.start >= threshold;
-      list = steps;
-      limit = threshold;
-      done = 0;
-      reached = initial;
-      started = initial ? 0 : undefined;
-      progress = 0;
-      since = 0;
-      active = initial;
-    }
-    for (; done < steps.length; done += 1) {
-      const step = steps[done];
+    const meta = stepMetaOf(steps);
+
+    const cell = cellSlot.own(
+      (existing) => threshold !== existing.limit || meta?.resetId !== existing.resetId,
+      () => {
+        const initial = scroll.y.start >= threshold;
+        return {
+          resetId: meta?.resetId,
+          limit: threshold,
+          done: 0,
+          reached: initial,
+          started: initial ? 0 : undefined,
+          progress: 0,
+          since: 0,
+          active: initial,
+        };
+      },
+      (existing) => ({ ...existing }),
+    );
+
+    for (; cell.done < steps.length; cell.done += 1) {
+      const step = steps[cell.done];
       if (step === undefined) break;
       const next = step.value >= threshold;
       switch (back) {
         case "stay":
-          if (started === undefined && next) started = step.at;
+          if (cell.started === undefined && next) cell.started = step.at;
           break;
         case "replay":
-          if (next === reached) break;
-          reached = next;
-          started = next ? step.at : undefined;
+          if (next === cell.reached) break;
+          cell.reached = next;
+          cell.started = next ? step.at : undefined;
           break;
         case "reverse":
-          if (next === reached) break;
-          progress = clamp(
-            progress + (reached ? 1 : -1) * (Math.max(0, step.at - since) / ms),
+          if (next === cell.reached) break;
+          cell.progress = clamp(
+            cell.progress + (cell.reached ? 1 : -1) * (Math.max(0, step.at - cell.since) / ms),
             0,
             1,
           );
-          since = step.at;
-          reached = next;
-          if (next) active = true;
+          cell.since = step.at;
+          cell.reached = next;
+          if (next) cell.active = true;
           break;
         default:
           return unreachable(back);
@@ -329,11 +350,11 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
     switch (back) {
       case "stay": {
         if (now === undefined) {
-          const shown = started !== undefined;
+          const shown = cell.started !== undefined;
           return { raw: shown ? 1 : 0, active: shown, moving: false, heading: 0 };
         }
-        if (started === undefined) return { raw: 0, active: false, moving: false, heading: 0 };
-        const raw = clamp(now - started, 0, ms) / ms;
+        if (cell.started === undefined) return { raw: 0, active: false, moving: false, heading: 0 };
+        const raw = clamp(now - cell.started, 0, ms) / ms;
         return { raw, active: true, moving: raw < 1, heading: raw < 1 ? 1 : 0 };
       }
       case "replay": {
@@ -341,8 +362,8 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
           const shown = scroll.y(time, events) >= threshold;
           return { raw: shown ? 1 : 0, active: shown, moving: false, heading: 0 };
         }
-        if (started === undefined) return { raw: 0, active: false, moving: false, heading: 0 };
-        const raw = clamp(now - started, 0, ms) / ms;
+        if (cell.started === undefined) return { raw: 0, active: false, moving: false, heading: 0 };
+        const raw = clamp(now - cell.started, 0, ms) / ms;
         return { raw, active: true, moving: raw < 1, heading: raw < 1 ? 1 : 0 };
       }
       case "reverse": {
@@ -350,13 +371,17 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
           const shown = scroll.y(time, events) >= threshold;
           return { raw: shown ? 1 : 0, active: shown, moving: false, heading: 0 };
         }
-        const raw = clamp(progress + (reached ? 1 : -1) * (Math.max(0, now - since) / ms), 0, 1);
-        const moving = reached ? raw < 1 : raw > 0;
+        const raw = clamp(
+          cell.progress + (cell.reached ? 1 : -1) * (Math.max(0, now - cell.since) / ms),
+          0,
+          1,
+        );
+        const moving = cell.reached ? raw < 1 : raw > 0;
         return {
           raw,
-          active: active && (reached || raw > 0),
+          active: cell.active && (cell.reached || raw > 0),
           moving,
-          heading: !moving ? 0 : reached ? 1 : -1,
+          heading: !moving ? 0 : cell.reached ? 1 : -1,
         };
       }
       default:

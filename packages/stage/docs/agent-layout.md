@@ -17,7 +17,7 @@ import { box, carry, scene } from "@gerak/stage";
 
 export default scene(
   { length: 2500 },
-  box("card", { watch: true }).moves(carry({ ms: 450, ease: ease.cubicOut, mode: "scale" })),
+  box("card").moves(carry({ ms: 450, ease: ease.cubicOut, mode: "scale" })),
 );
 ```
 
@@ -26,4 +26,4 @@ export default scene(
   - `"scale"` (default): translates center and scales width/height toward the previous/interrupted box, returning smoothly to `scale: 1`.
   - `"clip"`: crops without scaling (only suited where the new box encloses the old one).
   - `"keep"`: moves position while holding size unchanged.
-- **Reordering within one state:** Pass `target: (past, rest) => rest.get(\`list.\${slotOf(past, index)}\`)` to carry an item across slot boxes driven by events as well as re-measures.
+- **Reordering within one state:** Pass `target: (past, rest) => rest.get(\`list.\${slotOf(past, index)}\`)` to carry an item across slot boxes driven by app values or triggers as well as re-measures.

@@ -30,7 +30,7 @@ const mounted = mount(stage, { clock: "live" });
 
 // The engine's pose of each card now, for the browser test to hold the drawn one against.
 Reflect.set(window, "__expected", () => {
-  const { targets } = frame(stage, { time: mounted.driver.now(), events: mounted.events() });
+  const { targets } = frame(stage, { time: mounted.driver.now(), events: mounted.driver.input() });
   return Object.fromEntries(
     NAMES.map((name) => {
       const pose = poseOf(targets[name]);

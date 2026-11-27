@@ -1,4 +1,5 @@
 import {
+  NO_INPUT,
   POSE_2D_NUMBERS,
   POSE_3D_NUMBERS,
   VALUE_FIELDS,
@@ -9,16 +10,21 @@ import {
   elapsedOf,
   lanes,
   loop,
+  mergeInput,
   mix,
   motion,
   scroll,
+  shiftedInput,
+  sourceStreamOf,
   timeAt,
   unreachable,
   watchClock,
   watchedTime,
+  watchInputs,
+  withProbeStore,
   withProgress,
   type Ease,
-  type Events,
+  type Input,
   type InWindow,
   type LaneOrigin,
   type Lanes,
@@ -26,6 +32,7 @@ import {
   type Point3d,
   type Pose2d,
   type Pose3d,
+  type ShiftedInput,
   type Signal,
   type Span,
   type Time,
@@ -33,7 +40,6 @@ import {
   project3d,
   rawTime,
   unproject3d,
-  versionOf,
   viewSize3d,
 } from "@gerak/core";
 import { boxInViewport } from "../render/placement";
@@ -50,15 +56,7 @@ import {
   type ScrollPoint,
   type TriggerBeat,
 } from "./beat";
-import {
-  castBuilder,
-  type CastBuilder,
-  type Expect,
-  type Members,
-  type ScrollWindow,
-  type Spec,
-  type Stretch,
-} from "./cast";
+import type { Content, Expect, ScrollWindow, Stretch } from "./cast";
 import type {
   Element,
   ElementBinding,
@@ -78,6 +76,7 @@ import type {
 } from "./elements";
 import type { Carry, CarryOptions, RestReader } from "./layout";
 import type {
+  InputNeed,
   Limits,
   ListPose,
   ShotSummary,
@@ -85,9 +84,14 @@ import type {
   Drive,
   Moves,
   SceneContext,
-  StageDefinition,
 } from "./stage";
-import { compileStage, type CompileResult, type Stage } from "../run/compile";
+import {
+  compileDirectStage,
+  type CompileResult,
+  type MemberInput,
+  type Stage,
+  type StageInput,
+} from "../run/compile";
 import type { Provenance, ScenePlan, ShowSummary, StepSummary, StepWindow } from "./provenance";
 
 /** Options of `scene`: what is true of the whole piece. */
@@ -96,7 +100,7 @@ export interface SceneOptions {
   readonly kind?: never;
   /** Optional scene label shown in ownership diagnostics. */
   readonly name?: string | undefined;
-  readonly cues?: Events | undefined;
+  readonly cues?: Input | undefined;
   /** The piece's length in ms; defaults to the end of the last beat. */
   readonly length?: number | undefined;
 }
@@ -134,6 +138,7 @@ export function shot(scene: Scene, options: ShotOptions = {}): Shot {
 
 /** Where a shot sits on the scene's clock. */
 interface ShotClock {
+  readonly name: string;
   readonly from: number;
   readonly length: number;
 }
@@ -147,6 +152,7 @@ type MotionStep = {
   readonly loops: boolean;
   readonly reads: readonly string[];
   readonly travels: boolean;
+  readonly shotClock?: ShotClock | undefined;
 };
 
 type Motion3dStep = {
@@ -156,6 +162,7 @@ type Motion3dStep = {
   readonly window: InWindow | undefined;
   readonly joins: "layer" | "take";
   readonly loops: boolean;
+  readonly shotClock?: ShotClock | undefined;
 };
 
 type Travel3dStep = {
@@ -166,14 +173,23 @@ type Travel3dStep = {
   readonly span: Span | undefined;
   readonly window: InWindow | undefined;
   readonly loops: boolean;
+  readonly shotClock?: ShotClock | undefined;
 };
 
 type Step =
   | MotionStep
-  | { readonly kind: "modify"; readonly principle: Principle }
+  | {
+      readonly kind: "modify";
+      readonly principle: Principle;
+      readonly shotClock?: ShotClock | undefined;
+    }
   | Motion3dStep
   | Travel3dStep
-  | { readonly kind: "modify3d"; readonly principle: Principle3d };
+  | {
+      readonly kind: "modify3d";
+      readonly principle: Principle3d;
+      readonly shotClock?: ShotClock | undefined;
+    };
 
 interface Entry {
   readonly steps: readonly Step[];
@@ -188,9 +204,11 @@ interface SceneOwner {
 
 interface State {
   readonly owner: SceneOwner;
+  readonly includedOwners: ReadonlySet<SceneOwner>;
   readonly options: SceneOptions;
   readonly elements: ReadonlyMap<string, SceneElement>;
   readonly owned: ReadonlySet<string>;
+  readonly shotElements: ReadonlySet<string>;
   readonly order: readonly string[];
   readonly entries: ReadonlyMap<string, Entry>;
   readonly beats: ReadonlyMap<string, Beat>;
@@ -199,6 +217,7 @@ interface State {
   /** The shot clock of every element a shot owns. */
   readonly shotClocks: ReadonlyMap<string, ShotClock>;
   readonly shots: readonly ShotSummary[];
+  readonly shotCues: Input;
   /** Where the next shot starts, in ms. */
   readonly cursor: number;
   /** The shot or named scene that binds each owned element, innermost first. */
@@ -212,7 +231,6 @@ interface State {
 const NO_ENTRY: Entry = Object.freeze({ steps: [], show: [], scrollShow: [], limits: {} });
 
 let nextSceneId = 0;
-const OWNERS = new WeakMap<SceneElement, SceneOwner>();
 const READS = new WeakMap<object, readonly string[]>();
 const TRAVEL_TARGETS = new WeakMap<object, readonly Element[]>();
 const PART_LINES = new WeakMap<MotionContext, readonly number[]>();
@@ -230,14 +248,9 @@ const OBJECT_TRAVEL = new WeakMap<
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
 /** The scene time each shot time was made from. */
 const SCENE_TIMES = new WeakMap<Time, Time>();
-/** An event list moved to a shot's clock, and the version of the growing log it was moved from. */
-interface MovedEvents {
-  readonly version: number | undefined;
-  readonly events: Events;
-}
-/** Each event list moved to a shot's clock, by shot start, and the list each moved one came from. */
-const SHOT_EVENTS = new WeakMap<Events, Map<number, MovedEvents>>();
-const SCENE_EVENTS = new WeakMap<Events, Events>();
+/** Each input stream or list shifted to a shot's clock, by shot start, and the source list each shifted one came from. */
+const SHOT_EVENTS = new WeakMap<object, Map<number, ShiftedInput>>();
+const SCENE_EVENTS = new WeakMap<Input, Input>();
 
 interface MotionBody<P = Pose2d> {
   readonly fn: (time: Time, context?: MotionContext) => P;
@@ -273,12 +286,15 @@ function withMeta<P extends Pose2d | Pose3d>(
   reads: readonly string[],
   targets: readonly Element[],
 ): Motion<P, MotionContext> {
+  const travel: unknown = Reflect.get(base, "travel");
   const wrapped = Object.assign((time: Time, context?: MotionContext) => base(time, context), {
     span: base.span,
     window: base.window,
     period: base.period,
     joins: base.joins,
+    loopsForever: base.loopsForever,
     isAmbient: base.isAmbient,
+    ...(travel === undefined ? {} : { travel }),
     in: (window: InWindow, ease?: Ease) => withMeta(base.in(window, ease), reads, targets),
     loop: (ms: number) => withMeta(base.loop(ms), reads, targets),
     take: () => withMeta(base.take(), reads, targets),
@@ -295,15 +311,17 @@ function withMeta<P extends Pose2d | Pose3d>(
 /** The fields `bind` sets: any numeric field of a pose. */
 export type BoundFields = { readonly [K in (typeof POSE_2D_NUMBERS)[number]]?: Signal<number> };
 
-/** A motion setting each field from its signal at the scene's time. */
+/** A motion setting each field from its signal at the motion's time. */
 export function bind(fields: BoundFields): Motion<Pose2d, MotionContext> {
-  return motion((_time, context?: MotionContext) => {
-    const { time, events } = need(context, "bind");
+  const entries: (readonly [(typeof POSE_2D_NUMBERS)[number], Signal<number>])[] = [];
+  for (const key of POSE_2D_NUMBERS) {
+    const signal = fields[key];
+    if (signal !== undefined) entries.push([key, signal]);
+  }
+  return motion((time, context?: MotionContext) => {
+    const { events } = need(context, "bind");
     const out: { -readonly [K in keyof Pose2d]: Pose2d[K] } = {};
-    for (const key of POSE_2D_NUMBERS) {
-      const signal = fields[key];
-      if (signal !== undefined) out[key] = signal(time, events);
-    }
+    for (const [key, signal] of entries) out[key] = signal(time, events);
     return out;
   });
 }
@@ -330,7 +348,31 @@ export type BoundEachFields3d = {
   readonly [K in (typeof POSE_3D_NUMBERS)[number]]?: (index: number) => Signal<number>;
 } & { readonly [K in Only2dKey]?: never };
 
-/** A motion setting each field of each part of a 2D or 3D list from that part's signal at the scene's time. */
+function memoFieldSignals<K extends string>(
+  fields: Readonly<Partial<Record<K, (index: number) => Signal<number>>>>,
+  keys: readonly K[],
+): readonly (readonly [K, (index: number) => Signal<number>])[] {
+  const entries: (readonly [K, (index: number) => Signal<number>])[] = [];
+  for (const key of keys) {
+    const build = fields[key];
+    if (build === undefined) continue;
+    const cache = new Map<number, Signal<number>>();
+    entries.push([
+      key,
+      (index) => {
+        let held = cache.get(index);
+        if (held === undefined) {
+          held = build(index);
+          cache.set(index, held);
+        }
+        return held;
+      },
+    ]);
+  }
+  return entries;
+}
+
+/** A motion setting each field of each part of a 2D or 3D list from its memoized signal at the motion's time. */
 export function bindEach(fields: BoundEachSharedFields): Motion<SharedPose, MotionContext>;
 export function bindEach(fields: BoundEachFields): Motion<Pose2d, MotionContext>;
 export function bindEach(fields: BoundEachFields3d): Motion<Pose3d, MotionContext>;
@@ -346,27 +388,23 @@ export function bindEach(
     fields.rotationY !== undefined ||
     fields.scaleZ !== undefined
   ) {
-    return motion<Pose3d, MotionContext>((_time, context?: MotionContext) => {
-      const { time, events, index } = need(context, "bindEach");
+    const entries = memoFieldSignals(fields, POSE_3D_NUMBERS);
+    return motion<Pose3d, MotionContext>((time, context?: MotionContext) => {
+      const { events, index } = need(context, "bindEach");
       if (index === undefined)
         throw new TypeError("bindEach: this element has no parts; use `bind` instead.");
       const out: { -readonly [K in (typeof POSE_3D_NUMBERS)[number]]?: number } = {};
-      for (const key of POSE_3D_NUMBERS) {
-        const signal = fields[key];
-        if (signal !== undefined) out[key] = signal(index)(time, events);
-      }
+      for (const [key, signal] of entries) out[key] = signal(index)(time, events);
       return out;
     });
   }
-  return motion((_time, context?: MotionContext) => {
-    const { time, events, index } = need(context, "bindEach");
+  const entries = memoFieldSignals(fields, POSE_2D_NUMBERS);
+  return motion((time, context?: MotionContext) => {
+    const { events, index } = need(context, "bindEach");
     if (index === undefined)
       throw new TypeError("bindEach: this element has no parts; use `bind` instead.");
     const out: { -readonly [K in keyof Pose2d]: Pose2d[K] } = {};
-    for (const key of POSE_2D_NUMBERS) {
-      const signal = fields[key];
-      if (signal !== undefined) out[key] = signal(index)(time, events);
-    }
+    for (const [key, signal] of entries) out[key] = signal(index)(time, events);
     return out;
   });
 }
@@ -412,6 +450,11 @@ function isMotion<P extends Pose2d | Pose3d>(
 
 /** Plays `inner` on each list part (2D or 3D) in its own lane; with no parts it plays as is.
  * A function builds each part from `(index, count)`. */
+export function stagger(inner: TravelMotion, options: StaggerOptions): TravelMotion;
+export function stagger(
+  inner: (index: number, count: number) => TravelMotion,
+  options: StaggerOptions,
+): TravelMotion;
 export function stagger<P extends Pose2d | Pose3d>(
   inner: Motion<P, MotionContext>,
   options: StaggerOptions,
@@ -502,10 +545,34 @@ export function stagger<P extends Pose2d | Pose3d>(
   });
   const timed = outer === undefined ? play : play.in(outer);
   const taken = first.joins === "take" ? timed.take() : timed;
-  const marked = first.isAmbient || first.period !== undefined ? taken.ambient() : taken;
+  const marked = first.isAmbient || first.loopsForever ? taken.ambient() : taken;
   const reads = READS.get(first) ?? [];
   const targets = TRAVEL_TARGETS.get(first) ?? [];
-  return reads.length === 0 && targets.length === 0 ? marked : withMeta(marked, reads, targets);
+  const travel: unknown = Reflect.get(first, "travel");
+  const out =
+    reads.length === 0 && targets.length === 0 ? marked : withMeta(marked, reads, targets);
+  if (travel === undefined) return out;
+  function wrapTravel(next: Motion<P, MotionContext>): Motion<P, MotionContext> {
+    const wrapped = Object.assign((time: Time, context?: MotionContext) => next(time, context), {
+      span: next.span,
+      window: next.window,
+      period: next.period,
+      joins: next.joins,
+      loopsForever: next.loopsForever,
+      isAmbient: next.isAmbient,
+      travel,
+      in: (window: InWindow, ease?: Ease) => wrapTravel(next.in(window, ease)),
+      loop: (ms: number) => wrapTravel(next.loop(ms)),
+      take: () => wrapTravel(next.take()),
+      ambient: () => wrapTravel(next.ambient()),
+    });
+    const body: unknown = Reflect.get(next, MOTION_BODY);
+    if (body !== undefined) Object.defineProperty(wrapped, MOTION_BODY, { value: body });
+    if (reads.length > 0) READS.set(wrapped, reads);
+    if (targets.length > 0) TRAVEL_TARGETS.set(wrapped, targets);
+    return Object.freeze(wrapped);
+  }
+  return wrapTravel(out);
 }
 
 function poseDelta(before: Pose2d, now: Pose2d): Pose2d {
@@ -542,9 +609,10 @@ export function stayWith(element: Element): Motion<Pose2d, MotionContext> {
     const here = need(context, "stayWith");
     const start = here.span?.from ?? 0;
     const now = start + (elapsedOf(time.clock) ?? 0);
+    const baseTime = rawTime(here.time);
     return poseDelta(
-      here.read(element, { time: timeAt(here.time, start), ...indexOf(here) }),
-      here.read(element, { time: timeAt(here.time, now), ...indexOf(here) }),
+      here.read(element, { time: timeAt(baseTime, start), ...indexOf(here) }),
+      here.read(element, { time: timeAt(baseTime, now), ...indexOf(here) }),
     );
   });
   return withMeta(base, [element.name], []);
@@ -554,13 +622,11 @@ function isElement(value: unknown): value is Element {
   if (typeof value !== "object" || value === null) return false;
   const kind: unknown = Reflect.get(value, "kind");
   const name: unknown = Reflect.get(value, "name");
-  const opts: unknown = Reflect.get(value, "options");
   return (
     (kind === "box" || kind === "shape" || kind === "text") &&
     typeof name === "string" &&
     name !== "" &&
-    typeof opts === "object" &&
-    opts !== null
+    isScrollPoint(Reflect.get(value, "top"))
   );
 }
 
@@ -572,6 +638,7 @@ function travelMotion(base: Motion<Pose2d, MotionContext>, options: TravelOption
       window: base.window,
       period: base.period,
       joins: base.joins,
+      loopsForever: base.loopsForever,
       isAmbient: base.isAmbient,
       travel: options,
       in: (window: InWindow, ease?: Ease) => travelMotion(base.in(window, ease), options),
@@ -856,14 +923,14 @@ function traitsOf(run: SceneMotion | SceneMotion3d | TravelMotion): {
   const rawSpan: unknown = Reflect.get(run, "span");
   const rawWindow: unknown = Reflect.get(run, "window");
   const joins: unknown = Reflect.get(run, "joins");
-  const period: unknown = Reflect.get(run, "period");
+  const loopsForever: unknown = Reflect.get(run, "loopsForever");
   const span = isSpan(rawSpan) ? rawSpan : undefined;
   const window = isWindow(rawWindow) ? rawWindow : span;
   return {
     span,
     window,
     joins: joins === "take" ? "take" : "layer",
-    loops: typeof period === "number" || Reflect.get(run, "isAmbient") === true,
+    loops: loopsForever === true || Reflect.get(run, "isAmbient") === true,
   };
 }
 
@@ -886,37 +953,36 @@ function describe(element: SceneElement): string {
   return `"${element.name}" (${element.kind})`;
 }
 
-/** The owner each included scene's owner was merged into. */
-const INCLUDED_IN = new WeakMap<SceneOwner, SceneOwner>();
-
-/** Whether `owner` is `held` or took it in, directly or through scenes it included. */
-function owns(owner: SceneOwner, held: SceneOwner): boolean {
-  for (let at: SceneOwner | undefined = held; at !== undefined; at = INCLUDED_IN.get(at))
-    if (at === owner) return true;
-  return false;
-}
-
 const SCENE_OPTIONS = ["cues", "length"] as const;
 
 /** The state with another scene's elements, beats and motions merged in, on one clock. */
 function included(state: State, scene: unknown): State {
   const other = isScene(scene) ? stateOf(scene) : undefined;
   if (other === undefined) throw new TypeError("scene: a sub-scene is what `scene` returns.");
-  return includedState(state, other);
+  return includedState(state, other, false);
+}
+
+function mergedEntry(first: Entry, second: Entry): Entry {
+  for (const field of ["jump", "turn", "ratio", "steps"] as const)
+    if (first.limits[field] !== undefined && second.limits[field] !== undefined)
+      throw new TypeError(`scene: sequential shots set limit \`${field}\` twice.`);
+  return {
+    steps: [...first.steps, ...second.steps],
+    show: [...first.show, ...second.show],
+    scrollShow: [...first.scrollShow, ...second.scrollShow],
+    limits: { ...first.limits, ...second.limits },
+  };
 }
 
 /** The state with `other`'s elements, beats and motions merged in, on one clock. */
-function includedState(state: State, other: State): State {
+function includedState(state: State, other: State, allowShotMerge: boolean): State {
   const named = `scene "${other.owner.label}"`;
   if (other.shots.length > 0 && (state.shots.length > 0 || state.cursor > 0))
     throw new TypeError(
       `scene: ${named} holds shots, and so does "${state.owner.label}"; give every shot to one scene.`,
     );
-  if (owns(state.owner, other.owner))
-    throw new TypeError(`scene: ${named} is already in "${state.owner.label}".`);
-  const merged = INCLUDED_IN.get(other.owner);
-  if (merged !== undefined)
-    throw new TypeError(`scene: ${named} is already included in "${merged.label}".`);
+  if (state.owner === other.owner || state.includedOwners.has(other.owner))
+    throw new TypeError(`scene: ${named} is already included in "${state.owner.label}".`);
   for (const option of SCENE_OPTIONS)
     if (other.options[option] !== undefined)
       throw new TypeError(
@@ -931,28 +997,43 @@ function includedState(state: State, other: State): State {
       );
     elements.set(name, element);
   }
+  const mergedShotElements = new Set<string>(state.shotElements);
   for (const name of other.owned) {
     if (state.owned.has(name)) {
+      if (allowShotMerge && state.shotElements.has(name)) {
+        mergedShotElements.add(name);
+        continue;
+      }
       const held = state.elements.get(name);
+      const owner = state.sceneOf.get(name) ?? state.owner.label;
       throw new TypeError(
-        `scene: element ${held === undefined ? `"${name}"` : describe(held)} already belongs to "${state.owner.label}".`,
+        `scene: element ${held === undefined ? `"${name}"` : describe(held)} already belongs to "${owner}" and cannot also be bound in "${other.owner.label}".`,
       );
     }
+    if (allowShotMerge || other.shotElements.has(name)) mergedShotElements.add(name);
   }
   const entries = new Map(state.entries);
   for (const [name, entry] of other.entries) {
+    const prev = entries.get(name);
     if (state.owned.has(name) && !other.owned.has(name)) continue;
+    if (allowShotMerge && state.owned.has(name) && prev !== undefined) {
+      entries.set(name, mergedEntry(prev, entry));
+      continue;
+    }
     entries.set(name, entry);
   }
   const owned = new Set([...state.owned, ...other.owned]);
+  const includedOwners = new Set([...state.includedOwners, ...other.includedOwners, other.owner]);
   const beats = new Map(state.beats);
   const inputBeats = new Map(state.inputBeats);
   for (const beat of other.beats.values()) withBeat(beats, inputBeats, beat);
   for (const beat of other.inputBeats.values()) withInputBeat(beats, inputBeats, beat);
   const next: State = {
     ...state,
+    includedOwners,
     elements,
     owned,
+    shotElements: mergedShotElements,
     order: [...state.order, ...other.order.filter((name) => !state.order.includes(name))],
     entries,
     beats,
@@ -962,6 +1043,12 @@ function includedState(state: State, other: State): State {
     sceneOf: new Map([...state.sceneOf, ...other.sceneOf]),
     shotOf: new Map([...state.shotOf, ...other.shotOf]),
     beatScenes: new Map([...other.beatScenes, ...state.beatScenes]),
+    shotCues:
+      other.shotCues.length === 0
+        ? state.shotCues
+        : state.shotCues.length === 0
+          ? other.shotCues
+          : [...state.shotCues, ...other.shotCues],
     cursor: Math.max(state.cursor, other.cursor),
     shots: [
       ...state.shots,
@@ -971,7 +1058,6 @@ function includedState(state: State, other: State): State {
   const loop = loopOf(next.entries);
   if (loop !== undefined)
     throw new RangeError(`scene: elements read each other in a loop: ${loop.join(", ")}.`);
-  INCLUDED_IN.set(other.owner, state.owner);
   return next;
 }
 
@@ -1014,7 +1100,7 @@ function shotted(state: State, taken: Shot): State {
   const span =
     until !== undefined
       ? until - from
-      : (length ?? (ends.length > 0 ? Math.max(...ends) : undefined));
+      : (length ?? other.options.length ?? (ends.length > 0 ? Math.max(...ends) : undefined));
   if (span === undefined)
     throw new TypeError(`shot "${name}": it has no clock beat; give it a \`length\`.`);
   if (!(span > 0))
@@ -1031,7 +1117,7 @@ function shotted(state: State, taken: Shot): State {
       beat(rename(each.name), each.to - each.from, { at: each.from + from }),
     );
   beats.set(name, beat(name, span, { at: from }));
-  const clock: ShotClock = { from, length: span };
+  const clock: ShotClock = { name, from, length: span };
   const shotClocks = new Map(other.shotClocks);
   const sceneOf = new Map(other.sceneOf);
   const shotOf = new Map(other.shotOf);
@@ -1046,25 +1132,32 @@ function shotted(state: State, taken: Shot): State {
     sceneOf.set(member, name);
     shotOf.set(member, name);
     const shown = entry.show.map((stretch) => renamedStretch(stretch, rename));
+    const steps = entry.steps.map((step) => ({ ...step, shotClock: step.shotClock ?? clock }));
     entries.set(member, {
       ...entry,
+      steps,
       show:
         shown.length === 0 && entry.scrollShow.length === 0
           ? [{ kind: "beats", from: name, to: name }]
           : shown,
     });
   }
+  const shiftedCues: Input =
+    other.options.cues === undefined
+      ? NO_INPUT
+      : other.options.cues.map((cue) => ({ ...cue, at: cue.at + from }));
   const moved: State = {
     ...other,
-    options: { ...other.options, length: undefined },
+    options: { ...other.options, length: undefined, cues: undefined },
     beats,
     entries,
     shotClocks,
+    shotCues: shiftedCues,
     sceneOf,
     shotOf,
     beatScenes,
   };
-  const next = includedState(state, moved);
+  const next = includedState(state, moved, true);
   return {
     ...next,
     cursor: from + span,
@@ -1085,36 +1178,13 @@ function validateReference(
   if (!elements.has(element.name)) staged.set(element.name, element);
 }
 
-function validateRegistration(
-  elements: ReadonlyMap<string, SceneElement>,
-  owner: SceneOwner,
-  element: SceneElement,
-  staged: Map<string, SceneElement>,
-): void {
-  const held = elements.get(element.name) ?? staged.get(element.name);
+function register(elements: Map<string, SceneElement>, element: SceneElement): void {
+  const held = elements.get(element.name);
   if (held !== undefined && held !== element)
     throw new TypeError(
       `scene: element ${describe(held)} is already in the piece; ${describe(element)} cannot take its name.`,
     );
-  const existingOwner = OWNERS.get(element);
-  if (existingOwner !== undefined && !owns(owner, existingOwner))
-    throw new TypeError(
-      `scene: element ${describe(element)} already belongs to "${existingOwner.label}" and cannot join "${owner.label}".`,
-    );
-  staged.set(element.name, element);
-}
-
-function register(
-  elements: Map<string, SceneElement>,
-  owner: SceneOwner,
-  element: SceneElement,
-): void {
-  const staged = new Map<string, SceneElement>();
-  validateRegistration(elements, owner, element, staged);
-  for (const [name, entry] of staged) {
-    elements.set(name, entry);
-    OWNERS.set(entry, owner);
-  }
+  elements.set(element.name, element);
 }
 
 /** The elements whose edges a scroll or trigger beat reads; using one adds it to the piece. */
@@ -1204,53 +1274,45 @@ function expectOf(entry: Entry): Expect {
   return loops ? "ambient" : "settle";
 }
 
-function baseSpec(element: SceneElement, m: CastBuilder<string>): Spec {
-  switch (element.kind) {
-    case "object":
-      return element.parts === true ? m.objects() : m.object();
-    case "box":
-      return element.parts === true
-        ? m.many()
-        : m.box(element.media === true ? { media: true } : undefined);
-    case "shape": {
-      const { outline } = element;
-      return outline.kind === "path"
-        ? m.stroke(outline.path)
-        : m.morph(outline.base, outline.targets);
-    }
-    case "text": {
-      const { content, split } = element;
-      if (typeof content === "function") return m.readout(content);
-      if (split === undefined) return m.text();
-      switch (split) {
-        case "letters":
-          return m.letters();
-        case "words":
-          return m.words();
+function staticInputsOf(entry: Entry): InputNeed {
+  const scroll =
+    entry.scrollShow.length > 0 ||
+    entry.steps.some((step) => {
+      switch (step.kind) {
+        case "motion":
+          return step.travels || isInputBeat(step.window);
+        case "motion3d":
+          return isInputBeat(step.window);
+        case "travel3d":
+          return true;
+        case "modify":
+        case "modify3d":
+          return false;
         default:
-          return unreachable(split);
+          return unreachable(step);
       }
-    }
-    default:
-      return unreachable(element);
-  }
+    });
+  return { scroll, pointer: false, events: false };
 }
 
-function hasParts(element: SceneElement): boolean {
+function memberContentOf(element: Exclude<SceneElement, ObjectElement>): Content {
   switch (element.kind) {
     case "box":
-    case "object":
-      return element.parts === true;
-    case "text":
-      return element.split !== undefined;
+      return { kind: "box" };
     case "shape":
-      return false;
+      return element.outline.kind === "path"
+        ? { kind: "stroke", path: element.outline.path }
+        : { kind: "morph", shapes: [element.outline.base, ...element.outline.targets] };
+    case "text":
+      return typeof element.content === "function"
+        ? { kind: "readout", format: element.content }
+        : { kind: "text" };
     default:
       return unreachable(element);
   }
 }
 
-function castOf(state: State, m: CastBuilder<string>): Members {
+function membersOf(state: State): readonly MemberInput[] {
   for (const entry of state.entries.values())
     for (const step of entry.steps)
       if (step.kind === "motion")
@@ -1259,32 +1321,41 @@ function castOf(state: State, m: CastBuilder<string>): Members {
             throw new TypeError(
               `scene: a motion reads "${read}", which is not an element of the piece.`,
             );
-  const specOf = (element: SceneElement): Spec => {
+  const memberFor = (element: SceneElement): MemberInput => {
     const entry = state.entries.get(element.name) ?? NO_ENTRY;
-    const { watch } = element.kind === "object" ? {} : element.options;
-    let out = baseSpec(element, m);
-    if (entry.show.length > 0) out = out.showing(entry.show);
-    if (entry.scrollShow.length > 0) out = out.showingScroll(entry.scrollShow);
-    if (watch !== undefined) out = out.watch(watch);
-    const expect = expectOf(entry);
-    switch (expect) {
-      case "static":
-        return out.static();
-      case "ambient":
-        return out.ambient();
-      case "settle":
-        return out.settle();
+    const base = {
+      name: element.name,
+      expect: expectOf(entry),
+      inputs: staticInputsOf(entry),
+      ...(entry.show.length > 0 ? { on: entry.show } : {}),
+      ...(entry.scrollShow.length > 0 ? { onScroll: entry.scrollShow } : {}),
+    };
+    switch (element.kind) {
+      case "object":
+        return { ...base, kind: "object", parts: element.parts };
+      case "box":
+        return element.parts === true
+          ? { ...base, kind: "list" }
+          : { ...base, kind: "actor", content: { kind: "box" }, media: element.media };
+      case "shape":
+        return { ...base, kind: "actor", content: memberContentOf(element) };
+      case "text":
+        if (element.split !== undefined) return { ...base, kind: "list", split: element.split };
+        return { ...base, kind: "actor", content: memberContentOf(element) };
       default:
-        return unreachable(expect);
+        return unreachable(element);
     }
   };
-  const members: Record<string, Spec> = {};
+  const members: MemberInput[] = [];
   for (const name of state.order) {
     const element = state.elements.get(name);
-    if (element !== undefined) members[name] = specOf(element);
+    if (element !== undefined) members.push(memberFor(element));
   }
   return members;
 }
+
+type CompiledStack2d = (time: Time, events: Input) => Pose2d;
+type CompiledStack3d = (time: Time, events: Input) => Pose3d;
 
 interface Plan {
   readonly name: string;
@@ -1292,6 +1363,12 @@ interface Plan {
   readonly object: boolean;
   readonly steps: readonly Step[];
   readonly clock: ShotClock | undefined;
+  readonly multiShot: boolean;
+  readonly staticInputs: InputNeed;
+  solo2d?: CompiledStack2d | undefined;
+  solo3d?: CompiledStack3d | undefined;
+  part2d?: Map<string, CompiledStack2d> | undefined;
+  part3d?: Map<string, CompiledStack3d> | undefined;
 }
 
 interface Env {
@@ -1301,15 +1378,48 @@ interface Env {
   readonly counts: Readonly<Record<string, number>> | undefined;
   readonly lines: Readonly<Record<string, readonly number[]>> | undefined;
   /** Poses `read` already computed this frame, by element, part and time. */
-  readonly read2d: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
-  readonly read3d: Map<string, { readonly events: Events; readonly pose: Pose3d }>;
+  readonly read2d: Map<string, { readonly events: Input; readonly pose: Pose2d }>;
+  readonly read3d: Map<string, { readonly events: Input; readonly pose: Pose3d }>;
   readonly reading: string[];
   /** Filled as elements run: which can change with the clock alone. */
   readonly moves: Map<string, Moves> | undefined;
   /** Filled as elements run: what drives each. */
   readonly drives: Map<string, Drive> | undefined;
+  /** Filled as elements run: which dynamic inputs each read. */
+  readonly inputs: Map<string, InputNeed> | undefined;
   /** The scene's length in ms, for a shot's share of an untimed progress. */
   readonly total: number | undefined;
+}
+
+let activeEnv: Env | undefined;
+
+function needEnv(): Env {
+  if (activeEnv === undefined) throw new Error("scene: active evaluation environment missing.");
+  return activeEnv;
+}
+
+function initInputNeed(
+  map: Map<string, InputNeed> | undefined,
+  name: string,
+  base: InputNeed,
+): void {
+  if (map === undefined || map.has(name)) return;
+  map.set(name, { ...base });
+}
+
+function mergeInputNeed(
+  map: Map<string, InputNeed> | undefined,
+  name: string,
+  added: Partial<InputNeed> | undefined,
+): void {
+  if (map === undefined || added === undefined) return;
+  const cur = map.get(name) ?? { scroll: false, pointer: false, events: false };
+  const scrollNeed = cur.scroll || added.scroll === true;
+  const pointerNeed = cur.pointer || added.pointer === true;
+  const eventsNeed = cur.events || added.events === true;
+  if (scrollNeed !== cur.scroll || pointerNeed !== cur.pointer || eventsNeed !== cur.events) {
+    map.set(name, { scroll: scrollNeed, pointer: pointerNeed, events: eventsNeed });
+  }
 }
 
 const MORE: Drive = Object.freeze({ kind: "more" });
@@ -1378,35 +1488,38 @@ function movesOf(
 
 function wrapRead(
   base: MotionContext["read"],
-  onRead: (target: string) => void,
+  onRead: (target: string, probe: boolean) => void,
 ): MotionContext["read"] {
   function read(element: ObjectElement, at?: ReadAt): Pose3d;
   function read(element: Element | string, at?: ReadAt): Pose2d;
   function read(element: ObjectElement | Element | string, at?: ReadAt): Pose3d | Pose2d {
+    const probe = at?.time !== undefined;
     if (typeof element !== "string" && element.kind === "object") {
       const pose = base(element, at);
-      onRead(element.name);
+      onRead(element.name, probe);
       return pose;
     }
     const pose = base(element, at);
-    onRead(typeof element === "string" ? element : element.name);
+    onRead(typeof element === "string" ? element : element.name, probe);
     return pose;
   }
   return read;
 }
 
-/** The context a motion sees: its time tells the clock watcher, `carry` counts as `maybe`, reading
- * an element moves this one with it, and `other` hears a read of events, `carry` or `read`. */
+/** The context a motion sees: watches clock reads, element reads, `carry`/`read`/`events` drives,
+ * and `onEvents` specifically for direct reads of `context.events`. */
 function watched(
   context: MotionContext,
   seen: () => void,
   readOf: (target: string) => void,
   other: () => void,
+  onEvents?: () => void,
 ): MotionContext {
   const time = watchedTime(context.time);
   const seenBy: MotionContext = {
     time,
     get events() {
+      onEvents?.();
       other();
       return context.events;
     },
@@ -1418,8 +1531,8 @@ function watched(
     },
     element: context.element,
     span: context.span,
-    read: wrapRead(context.read, (target) => {
-      readOf(target);
+    read: wrapRead(context.read, (target, probe) => {
+      if (!probe) readOf(target);
       other();
     }),
     ...(context.index === undefined ? {} : { index: context.index }),
@@ -1468,23 +1581,63 @@ function enterRead(env: Env, plan: Plan, index: number | undefined): void {
   env.reading.push(token);
 }
 
+function getStack2d(
+  plan: Plan,
+  index: number | undefined,
+  count: number | undefined,
+): CompiledStack2d {
+  if (!plan.parts || index === undefined) {
+    plan.solo2d ??= buildStack2d(plan, index, count);
+    return plan.solo2d;
+  }
+  const map = (plan.part2d ??= new Map());
+  const key = `${index}/${count ?? ""}`;
+  let cached = map.get(key);
+  if (cached === undefined) {
+    cached = buildStack2d(plan, index, count);
+    map.set(key, cached);
+  }
+  return cached;
+}
+
+function getStack3d(
+  plan: Plan,
+  index: number | undefined,
+  count: number | undefined,
+): CompiledStack3d {
+  if (!plan.parts || index === undefined) {
+    plan.solo3d ??= buildStack3d(plan, index, count);
+    return plan.solo3d;
+  }
+  const map = (plan.part3d ??= new Map());
+  const key = `${index}/${count ?? ""}`;
+  let cached = map.get(key);
+  if (cached === undefined) {
+    cached = buildStack3d(plan, index, count);
+    map.set(key, cached);
+  }
+  return cached;
+}
+
 function evaluate2d(
   plan: Plan,
   env: Env,
   index: number | undefined,
   count: number | undefined,
   time: Time,
-  events: Events,
+  events: Input,
 ): Pose2d {
   enterRead(env, plan, index);
+  const prevEnv = activeEnv;
+  activeEnv = env;
+  initInputNeed(env.inputs, plan.name, plan.staticInputs);
   try {
-    return stackOf(
-      plan,
-      env,
-      index,
-      count,
-    )(shotTime(time, plan.clock, env.total), shotEvents(events, plan.clock));
+    const stack = getStack2d(plan, index, count);
+    return plan.multiShot
+      ? stack(time, events)
+      : stack(shotTime(time, plan.clock, env.total), shotEvents(events, plan.clock));
   } finally {
+    activeEnv = prevEnv;
     env.reading.pop();
   }
 }
@@ -1495,17 +1648,19 @@ function evaluate3d(
   index: number | undefined,
   count: number | undefined,
   time: Time,
-  events: Events,
+  events: Input,
 ): Pose3d {
   enterRead(env, plan, index);
+  const prevEnv = activeEnv;
+  activeEnv = env;
+  initInputNeed(env.inputs, plan.name, plan.staticInputs);
   try {
-    return stack3dOf(
-      plan,
-      env,
-      index,
-      count,
-    )(shotTime(time, plan.clock, env.total), shotEvents(events, plan.clock));
+    const stack = getStack3d(plan, index, count);
+    return plan.multiShot
+      ? stack(time, events)
+      : stack(shotTime(time, plan.clock, env.total), shotEvents(events, plan.clock));
   } finally {
+    activeEnv = prevEnv;
     env.reading.pop();
   }
 }
@@ -1570,26 +1725,36 @@ function shotTime(time: Time, clock: ShotClock | undefined, total: number | unde
   return local;
 }
 
-/** `events` from the shot's start on, each `at` moved back by the start, made once per list and shot start. */
-function shotEvents(events: Events, clock: ShotClock | undefined): Events {
+/** `events` from the shot's start on, each `at` moved back by the start, carrying a record per stream and shot start. */
+function shotEvents(events: Input, clock: ShotClock | undefined): Input {
   if (clock === undefined || clock.from === 0) return events;
-  const byStart = SHOT_EVENTS.get(events) ?? new Map<number, MovedEvents>();
-  const version = versionOf(events);
-  const known = byStart.get(clock.from);
-  if (known !== undefined && known.version === version) return known.events;
-  const moved = events
-    .filter((event) => event.at >= clock.from)
-    .map((event) => ({ ...event, at: event.at - clock.from }));
-  byStart.set(clock.from, { version, events: moved });
-  SHOT_EVENTS.set(events, byStart);
+  const key = sourceStreamOf(events) ?? events;
+  let byStart = SHOT_EVENTS.get(key);
+  if (byStart === undefined) {
+    byStart = new Map();
+    SHOT_EVENTS.set(key, byStart);
+  }
+  let shifter = byStart.get(clock.from);
+  if (shifter === undefined) {
+    shifter = shiftedInput();
+    byStart.set(clock.from, shifter);
+  }
+  const moved = shifter.resolve(events, clock.from);
   SCENE_EVENTS.set(moved, events);
   return moved;
 }
 
-function readerOf(env: Env, plan: Plan, local: Time, localEvents: Events): MotionContext["read"] {
-  const time = sceneTime(local, plan.clock, env.total);
+function readerOf(
+  env: Env,
+  plan: Plan,
+  local: Time,
+  localEvents: Input,
+  stepClock?: ShotClock,
+): MotionContext["read"] {
+  const activeClock = stepClock ?? plan.clock;
+  const time = sceneTime(local, activeClock, env.total);
   const events =
-    plan.clock === undefined ? localEvents : (SCENE_EVENTS.get(localEvents) ?? localEvents);
+    activeClock === undefined ? localEvents : (SCENE_EVENTS.get(localEvents) ?? localEvents);
   function read(element: ObjectElement, at?: ReadAt): Pose3d;
   function read(element: Element | string, at?: ReadAt): Pose2d;
   function read(element: ObjectElement | Element | string, at?: ReadAt): Pose3d | Pose2d {
@@ -1606,20 +1771,51 @@ function readerOf(env: Env, plan: Plan, local: Time, localEvents: Events): Motio
       throw new RangeError(`read: "${name}" is not an object; its pose is 2D.`);
     const part = target.parts ? (at?.index ?? 0) : undefined;
     const parts = target.parts ? (at?.count ?? env.counts?.[name] ?? 1) : undefined;
-    const when = at?.time === undefined ? time : sceneTime(at.time, plan.clock, env.total);
+    const isProbe = at?.time !== undefined;
+    const when = isProbe ? sceneTime(at.time, activeClock, env.total) : time;
     const length = when.clock.kind === "timed" ? when.clock.length : "";
     const key = `${name}|${part}|${parts}|${when.clock.kind}|${elapsedOf(when.clock)}|${length}|${when.progress}`;
+    const probeInputs =
+      isProbe && env.inputs !== undefined ? new Map<string, InputNeed>() : undefined;
+    const evalEnv: Env = isProbe
+      ? { ...env, moves: undefined, drives: undefined, inputs: probeInputs }
+      : env;
+    const mergeTargetInputs = (): void => {
+      if (env.inputs === undefined) return;
+      mergeInputNeed(env.inputs, plan.name, target.staticInputs);
+      if (probeInputs !== undefined) {
+        const probed = probeInputs.get(target.name);
+        if (probed !== undefined) {
+          mergeInputNeed(env.inputs, target.name, probed);
+          mergeInputNeed(env.inputs, plan.name, probed);
+        }
+      }
+      const targetInputs = env.inputs.get(target.name);
+      if (targetInputs !== undefined) mergeInputNeed(env.inputs, plan.name, targetInputs);
+    };
     if (wantObject) {
       const known = env.read3d.get(key);
-      if (known !== undefined && known.events === events) return known.pose;
-      const pose = evaluate3d(target, env, part, parts, when, events);
+      if (known !== undefined && known.events === events) {
+        mergeTargetInputs();
+        return known.pose;
+      }
+      const pose = isProbe
+        ? withProbeStore(() => evaluate3d(target, evalEnv, part, parts, when, events))
+        : evaluate3d(target, evalEnv, part, parts, when, events);
       env.read3d.set(key, { events, pose });
+      mergeTargetInputs();
       return pose;
     }
     const known = env.read2d.get(key);
-    if (known !== undefined && known.events === events) return known.pose;
-    const pose = evaluate2d(target, env, part, parts, when, events);
+    if (known !== undefined && known.events === events) {
+      mergeTargetInputs();
+      return known.pose;
+    }
+    const pose = isProbe
+      ? withProbeStore(() => evaluate2d(target, evalEnv, part, parts, when, events))
+      : evaluate2d(target, evalEnv, part, parts, when, events);
     env.read2d.set(key, { events, pose });
+    mergeTargetInputs();
     return pose;
   }
   return read;
@@ -1633,14 +1829,80 @@ function replacing3d(below: Pose3d, pose: Pose3d): Pose3d {
   return out;
 }
 
-/** An object's motions as one 3D signal: the same notes, windows and joins as an element's, over `Pose3d`. */
-function stack3dOf(
-  plan: Plan,
+function runStepWithWatches<T>(
   env: Env,
+  planName: string,
+  baseContext: MotionContext,
+  travels: boolean,
+  run: (usedContext: MotionContext) => T,
+): T {
+  const moves = env.moves;
+  const drives = env.drives;
+  const inputs = env.inputs;
+  let sawScroll = false;
+  let sawPointer = false;
+  let sawEventsChannel = false;
+  let sawEventsGetter = false;
+
+  const used =
+    moves === undefined && drives === undefined && inputs === undefined
+      ? baseContext
+      : watched(
+          baseContext,
+          () => note(moves, planName, "maybe"),
+          (target) => note(moves, planName, moves?.get(target) === "time" ? "time" : "maybe"),
+          () => {
+            if (!travels) noteDrive(drives, planName, MORE);
+          },
+          () => {
+            sawEventsGetter = true;
+          },
+        );
+
+  const execute = (): T =>
+    moves === undefined
+      ? run(used)
+      : watchClock(
+          (use) => note(moves, planName, use),
+          () => run(used),
+        );
+
+  const result =
+    inputs === undefined
+      ? execute()
+      : watchInputs((channel) => {
+          switch (channel) {
+            case "scroll":
+              sawScroll = true;
+              break;
+            case "pointer":
+              sawPointer = true;
+              break;
+            case "events":
+              sawEventsChannel = true;
+              break;
+            default:
+              unreachable(channel);
+          }
+        }, execute);
+
+  if (inputs !== undefined) {
+    mergeInputNeed(inputs, planName, {
+      scroll: sawScroll,
+      pointer: sawPointer,
+      events: sawEventsChannel || (sawEventsGetter && !sawScroll && !sawPointer),
+    });
+  }
+  return result;
+}
+
+/** An object's motions built once as a cached 3D stack, reading the active evaluation env dynamically. */
+function buildStack3d(
+  plan: Plan,
   index: number | undefined,
   count: number | undefined,
-): Signal<Pose3d> {
-  let stack: Signal<Pose3d> = () => ({});
+): CompiledStack3d {
+  let stack: CompiledStack3d = () => ({});
   for (const step of plan.steps) {
     const below = stack;
     switch (step.kind) {
@@ -1650,6 +1912,7 @@ function stack3dOf(
       case "modify3d": {
         const principled = step.principle(below);
         stack = (time, events) => {
+          const env = needEnv();
           note(env.moves, plan.name, "maybe");
           noteDrive(env.drives, plan.name, MORE);
           return principled(time, events);
@@ -1658,26 +1921,37 @@ function stack3dOf(
       }
       case "travel3d":
         stack = (time, events) => {
+          const env = needEnv();
+          const prev = below(time, events);
+          if (plan.multiShot && step.shotClock !== undefined) {
+            const rawNow = elapsedOf(time.clock);
+            if (rawNow !== undefined && rawNow < step.shotClock.from) return prev;
+          }
+          const stepTime =
+            plan.multiShot && step.shotClock !== undefined
+              ? shotTime(time, step.shotClock, env.total)
+              : time;
+          const stepEvents =
+            plan.multiShot && step.shotClock !== undefined
+              ? shotEvents(events, step.shotClock)
+              : events;
           const context: MotionContext = {
-            time,
-            events,
+            time: stepTime,
+            events: stepEvents,
             rest: env.rest,
             carry: env.carry,
             element: plan.name,
             span: step.span,
-            read: readerOf(env, plan, time, events),
+            read: readerOf(env, plan, stepTime, stepEvents, step.shotClock),
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
           };
-          const moves = env.moves;
-          if (moves !== undefined) {
-            const kind = movesOf(step, time, context);
-            if (kind !== undefined) note(moves, plan.name, kind);
+          if (env.moves !== undefined) {
+            const kind = movesOf(step, stepTime, context);
+            if (kind !== undefined) note(env.moves, plan.name, kind);
           }
           noteDrive(env.drives, plan.name, MORE);
-          const prev = below(time, events);
-          // A travel with no window sits on its slot on every clock; sweeping requires `.in(beat)`.
-          const ran = step.window === undefined ? withProgress(time, 1) : time;
+          const ran = step.window === undefined ? withProgress(stepTime, 1) : stepTime;
           const holder: {
             readonly view: ObjectView;
             readonly below: Pose3d;
@@ -1689,8 +1963,10 @@ function stack3dOf(
             fit: step.fit,
             out: undefined,
           };
-          OBJECT_TRAVEL.set(context, holder);
-          step.run(ran, context);
+          runStepWithWatches(env, plan.name, context, false, (used) => {
+            OBJECT_TRAVEL.set(used, holder);
+            step.run(ran, used);
+          });
           const out = holder.out;
           if (out === undefined) return prev;
           if (out.scale !== undefined) {
@@ -1706,42 +1982,46 @@ function stack3dOf(
         break;
       case "motion3d":
         stack = (time, events) => {
+          const env = needEnv();
+          const prev = below(time, events);
+          if (plan.multiShot && step.shotClock !== undefined) {
+            const rawNow = elapsedOf(time.clock);
+            if (rawNow !== undefined && rawNow < step.shotClock.from) return prev;
+          }
+          const stepTime =
+            plan.multiShot && step.shotClock !== undefined
+              ? shotTime(time, step.shotClock, env.total)
+              : time;
+          const stepEvents =
+            plan.multiShot && step.shotClock !== undefined
+              ? shotEvents(events, step.shotClock)
+              : events;
           const context: MotionContext = {
-            time,
-            events,
+            time: stepTime,
+            events: stepEvents,
             rest: env.rest,
             carry: env.carry,
             element: plan.name,
             span: step.span,
-            read: readerOf(env, plan, time, events),
+            read: readerOf(env, plan, stepTime, stepEvents, step.shotClock),
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
           };
-          const moves = env.moves;
-          const drives = env.drives;
-          if (moves !== undefined) {
-            const kind = movesOf(step, time, context);
-            if (kind !== undefined) note(moves, plan.name, kind);
+          if (env.moves !== undefined) {
+            const kind = movesOf(step, stepTime, context);
+            if (kind !== undefined) note(env.moves, plan.name, kind);
           }
-          noteDrive(drives, plan.name, driveOf({ ...step, travels: false }));
-          const used =
-            moves === undefined && drives === undefined
-              ? context
-              : watched(
-                  context,
-                  () => note(moves, plan.name, "maybe"),
-                  (target) =>
-                    note(moves, plan.name, moves?.get(target) === "time" ? "time" : "maybe"),
-                  () => noteDrive(drives, plan.name, MORE),
-                );
-          const prev = below(time, events);
-          const pose =
-            moves === undefined
-              ? step.run(time, used)
-              : watchClock(
-                  (use) => note(moves, plan.name, use),
-                  () => step.run(step.window === undefined ? watchedTime(time) : time, used),
-                );
+          noteDrive(env.drives, plan.name, driveOf({ ...step, travels: false }));
+          let usedRef: MotionContext = context;
+          const pose = runStepWithWatches(env, plan.name, context, false, (used) => {
+            usedRef = used;
+            return step.run(
+              env.moves !== undefined && step.window === undefined
+                ? watchedTime(stepTime)
+                : stepTime,
+              used,
+            );
+          });
           switch (step.joins) {
             case "layer":
               return combine3d([prev, pose]);
@@ -1750,8 +2030,8 @@ function stack3dOf(
                 step.window !== undefined &&
                 "active" in step.window &&
                 typeof step.window.active === "function"
-                  ? step.window.active(time, used)
-                  : (elapsedOf(time.clock) ?? 0) >= (step.span?.from ?? 0);
+                  ? step.window.active(stepTime, usedRef)
+                  : (elapsedOf(stepTime.clock) ?? 0) >= (step.span?.from ?? 0);
               return active ? replacing3d(prev, pose) : prev;
             }
             default:
@@ -1766,19 +2046,20 @@ function stack3dOf(
   return stack;
 }
 
-function stackOf(
+/** An element's motions built once as a cached 2D stack, reading the active evaluation env dynamically. */
+function buildStack2d(
   plan: Plan,
-  env: Env,
   index: number | undefined,
   count: number | undefined,
-): Signal<Pose2d> {
-  let stack: Signal<Pose2d> = () => ({});
+): CompiledStack2d {
+  let stack: CompiledStack2d = () => ({});
   for (const step of plan.steps) {
     const below = stack;
     switch (step.kind) {
       case "modify": {
         const principled = step.principle(below);
         stack = (time, events) => {
+          const env = needEnv();
           note(env.moves, plan.name, "maybe");
           noteDrive(env.drives, plan.name, MORE);
           return principled(time, events);
@@ -1791,53 +2072,53 @@ function stackOf(
         throw new TypeError(`scene: "${plan.name}" is not an object and takes no 3D motion.`);
       case "motion":
         stack = (time, events) => {
+          const env = needEnv();
+          const prev = below(time, events);
+          if (plan.multiShot && step.shotClock !== undefined) {
+            const rawNow = elapsedOf(time.clock);
+            if (rawNow !== undefined && rawNow < step.shotClock.from) return prev;
+          }
+          const stepTime =
+            plan.multiShot && step.shotClock !== undefined
+              ? shotTime(time, step.shotClock, env.total)
+              : time;
+          const stepEvents =
+            plan.multiShot && step.shotClock !== undefined
+              ? shotEvents(events, step.shotClock)
+              : events;
           const partLines = index === undefined ? undefined : env.lines?.[plan.name];
           const line = index === undefined ? undefined : (partLines?.[index] ?? 0);
           const context: MotionContext = {
-            time,
-            events,
+            time: stepTime,
+            events: stepEvents,
             rest: env.rest,
             carry: env.carry,
             element: plan.name,
             span: step.span,
-            read: readerOf(env, plan, time, events),
+            read: readerOf(env, plan, stepTime, stepEvents, step.shotClock),
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
             ...(line === undefined ? {} : { line }),
           };
-          const moves = env.moves;
-          const drives = env.drives;
-          if (moves !== undefined) {
-            const kind = movesOf(step, time, context);
-            if (kind !== undefined) note(moves, plan.name, kind);
+          if (env.moves !== undefined) {
+            const kind = movesOf(step, stepTime, context);
+            if (kind !== undefined) note(env.moves, plan.name, kind);
           }
-          noteDrive(drives, plan.name, driveOf(step));
-          const used =
-            (moves === undefined && drives === undefined) || step.travels
-              ? context
-              : watched(
-                  context,
-                  () => note(moves, plan.name, "maybe"),
-                  (target) =>
-                    note(moves, plan.name, moves?.get(target) === "time" ? "time" : "maybe"),
-                  () => noteDrive(drives, plan.name, MORE),
-                );
-          if (partLines !== undefined) PART_LINES.set(used, partLines);
-          const prev = below(time, events);
-          if (step.travels) BELOW_POSE.set(used, prev);
-          // A travel with no window sits on its slot on every clock; sweeping requires `.in(beat)`.
-          const ran = step.travels && step.window === undefined ? withProgress(time, 1) : time;
-          const pose =
-            moves === undefined
-              ? step.run(ran, used)
-              : watchClock(
-                  (use) => note(moves, plan.name, use),
-                  () =>
-                    step.run(
-                      step.window === undefined && !step.travels ? watchedTime(ran) : ran,
-                      used,
-                    ),
-                );
+          noteDrive(env.drives, plan.name, driveOf(step));
+          const ran =
+            step.travels && step.window === undefined ? withProgress(stepTime, 1) : stepTime;
+          let usedRef: MotionContext = context;
+          const pose = runStepWithWatches(env, plan.name, context, step.travels, (used) => {
+            usedRef = used;
+            if (partLines !== undefined) PART_LINES.set(used, partLines);
+            if (step.travels) BELOW_POSE.set(used, prev);
+            return step.run(
+              env.moves !== undefined && step.window === undefined && !step.travels
+                ? watchedTime(ran)
+                : ran,
+              used,
+            );
+          });
           switch (step.joins) {
             case "layer":
               return step.travels ? joinTravel(prev, pose) : combine([prev, pose]);
@@ -1846,8 +2127,8 @@ function stackOf(
                 step.window !== undefined &&
                 "active" in step.window &&
                 typeof step.window.active === "function"
-                  ? step.window.active(time, used)
-                  : (elapsedOf(time.clock) ?? 0) >= (step.span?.from ?? 0);
+                  ? step.window.active(stepTime, usedRef)
+                  : (elapsedOf(stepTime.clock) ?? 0) >= (step.span?.from ?? 0);
               if (!active) return prev;
               return step.travels ? joinTravel(prev, pose) : replacing(prev, pose);
             }
@@ -1975,7 +2256,9 @@ export function provenanceOf(scene: Scene): ScenePlan {
   for (const name of state.order) {
     const entry = state.entries.get(name) ?? NO_ENTRY;
     const shot = state.shotOf.get(name);
-    const steps: StepSummary[] = entry.steps.map((step) => stepSummary(step, shot));
+    const steps: StepSummary[] = entry.steps.map((step) =>
+      stepSummary(step, step.shotClock?.name ?? shot),
+    );
     const windows: ShowSummary[] = [
       ...entry.show.map(showSummary),
       ...entry.scrollShow.map((): ShowSummary => ({ kind: "scroll" })),
@@ -1996,22 +2279,45 @@ export function provenanceOf(scene: Scene): ScenePlan {
   });
 }
 
-function definitionOf(state: State): StageDefinition {
+function hasParts(element: SceneElement): boolean {
+  switch (element.kind) {
+    case "object":
+    case "box":
+      return element.parts === true;
+    case "text":
+      return element.split !== undefined;
+    case "shape":
+      return false;
+    default:
+      return unreachable(element);
+  }
+}
+
+function stageInputOf(state: State): StageInput {
   const ends = [...state.beats.values()].map((beat) => beat.to);
   const durationMs = state.options.length ?? (ends.length > 0 ? Math.max(...ends) : undefined);
   let plans: ReadonlyMap<string, Plan> | undefined;
   const plansOf = (): ReadonlyMap<string, Plan> => {
     plans ??= new Map(
-      [...state.elements.values()].map((element) => [
-        element.name,
-        {
-          name: element.name,
-          parts: hasParts(element),
-          object: element.kind === "object",
-          steps: (state.entries.get(element.name) ?? NO_ENTRY).steps,
-          clock: state.shotClocks.get(element.name),
-        },
-      ]),
+      [...state.elements.values()].map((element) => {
+        const entry = state.entries.get(element.name) ?? NO_ENTRY;
+        const shotSet = new Set<ShotClock>();
+        for (const step of entry.steps) {
+          if (step.shotClock !== undefined) shotSet.add(step.shotClock);
+        }
+        return [
+          element.name,
+          {
+            name: element.name,
+            parts: hasParts(element),
+            object: element.kind === "object",
+            steps: entry.steps,
+            clock: state.shotClocks.get(element.name),
+            multiShot: shotSet.size > 1,
+            staticInputs: staticInputsOf(entry),
+          },
+        ];
+      }),
     );
     return plans;
   };
@@ -2020,16 +2326,18 @@ function definitionOf(state: State): StageDefinition {
     if (inputBeat.kind === "trigger-beat" && inputBeat.ms > maxTriggerMs)
       maxTriggerMs = inputBeat.ms;
   const settleMs = maxTriggerMs > 0 ? Math.max(2000, maxTriggerMs + 200) : undefined;
-  const { cues } = state.options;
+  const cues =
+    state.options.cues === undefined && state.shotCues.length === 0
+      ? undefined
+      : mergeInput(state.options.cues ?? NO_INPUT, state.shotCues);
   return {
-    kind: "stage-definition",
     beats: Object.fromEntries(
       [...state.beats]
         .sort(([, a], [, b]) => a.from - b.from)
         .map(([name, beat]) => [name, [beat.from, beat.to]]),
     ),
     limits: limitsOf(state),
-    cast: (m) => castOf(state, m),
+    members: membersOf(state),
     ...(state.shots.length === 0 ? {} : { shots: state.shots }),
     scene: (context: SceneContext) => {
       const env: Env = {
@@ -2044,6 +2352,7 @@ function definitionOf(state: State): StageDefinition {
         reading: [],
         moves: context.moves,
         drives: context.drives,
+        inputs: context.inputs,
       };
       const out: Record<string, Pose2d | Pose3d | ListPose | ListPose3d> = {};
       for (const plan of env.plans.values()) {
@@ -2196,7 +2505,7 @@ function shown(state: State, windows: readonly ShowWindow[]): State {
 /** The state after `.limits(limits)` on the bound element. */
 function limited(state: State, limits: Limits): State {
   const [name, entry] = entryOf(state);
-  for (const field of ["jump", "turn", "ratio"] as const)
+  for (const field of ["jump", "turn", "ratio", "steps"] as const)
     if (limits[field] !== undefined && entry.limits[field] !== undefined)
       throw new TypeError(`scene: "${name}" sets limit \`${field}\` twice.`);
   const merged = {
@@ -2342,7 +2651,7 @@ function appendStep(state: State, added: Step): State {
 
 function select(state: State, element: SceneElement): State {
   const elements = new Map(state.elements);
-  register(elements, state.owner, element);
+  register(elements, element);
   const owned = state.owned.has(element.name)
     ? state.owned
     : new Set([...state.owned, element.name]);
@@ -2367,9 +2676,11 @@ function startState(options: SceneOptions): State {
       : `scene ${nextSceneId}`;
   return {
     owner: Object.freeze({ label }),
+    includedOwners: new Set(),
     options,
     elements: new Map(),
     owned: new Set(),
+    shotElements: new Set(),
     order: [],
     entries: new Map(),
     beats: new Map(),
@@ -2377,6 +2688,7 @@ function startState(options: SceneOptions): State {
     current: undefined,
     shotClocks: new Map(),
     shots: [],
+    shotCues: NO_INPUT,
     cursor: 0,
     sceneOf: new Map(),
     shotOf: new Map(),
@@ -2512,7 +2824,22 @@ export interface CompileSceneOptions {
 export function compileScene(scene: Scene, options: CompileSceneOptions = {}): CompileResult {
   const state = stateOf(scene);
   if (state === undefined) throw new TypeError("compileScene: expected what `scene` returns.");
-  const result = compileStage(definitionOf(state));
+  let input: StageInput;
+  try {
+    input = stageInputOf(state);
+  } catch (thrown) {
+    return {
+      ok: false,
+      errors: Object.freeze([
+        {
+          kind: "invalid",
+          field: "cast",
+          reason: thrown instanceof Error ? thrown.message : String(thrown),
+        },
+      ]),
+    };
+  }
+  const result = compileDirectStage(input);
   const { wrap } = options;
   if (!result.ok || wrap === undefined) return result;
   return { ok: true, stage: Object.freeze({ ...result.stage, scene: wrap(result.stage.scene) }) };

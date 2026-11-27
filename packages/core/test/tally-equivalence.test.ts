@@ -4,8 +4,8 @@ import {
   elapsedOf,
   liveAt,
   tally,
-  type Events,
-  type MotionEvent,
+  type Input,
+  type InputEntry,
   type Time,
 } from "@gerak/core";
 
@@ -17,12 +17,12 @@ interface Options {
 
 /** A frozen copy of the table-building tally this one must keep matching. */
 function oldTally(options: Options) {
-  const valueOf = (event: MotionEvent): number | undefined => {
+  const valueOf = (event: InputEntry): number | undefined => {
     if (options.target !== undefined && event.target !== options.target) return undefined;
     const held = options.on[event.name];
     return held === "value" ? event.value : held;
   };
-  const build = (events: Events) => {
+  const build = (events: Input) => {
     const times: number[] = [];
     const values: number[] = [];
     const areas: number[] = [];
@@ -40,8 +40,8 @@ function oldTally(options: Options) {
     }
     return { times, values, areas };
   };
-  const total = (events: Events): number => build(events).areas.at(-1) ?? 0;
-  const at = (time: Time, events: Events): number => {
+  const total = (events: Input): number => build(events).areas.at(-1) ?? 0;
+  const at = (time: Time, events: Input): number => {
     const now = elapsedOf(time.clock);
     if (now === undefined) return total(events);
     const { times, values, areas } = build(events);
@@ -55,7 +55,7 @@ function oldTally(options: Options) {
 
 const TIMES = Array.from({ length: 190 }, (_, index) => index * 16);
 
-function agree(options: Options, lists: readonly Events[]) {
+function agree(options: Options, lists: readonly Input[]) {
   const before = oldTally(options);
   const now = tally(options);
   for (const events of lists) {
@@ -65,14 +65,14 @@ function agree(options: Options, lists: readonly Events[]) {
   }
 }
 
-const samples: Events = [
-  { name: "mouth", at: 100, value: 0.5 },
-  { name: "blink", at: 350 },
-  { name: "mouth", at: 400, value: 0.5 },
-  { name: "mouth", at: 600, value: 0.25 },
-  { name: "mouth", at: 1000, value: 0 },
-  { name: "mouth", at: 1000, value: 2 },
-  { name: "mouth", at: 2500, value: 1 },
+const samples: Input = [
+  { kind: "value", name: "mouth", at: 100, value: 0.5 },
+  { kind: "trigger", name: "blink", at: 350, value: 1 },
+  { kind: "value", name: "mouth", at: 400, value: 0.5 },
+  { kind: "value", name: "mouth", at: 600, value: 0.25 },
+  { kind: "value", name: "mouth", at: 1000, value: 0 },
+  { kind: "value", name: "mouth", at: 1000, value: 2 },
+  { kind: "value", name: "mouth", at: 2500, value: 1 },
 ];
 
 describe("tally keeps the values it had", () => {
@@ -81,11 +81,11 @@ describe("tally keeps the values it had", () => {
   });
 
   it("matches with named goals and a target filter", () => {
-    const events: Events = [
-      { name: "shut", at: 200, target: "lid" },
-      { name: "open", at: 500, target: "lid" },
-      { name: "shut", at: 700, target: "eye" },
-      { name: "shut", at: 900, target: "lid" },
+    const events: Input = [
+      { kind: "trigger", name: "shut", at: 200, value: 1, target: "lid" },
+      { kind: "trigger", name: "open", at: 500, value: 1, target: "lid" },
+      { kind: "trigger", name: "shut", at: 700, value: 1, target: "eye" },
+      { kind: "trigger", name: "shut", at: 900, value: 1, target: "lid" },
     ];
     agree({ start: 1, on: { open: 1, shut: 0 }, target: "lid" }, [events]);
   });

@@ -30,7 +30,7 @@ look: pick the amounts the brief's style calls for. Names are in [the reference]
   `{ rotation: -heading }`. A round body needs only the outer one.
 - **A tail.** `trail((t) => body(t).rotation ?? 0, { damping: 10 })` turns behind the body. For a chain, trail each
   link on the one before it.
-- **A timed shake.** `react({ on: ["hit"], kind: "shake", amplitude })` with a cue at the hit's ms in `play`'s
+- **A timed shake.** `react(triggers(cuesContract, "hit"), { kind: "shake", amplitude })` with a cue at the hit's ms in `play`'s
   `cues`.
 - **A pop.** The `pop` move; for one that rings, scale with `springEase` on a `mix` from 0, plus opacity on a short `span`.
 

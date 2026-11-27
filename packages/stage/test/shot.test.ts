@@ -1,4 +1,13 @@
-import { eventLog, motion, state, type Pose2d, type Time } from "@gerak/core";
+import {
+  createStore,
+  inputLog,
+  inputs,
+  motion,
+  state,
+  withStore,
+  type Pose2d,
+  type Time,
+} from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   beat,
@@ -100,12 +109,12 @@ describe("shot", () => {
     ).not.toThrow();
   });
 
-  it("refuses one element in two shots", () => {
+  it("refuses one element bound directly and in a shot, while allowing sequential shots", () => {
     const shared = box("shared");
     const one = scene({ name: "one" }, shared.moves(slide.in(beat("go", 500))));
-    expect(() =>
-      scene(shot(one), shot(scene({ name: "two" }, box("other").moves(slide), shared))),
-    ).toThrow(/"shared"/);
+    const two = scene({ name: "two" }, box("other").moves(slide), shared);
+    expect(() => compiled(scene(shot(one), shot(two, { length: 500 })))).not.toThrow();
+    expect(() => scene(shared, shot(one))).toThrow(/"shared"/);
   });
 
   it("hands a shot's motions its events at its own ms", () => {
@@ -123,7 +132,7 @@ describe("shot", () => {
     );
     const stage = compiled(
       scene(
-        { cues: [{ name: "tap", at: 700 }] },
+        { cues: [{ kind: "trigger", name: "tap", at: 700, value: 1 }] },
         shot(sliding("hook", 600)),
         shot(counting, { length: 400 }),
       ),
@@ -162,11 +171,12 @@ describe("shot", () => {
       ),
     );
     const stage = compiled(scene(shot(sliding("hook", 600)), shot(counting, { length: 400 })));
-    const log = eventLog();
+    const tapInputs = inputs({ triggers: { tap: {} } });
+    const log = inputLog();
     const tally = (ms: number) =>
-      poseOf(frame(stage, { time: at(ms, 1000), events: log.events }).targets["tally"])?.x;
+      poseOf(frame(stage, { time: at(ms, 1000), events: log.input }).targets["tally"])?.x;
     expect(tally(700)).toBe(0);
-    log.add({ name: "tap", at: 750 });
+    log.trigger(750, tapInputs, "tap");
     expect(tally(800)).toBe(1);
   });
 
@@ -210,8 +220,8 @@ describe("shot", () => {
       scene(
         {
           cues: [
-            { name: "beat", at: 500 },
-            { name: "beat", at: 700 },
+            { kind: "trigger", name: "beat", at: 500, value: 1 },
+            { kind: "trigger", name: "beat", at: 700, value: 1 },
           ],
         },
         shot(sliding("hook", 600)),
@@ -247,8 +257,8 @@ describe("shot", () => {
       scene(
         {
           cues: [
-            { name: "beat", at: 440 },
-            { name: "beat", at: 600 },
+            { kind: "trigger", name: "beat", at: 440, value: 1 },
+            { kind: "trigger", name: "beat", at: 600, value: 1 },
           ],
         },
         shot(sliding("hook", 600)),
@@ -281,7 +291,7 @@ describe("shot", () => {
     );
     const stage = compiled(
       scene(
-        { cues: [{ name: "beat", at: 600 }] },
+        { cues: [{ kind: "trigger", name: "beat", at: 600, value: 1 }] },
         shot(sliding("hook", 600)),
         shot(counting, { length: 400 }),
       ),
@@ -317,7 +327,7 @@ describe("shot", () => {
     );
     const stage = compiled(
       scene(
-        { cues: [{ name: "beat", at: 200 }] },
+        { cues: [{ kind: "trigger", name: "beat", at: 200, value: 1 }] },
         shot(lead, { length: 600 }),
         shot(follow, { length: 400 }),
       ),
@@ -331,5 +341,39 @@ describe("shot", () => {
   it("refuses a shot inside a shot", () => {
     const inner = scene(shot(sliding("inner", 300)));
     expect(() => scene(shot(inner, { length: 300 }))).toThrow(/shot/);
+  });
+
+  it("resumes state inside a later shot when the input log grows by one entry per step", () => {
+    let ruleCalls = 0;
+    const ticks = state(0, (count, event) => {
+      ruleCalls += 1;
+      return event.name === "tick" ? count + 1 : count;
+    });
+    const counting = scene(
+      { name: "count" },
+      box("counter").moves(
+        motion(
+          (_t: Time, context?: MotionContext): Pose2d =>
+            context === undefined ? {} : { x: ticks(context.time, context.events) },
+        ),
+      ),
+    );
+    const stage = compiled(scene(shot(sliding("hook", 600)), shot(counting, { length: 2000 })));
+    const tickInputs = inputs({ triggers: { tick: {} } });
+    const log = inputLog();
+    const store = createStore();
+
+    withStore(store, () => {
+      for (let i = 1; i <= 10; i += 1) {
+        const ms = 600 + i * 100;
+        const before = ruleCalls;
+        log.trigger(ms, tickInputs, "tick");
+        const x = poseOf(
+          frame(stage, { time: at(ms, 2600), events: log.input }).targets["counter"],
+        )?.x;
+        expect(x).toBe(i);
+        expect(ruleCalls - before).toBe(1);
+      }
+    });
   });
 });

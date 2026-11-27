@@ -1,9 +1,9 @@
-import { INPUT_EVENTS, liveAt, type Events } from "@gerak/core";
+import { INPUT_EVENTS, liveAt, type Input } from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import { beat, scrollPoint } from "../src";
 
-const scrolls = (...steps: readonly [at: number, value: number][]): Events =>
-  steps.map(([at, value]) => ({ name: INPUT_EVENTS.scroll, at, value }));
+const scrolls = (...steps: readonly [at: number, value: number][]): Input =>
+  steps.map(([at, value]) => ({ kind: "value", name: INPUT_EVENTS.scroll, at, value }));
 
 describe("which way a trigger's clock part runs", () => {
   it("forward after crossing and at rest once done, for each way back", () => {

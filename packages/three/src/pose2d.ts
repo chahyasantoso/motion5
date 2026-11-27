@@ -1,5 +1,6 @@
 import type { Anchor, Point2d, Pose2d } from "@gerak/core";
 import { BufferGeometry, Vector3, type Object3D } from "three";
+import { applyObjectOpacity } from "./materials";
 
 /** The anchor's point on the object's own geometry box, in its local space, y up; the origin without geometry. */
 function pivotOf(object: Object3D, anchor: Anchor): Vector3 {
@@ -97,12 +98,6 @@ export function applyPose2d(
     rest.y - (pose.y ?? 0) + pivot.y - moved.y,
     object.position.z,
   );
-  if (pose.opacity !== undefined) {
-    const material: unknown = Reflect.get(object, "material");
-    if (material !== null && typeof material === "object" && "opacity" in material) {
-      Reflect.set(material, "opacity", pose.opacity);
-      Reflect.set(material, "transparent", true);
-    }
-  }
+  applyObjectOpacity(object, pose.opacity);
   writeCustom(object, pose.custom, custom);
 }

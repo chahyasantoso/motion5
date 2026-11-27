@@ -1,19 +1,15 @@
-import { clamp, ease } from "@gerak/core";
-import { mount, ready } from "@gerak/dom";
+import { clamp, ease, unreachable } from "@gerak/core";
+import { listen, mount, ready } from "@gerak/dom";
 import { restReader } from "@gerak/stage";
 import {
   BUILDER_CAPACITY,
+  BUILDER_EXIT_POOL,
   BUILDER_JAR_PRICE,
   BUILDER_MIN_SEAL,
   FLAVORS,
   FLAVOR_SELECT_EVENT,
-  JAR_ADD_EVENT,
-  JAR_MIX_EVENT,
-  JAR_REMOVE_EVENT,
-  JAR_RESET_EVENT,
-  JAR_SEAL_EVENT,
-  JAR_UNSEAL_EVENT,
   SPOTLIGHT_ZONES,
+  cookieInputs,
   isSpotlightZone,
   spotlightTargetForZone,
   spotlightZoneForProgress,
@@ -22,7 +18,16 @@ import {
   type SpotlightZone,
 } from "./contract.ts";
 import cookieScene from "./cookie.ts";
-import { builderState, type BuilderState } from "./scene-builder.ts";
+import {
+  INITIAL_JAR,
+  addCookie,
+  mixJar,
+  removeFlavor,
+  resetJar,
+  toggleSeal,
+  type JarState,
+  type JarUpdate,
+} from "./jar.ts";
 import { loadCookieWorld } from "./world-models.ts";
 import { createCookieStudio } from "./world-studio.ts";
 
@@ -36,7 +41,16 @@ async function bootstrap(): Promise<void> {
   }
 
   const models = await loadCookieWorld();
-  const studio = createCookieStudio(node, models.objects);
+  const lastExitFlavors: (number | undefined)[] = new Array(BUILDER_EXIT_POOL).fill(undefined);
+  const studio = createCookieStudio(node, models.objects, {
+    builderExitCookies: (_object, pose, index) => {
+      const flavor = pose.custom?.flavor;
+      if (flavor !== undefined && isSpotlightZone(flavor) && flavor !== lastExitFlavors[index]) {
+        lastExitFlavors[index] = flavor;
+        models.setBuilderExitCookieFlavor(index, flavor);
+      }
+    },
+  });
   studio.world.add(...models.roots);
   studio.renderer.compile(studio.world, studio.camera);
   studio.draw();
@@ -125,9 +139,8 @@ async function bootstrap(): Promise<void> {
     }
   };
 
-  const syncJarUi = (jar: BuilderState): void => {
-    const { sealed } = jar;
-    const jarSlots = jar.slots.map((slot) => slot.flavor);
+  const syncJarUi = (jar: JarState): void => {
+    const { sealed, slots: jarSlots } = jar;
     const count = jarSlots.length;
     const isFull = count >= BUILDER_CAPACITY;
     const canSeal = !sealed && count >= BUILDER_MIN_SEAL;
@@ -242,49 +255,43 @@ async function bootstrap(): Promise<void> {
     }
   };
 
-  const syncJarModels = (jar: BuilderState): void => {
-    jar.slots.forEach((slot, index) => models.setBuilderCookieFlavor(index, slot.flavor));
-    for (const exit of jar.exiting) models.setBuilderExitCookieFlavor(exit.poolSlot, exit.flavor);
+  let jar = INITIAL_JAR;
+
+  const syncJarModels = (next: JarState): void => {
+    next.slots.forEach((flavor, index) => models.setBuilderCookieFlavor(index, flavor));
   };
 
-  const stopJar = mounted.player.observe(builderState, (next) => {
-    syncJarModels(next);
-    syncJarUi(next);
-  });
-  const jarNow = (): BuilderState => builderState(mounted.driver.now(), mounted.events());
-
-  const addFlavorToJar = (zone: SpotlightZone): void => {
-    const jar = jarNow();
-    if (jar.sealed || jar.slots.length >= BUILDER_CAPACITY) return;
-    mounted.send(JAR_ADD_EVENT, zone);
+  const applyJarUpdate = (update: JarUpdate): void => {
+    if (update.sends.length === 0) return;
+    jar = update.jar;
+    syncJarModels(jar);
+    syncJarUi(jar);
+    for (const entry of update.sends) {
+      switch (entry.kind) {
+        case "value":
+          mounted.set(cookieInputs, entry.name, entry.value);
+          break;
+        case "trigger":
+          mounted.trigger(cookieInputs, entry.name, entry.value);
+          break;
+        default:
+          unreachable(entry);
+      }
+    }
   };
 
-  const removeFlavorFromJar = (zone: SpotlightZone): void => {
-    const jar = jarNow();
-    const removeIdx = jar.slots.map((slot) => slot.flavor).lastIndexOf(zone);
-    if (jar.sealed || removeIdx === -1) return;
-    mounted.send(JAR_REMOVE_EVENT, removeIdx);
-  };
+  syncJarUi(jar);
 
-  const fillBakersMix = (): void => {
-    const jar = jarNow();
-    if (jar.sealed) return;
-    mounted.send(JAR_MIX_EVENT, jar.slots.length === 0 ? BUILDER_CAPACITY : jar.slots.length);
-  };
+  const addFlavorToJar = (zone: SpotlightZone): void => applyJarUpdate(addCookie(jar, zone));
+  const removeFlavorFromJar = (zone: SpotlightZone): void =>
+    applyJarUpdate(removeFlavor(jar, zone));
+  const fillBakersMix = (): void => applyJarUpdate(mixJar(jar));
+  const clearJar = (): void => applyJarUpdate(resetJar(jar));
+  const toggleSealJar = (): void => applyJarUpdate(toggleSeal(jar));
 
-  const clearJar = (): void => {
-    const jar = jarNow();
-    if (jar.sealed || jar.slots.length === 0) return;
-    mounted.send(JAR_RESET_EVENT, 0);
-  };
-
-  const toggleSealJar = (): void => {
-    const jar = jarNow();
-    if (jar.sealed) mounted.send(JAR_UNSEAL_EVENT, 0);
-    else if (jar.slots.length >= BUILDER_MIN_SEAL) mounted.send(JAR_SEAL_EVENT, jar.sealId + 1);
-  };
-
-  const cleanupListeners: (() => void)[] = [];
+  const cleanupListeners: (() => void)[] = [
+    listen(mounted, { elements: ["heroCta", "builderSealBtn"], pointer: true }),
+  ];
   let scrollRafId: number | null = null;
   let cancelListenersOff: (() => void) | null = null;
 
@@ -390,7 +397,7 @@ async function bootstrap(): Promise<void> {
       const { stageTop, pinSpan } = spotlightRange();
       const targetScrollY = Math.max(0, stageTop + pinSpan * spotlightTargetForZone(zone));
       window.scrollTo({ top: targetScrollY, behavior: "instant" });
-      mounted.send(FLAVOR_SELECT_EVENT, zone);
+      mounted.set(cookieInputs, FLAVOR_SELECT_EVENT, zone);
       applyActiveFlavor(zone);
     };
     dotEl.addEventListener("click", onClick);
@@ -468,7 +475,6 @@ async function bootstrap(): Promise<void> {
     window.removeEventListener("scroll", onScroll);
     document.removeEventListener("scroll", onScroll);
     unsubscribePlayer();
-    stopJar();
     for (const off of cleanupListeners) off();
     mounted.dispose();
     studio.dispose();

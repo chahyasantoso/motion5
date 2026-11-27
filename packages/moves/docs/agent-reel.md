@@ -32,7 +32,7 @@ storyboard before it, and shots in place of one idea.
 - A shot lasts until its last clock beat ends; `length` sets it, and `until` ends it on a scene ms, such as a beat cue's
   `at`, so a cut lands on the music. `overlap` starts a shot that many ms before the last one ends, and both show
   meanwhile: the transition's window.
-- Inside a shot, time and events start at 0 when the shot does. `context.read` of another shot's member reads it at the
+- Inside a shot, time and input start at 0 when the shot does. `context.read` of another shot's member reads it at the
   scene's time, so a shot never needs another shot's ms.
 - A shot's members show only during the shot unless they `.shows(...)` a wider window of their own beats. A member seen
   across shots (the camera, a caption bar, a carried object) belongs to the reel, not to a shot, and is written on the

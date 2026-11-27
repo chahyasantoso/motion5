@@ -318,7 +318,7 @@ export function captionCues(
     const itemWords = item.text.split(/\s+/).filter((word) => word.length > 0);
     if (itemWords.length === 0) continue;
     words.push(...itemWords);
-    cues.push({ name, at: item.at, value: words.length });
+    cues.push({ kind: "value", name, at: item.at, value: words.length });
   }
   return { cues, words };
 }

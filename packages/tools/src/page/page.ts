@@ -163,15 +163,17 @@ function seedRandom(): void {
   };
 }
 
-/** Steps any held frame source and sets CSS and Web Animations on the document timeline to `ms`. */
+/** Steps held/hosted drivers and holds CSS and Web Animations on the document timeline at `ms`. */
 function stepAndHoldAnimations(ms: number): void {
+  const stepDriver: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/tool-step"));
+  if (typeof stepDriver === "function") Reflect.apply(stepDriver, undefined, [ms]);
   const step: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/held-step"));
   if (typeof step === "function") Reflect.apply(step, undefined, []);
   const seen: unknown = Reflect.get(window, "__motionBorn");
   const born = seen instanceof WeakMap ? seen : new WeakMap<Animation, number>();
   Reflect.set(window, "__motionBorn", born);
   for (const animation of document.getAnimations()) {
-    // An animation on a scroll timeline follows the scripted scroll, not the clock.
+    // Scroll-timeline animations follow scripted scroll directly rather than document time.
     if (animation.timeline !== document.timeline) continue;
     const start: unknown = born.get(animation);
     const from = typeof start === "number" ? start : ms;
@@ -257,9 +259,61 @@ async function openPageSession(
   const real = target.clock === "real";
   if (target.prepare !== undefined) await target.prepare(page);
   if (!real) {
-    // Tells a page mount the clock is held, so it draws every element itself.
+    // Keep gerak elements in the synchronous engine under HELD_CLOCK while stepping hosted live drivers deterministically.
     await page.addInitScript(() => {
       Reflect.set(globalThis, Symbol.for("@gerak/dom/held-clock"), true);
+      let currentMs = 0;
+      const listeners = new Set<() => void>();
+      interface HeldEntry {
+        readonly kind: "value" | "trigger";
+        readonly name: string;
+        readonly at: number;
+        readonly value: number;
+        readonly target?: string;
+      }
+      let entries: HeldEntry[] = [];
+      const latestValues = new Map<string, number>();
+      const insertEntry = (entry: HeldEntry): void => {
+        let index = entries.length;
+        while (index > 0 && (entries[index - 1]?.at ?? 0) > entry.at) index -= 1;
+        entries = [...entries.slice(0, index), entry, ...entries.slice(index)];
+      };
+      const sharedDriver = {
+        now: () => ({ progress: 0, clock: { kind: "live" as const, elapsed: currentMs } }),
+        input: () => entries,
+        set: (_contract: unknown, name: string, value: number, target?: string) => {
+          const key = `${name}\0${target ?? ""}`;
+          if (Object.is(latestValues.get(key), value)) return;
+          latestValues.set(key, value);
+          insertEntry({
+            kind: "value",
+            name,
+            at: currentMs,
+            value,
+            ...(target === undefined ? {} : { target }),
+          });
+        },
+        trigger: (_contract: unknown, name: string, value = 1, target?: string) => {
+          insertEntry({
+            kind: "trigger",
+            name,
+            at: currentMs,
+            value,
+            ...(target === undefined ? {} : { target }),
+          });
+        },
+        subscribe(listener: () => void) {
+          listeners.add(listener);
+          return () => {
+            listeners.delete(listener);
+          };
+        },
+      };
+      Reflect.set(globalThis, Symbol.for("@gerak/dom/driver"), () => sharedDriver);
+      Reflect.set(globalThis, Symbol.for("@gerak/dom/tool-step"), (ms: number) => {
+        currentMs = ms;
+        for (const listener of [...listeners]) listener();
+      });
     });
     await page.clock.install({ time: 0 });
     // A pause a second ahead outruns a busy machine; story time counts from the first frame, not from here.
@@ -397,16 +451,41 @@ async function openPageSession(
   return { session, pageErrors };
 }
 
+/** A started or pending local dev server returned by `createServer`. */
+export interface SiteServer {
+  readonly resolvedUrls: { readonly local: readonly string[] } | null;
+  listen(): Promise<unknown>;
+  close(): Promise<void>;
+}
+
+/** Factory creating a local dev server for `openSite`. */
+export type SiteServerFactory = (config: import("vite").InlineConfig) => Promise<SiteServer>;
+
+/** A reachable site with its base URL and cleanup hook. */
+export interface PageSite {
+  readonly base: string;
+  close(): Promise<void>;
+}
+
+/** Optional dependencies for `withPage` tests. */
+export interface WithPageDeps {
+  readonly openSite?: (source: PageSource) => Promise<PageSite>;
+  readonly launchBrowser?: (options: { readonly headless: boolean }) => Promise<Browser>;
+}
+
 /** Serves or reaches the page's site, opens the page under a paused fake clock, and hands it to `visit`. */
 export async function withPage<T>(
   target: PageTarget,
   visit: (session: PageSession) => Promise<T>,
+  deps?: WithPageDeps,
 ): Promise<{ readonly value: T; readonly pageErrors: readonly string[] }> {
-  const site = await openSite(target.source);
+  const site = await (deps?.openSite ?? openSite)(target.source);
   const base = site.base;
   let browser: Browser;
   try {
-    browser = target.browser ?? (await launchBrowser({ headless: target.show !== true }));
+    browser =
+      target.browser ??
+      (await (deps?.launchBrowser ?? launchBrowser)({ headless: target.show !== true }));
   } catch (error) {
     await site.close();
     throw error;
@@ -419,14 +498,17 @@ export async function withPage<T>(
     const value = await visit(session);
     return { value, pageErrors };
   } finally {
-    if (target.browser === undefined) await browser.close();
-    else await closeQuietly(opened);
-    await site.close();
+    try {
+      if (target.browser === undefined) await browser.close();
+      else await closeQuietly(opened);
+    } finally {
+      await site.close();
+    }
   }
 }
 
 /** Closes `page` if there is one, ignoring a page that is already gone. */
-async function closeQuietly(page: Page | undefined): Promise<void> {
+export async function closeQuietly(page: Page | undefined): Promise<void> {
   if (page === undefined) return;
   await page.close().catch(() => undefined);
 }
@@ -454,31 +536,34 @@ async function waitUntil(at: number): Promise<void> {
   if (left > 0) await new Promise<void>((done) => setTimeout(done, left));
 }
 
-/** A base address for the source, and how to release whatever was started for it. */
-async function openSite(
+/** Starts an ephemeral local server for `source` when serving, returning its `base` URL and `close`. */
+export async function openSite(
   source: PageSource,
-): Promise<{ readonly base: string; close(): Promise<void> }> {
+  createServer?: SiteServerFactory,
+): Promise<PageSite> {
   switch (source.kind) {
     case "url":
       return { base: source.base, close: async () => undefined };
     case "serve": {
-      const { createServer } = await import("vite");
+      const makeServer = createServer ?? (await import("vite")).createServer;
       const added = await pageServerConfig(source.root);
-      const server = await createServer({
+      const server = await makeServer({
         root: source.root,
         logLevel: "silent",
         appType: "mpa",
         plugins: added.plugins,
         optimizeDeps: added.optimizeDeps,
-        server: { ...added.server, port: 5280 },
+        server: { ...added.server, port: 0 },
       });
-      await server.listen();
-      const base = server.resolvedUrls?.local[0];
-      if (base === undefined) {
-        await server.close();
-        throw new Error("The page server reported no local address.");
+      try {
+        await server.listen();
+        const base = server.resolvedUrls?.local[0];
+        if (base === undefined) throw new Error("The page server reported no local address.");
+        return { base, close: () => server.close() };
+      } catch (error) {
+        await server.close().catch(() => undefined);
+        throw error;
       }
-      return { base, close: () => server.close() };
     }
     default:
       return unreachable(source);

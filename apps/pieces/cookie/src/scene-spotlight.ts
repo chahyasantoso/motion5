@@ -1,18 +1,20 @@
 import {
-  INPUT_EVENTS,
   arch,
   clamp,
   ease,
+  elapsedOf,
   mix,
   motion,
+  rawTime,
   scroll,
-  shared,
-  state,
-  transition,
+  stillMoving,
+  storeCell,
+  value,
+  type Input,
   type Motion,
   type Pose2d,
   type Pose3d,
-  type Signal,
+  type Step,
   type Time,
   type Transition,
 } from "@gerak/core";
@@ -24,6 +26,7 @@ import {
   LENS,
   SPOTLIGHT_ROLL_MS,
   STAGE_SIZE,
+  cookieInputs,
   fallbackViewWidth,
   fitCookieSlot,
   isHeroHandoffActive,
@@ -76,45 +79,116 @@ const IDLE_TRANSITION: Transition<SpotlightZone | -1> = {
   active: false,
 };
 
-let rollSignalCache: {
-  readonly key: string;
-  readonly signal: Signal<Transition<SpotlightZone | -1>>;
-} | null = null;
+const flavorSelect = value(cookieInputs, FLAVOR_SELECT_EVENT);
 
-function spotlightTransition(
+interface SpotlightTransitionCache {
+  readonly key: string;
+  readonly scrollSteps: readonly Step<number>[];
+  readonly scrollCount: number;
+  readonly selectSteps: readonly Step<number>[];
+  readonly selectCount: number;
+  readonly current: SpotlightZone | -1;
+  readonly previous: SpotlightZone | -1;
+  readonly changedAt: number;
+}
+
+const spotlightCacheSlot = storeCell<SpotlightTransitionCache>();
+
+function readSpotlightTransition(
   stageTop: number,
   pinMax: number,
   pinSpan: number,
-): Signal<Transition<SpotlightZone | -1>> {
+  time: Time,
+  events: Input,
+): Transition<SpotlightZone | -1> {
+  const scrollSteps = scroll.y.steps(time, events);
+  const selectSteps = flavorSelect.steps(time, events);
   const key = `${stageTop}:${pinMax}:${pinSpan}`;
-  if (rollSignalCache?.key === key) {
-    return rollSignalCache.signal;
+  const cached = spotlightCacheSlot.get();
+
+  let current: SpotlightZone | -1;
+  let previous: SpotlightZone | -1;
+  let changedAt: number;
+
+  if (
+    cached !== undefined &&
+    cached.key === key &&
+    cached.scrollSteps === scrollSteps &&
+    cached.scrollCount === scrollSteps.length &&
+    cached.selectSteps === selectSteps &&
+    cached.selectCount === selectSteps.length
+  ) {
+    current = cached.current;
+    previous = cached.previous;
+    changedAt = cached.changedAt;
+  } else {
+    current = -1;
+    previous = -1;
+    changedAt = -Infinity;
+    const apply = (at: number, next: SpotlightZone | -1): void => {
+      if (next === current) return;
+      previous = current;
+      current = next;
+      changedAt = at;
+    };
+    let si = 0;
+    let fi = 0;
+    while (si < scrollSteps.length || fi < selectSteps.length) {
+      const sStep = scrollSteps[si];
+      const fStep = selectSteps[fi];
+      if (fStep === undefined || (sStep !== undefined && sStep.at <= fStep.at)) {
+        if (sStep === undefined) break;
+        si += 1;
+        const y = sStep.value;
+        if (y < stageTop) apply(sStep.at, -1);
+        else if (y <= pinMax) {
+          apply(sStep.at, spotlightZoneForProgress(clamp((y - stageTop) / pinSpan, 0, 1)));
+        }
+      } else {
+        fi += 1;
+        if (isSpotlightZone(fStep.value)) apply(fStep.at, fStep.value);
+      }
+    }
+    spotlightCacheSlot.set({
+      key,
+      scrollSteps,
+      scrollCount: scrollSteps.length,
+      selectSteps,
+      selectCount: selectSteps.length,
+      current,
+      previous,
+      changedAt,
+    });
   }
-  const zoneState = state<SpotlightZone | -1>(-1, (cur, ev) => {
-    if (ev.name === FLAVOR_SELECT_EVENT) {
-      return ev.value !== undefined && isSpotlightZone(ev.value) ? ev.value : cur;
-    }
-    if (ev.name === INPUT_EVENTS.scroll && ev.value !== undefined) {
-      const y = ev.value;
-      if (y < stageTop) return -1;
-      if (y <= pinMax) return spotlightZoneForProgress(clamp((y - stageTop) / pinSpan, 0, 1));
-    }
-    return cur;
-  });
-  const signal = shared(
-    transition(zoneState, {
-      ms: (from, to) => (from === -1 || to === -1 ? 0 : SPOTLIGHT_ROLL_MS),
-    }),
-  );
-  rollSignalCache = { key, signal };
-  return signal;
+
+  if (changedAt === -Infinity) return IDLE_TRANSITION;
+  const now = elapsedOf(rawTime(time).clock);
+  if (now === undefined) return { current, previous, progress: 1, active: false };
+  const duration = previous === -1 || current === -1 ? 0 : SPOTLIGHT_ROLL_MS;
+  const elapsed = Math.max(0, now - changedAt);
+  if (duration <= 0 || elapsed >= duration) {
+    return { current, previous, progress: 1, active: false };
+  }
+  stillMoving();
+  return {
+    current,
+    previous,
+    progress: clamp(elapsed / duration, 0, 1),
+    active: true,
+  };
 }
 
 function readSpotlightFrame(context?: MotionContext): SpotlightFrame {
   const scrollY = context ? scroll.y(context.time, context.events) : 0;
   const range = stickyRangeOf(context?.rest, "spotlightStage", "slotFlavorCookie", 2050, 3600);
   const trans = context
-    ? spotlightTransition(range.stageTop, range.pinMax, range.pinSpan)(context.time, context.events)
+    ? readSpotlightTransition(
+        range.stageTop,
+        range.pinMax,
+        range.pinSpan,
+        context.time,
+        context.events,
+      )
     : IDLE_TRANSITION;
   const active: SpotlightZone = trans.current === -1 ? 0 : trans.current;
   const outgoing: SpotlightZone | -1 = trans.active && trans.previous !== -1 ? trans.previous : -1;

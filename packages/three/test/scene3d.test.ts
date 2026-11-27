@@ -191,7 +191,12 @@ describe("threeBinder", () => {
     const listeners = new Set<() => void>();
     const driver = {
       now: (): Time => ({ progress: 0, clock: { kind: "live", elapsed: 0 } }),
-      events: () => (scrollY === 0 ? [] : [{ name: INPUT_EVENTS.scroll, at: 0, value: scrollY }]),
+      input: () =>
+        scrollY === 0
+          ? []
+          : [{ kind: "value" as const, name: INPUT_EVENTS.scroll, at: 0, value: scrollY }],
+      set: () => undefined,
+      trigger: () => undefined,
       subscribe: (listener: () => void) => {
         listeners.add(listener);
         return () => listeners.delete(listener);
@@ -254,7 +259,12 @@ describe("threeBinder", () => {
     const listeners = new Set<() => void>();
     const driver = {
       now: (): Time => ({ progress: 0.5, clock: { kind: "live", elapsed: 0 } }),
-      events: () => (scrollY === 0 ? [] : [{ name: INPUT_EVENTS.scroll, at: 0, value: scrollY }]),
+      input: () =>
+        scrollY === 0
+          ? []
+          : [{ kind: "value" as const, name: INPUT_EVENTS.scroll, at: 0, value: scrollY }],
+      set: () => undefined,
+      trigger: () => undefined,
       subscribe: (listener: () => void) => {
         listeners.add(listener);
         return () => listeners.delete(listener);
@@ -324,5 +334,363 @@ describe("threeBinder", () => {
         partsStage.stage,
       ),
     ).toThrow(TypeError);
+  });
+
+  it("isolates captured material state per binder across shared materials and disposal", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 0.8, transparent: false });
+    const meshA = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    meshA.name = "a";
+    const meshB = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    meshB.name = "b";
+
+    const rootA = new Object3D();
+    rootA.add(meshA);
+    const rootB = new Object3D();
+    rootB.add(meshB);
+
+    const stageA = compileScene(
+      scene(
+        { length: 1000 },
+        object("a").moves((t) => ({ opacity: t.progress >= 0.5 ? 0.5 : 1 })),
+      ),
+    );
+    const stageB = compileScene(
+      scene(
+        { length: 1000 },
+        object("b").moves((t) => (t.progress >= 0.5 ? { opacity: 0.5 } : {})),
+      ),
+    );
+    if (!stageA.ok) throw new Error(stageA.errors.map(formatStageError).join("\n"));
+    if (!stageB.ok) throw new Error(stageB.errors.map(formatStageError).join("\n"));
+
+    const driverA = manualDriver({ durationMs: 1000 });
+    const driverB = manualDriver({ durationMs: 1000 });
+    const playerA = play((time, events) => frame(stageA.stage, { time, events }).targets, driverA);
+    const playerB = play((time, events) => frame(stageB.stage, { time, events }).targets, driverB);
+
+    const stopA = threeBinder(rootA).start(playerA, stageA.stage);
+    driverA.seekMs(500);
+    expect(meshA.material.opacity).toBeCloseTo(0.4, 9);
+
+    const stopB = threeBinder(rootB).start(playerB, stageB.stage);
+    stopA();
+
+    expect(meshA.material).toBe(sharedMat);
+    expect(sharedMat.opacity).toBeCloseTo(0.8, 9);
+    expect(sharedMat.transparent).toBe(false);
+
+    driverB.seekMs(500);
+    expect(meshB.material.opacity).toBeCloseTo(0.4, 9);
+
+    driverB.seekMs(0);
+    expect(meshB.material.opacity).toBeCloseTo(0.8, 9);
+    expect(meshB.material.transparent).toBe(false);
+
+    stopB();
+    expect(meshB.material).toBe(sharedMat);
+    expect(sharedMat.opacity).toBeCloseTo(0.8, 9);
+    expect(sharedMat.transparent).toBe(false);
+  });
+
+  it("keeps one binder's captured material state intact when another binder on the same mesh disposes", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 0.8, transparent: false });
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    mesh.name = "box";
+    const root = new Object3D();
+    root.add(mesh);
+
+    const stageA = compileScene(
+      scene(
+        { length: 1000 },
+        object("box").moves(() => ({})),
+      ),
+    );
+    const stageB = compileScene(
+      scene(
+        { length: 1000 },
+        object("box").moves((t) => ({ opacity: t.progress >= 0.5 ? 0.25 : 1 })),
+      ),
+    );
+    if (!stageA.ok) throw new Error(stageA.errors.map(formatStageError).join("\n"));
+    if (!stageB.ok) throw new Error(stageB.errors.map(formatStageError).join("\n"));
+
+    const driverA = manualDriver({ durationMs: 1000 });
+    const driverB = manualDriver({ durationMs: 1000 });
+    const playerA = play((time, events) => frame(stageA.stage, { time, events }).targets, driverA);
+    const playerB = play((time, events) => frame(stageB.stage, { time, events }).targets, driverB);
+
+    const stopA = threeBinder(root).start(playerA, stageA.stage);
+    const stopB = threeBinder(root).start(playerB, stageB.stage);
+
+    driverB.seekMs(500);
+    expect(mesh.material.opacity).toBeCloseTo(0.2, 9);
+
+    stopA();
+    expect(mesh.material.opacity).toBeCloseTo(0.2, 9);
+
+    stopB();
+    expect(mesh.material).toBe(sharedMat);
+    expect(sharedMat.opacity).toBeCloseTo(0.8, 9);
+    expect(sharedMat.transparent).toBe(false);
+  });
+
+  it("leaves a clone alive when a later binder captured it and the first binder disposes first", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 0.8, transparent: false });
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    mesh.name = "box";
+    const root = new Object3D();
+    root.add(mesh);
+    const fading = (at: number) =>
+      compileScene(
+        scene(
+          { length: 1000 },
+          object("box").moves((t) => ({ opacity: t.progress >= at ? 0.5 : 1 })),
+        ),
+      );
+    const stageA = fading(0.25);
+    const stageB = fading(0.5);
+    if (!stageA.ok) throw new Error(stageA.errors.map(formatStageError).join("\n"));
+    if (!stageB.ok) throw new Error(stageB.errors.map(formatStageError).join("\n"));
+    const driverA = manualDriver({ durationMs: 1000 });
+    const driverB = manualDriver({ durationMs: 1000 });
+    const playerA = play((time, events) => frame(stageA.stage, { time, events }).targets, driverA);
+    const playerB = play((time, events) => frame(stageB.stage, { time, events }).targets, driverB);
+
+    const stopA = threeBinder(root).start(playerA, stageA.stage);
+    driverA.seekMs(500);
+    const cloneA = mesh.material;
+    expect(cloneA).not.toBe(sharedMat);
+    let disposedA = false;
+    cloneA.addEventListener("dispose", () => {
+      disposedA = true;
+    });
+    const stopB = threeBinder(root).start(playerB, stageB.stage);
+    driverB.seekMs(500);
+
+    stopA();
+    expect(disposedA).toBe(false);
+    stopB();
+    expect(mesh.material).toBe(cloneA);
+  });
+
+  it("calls a parts list writer once per member per written frame after writing transforms, skipping other lists", () => {
+    const a0 = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
+    const a1 = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
+    const b0 = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
+
+    const listStage = compileScene(
+      scene(
+        { length: 1000 },
+        object("primary", { parts: true }).moves((t, ctx) => {
+          const index = ctx.index ?? 0;
+          const step = t.progress >= 0.5 ? 1 : 0;
+          return index === 0 ? { x: step + 1, custom: { flavor: step } } : { x: 2 };
+        }),
+        object("secondary", { parts: true }).moves((t, ctx) => ({
+          y: (ctx.index ?? 0) + t.progress,
+        })),
+      ),
+    );
+    if (!listStage.ok) throw new Error(listStage.errors.map(formatStageError).join("\n"));
+
+    const calls: {
+      readonly object: Object3D;
+      readonly posX: number;
+      readonly pose: Pose3d;
+      readonly index: number;
+    }[] = [];
+    let draws = 0;
+
+    const binder = threeBinder(new Object3D(), {
+      objects: { primary: [a0, a1], secondary: [b0] },
+      writers: {
+        primary: (obj, pose, index) => {
+          calls.push({ object: obj, posX: obj.position.x, pose, index });
+        },
+      },
+      draw: () => {
+        draws += 1;
+      },
+    });
+    const counts = binder.counts?.(["primary", "secondary"]);
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play(
+      (time, events) => frame(listStage.stage, { time, events, counts }).targets,
+      driver,
+    );
+    binder.start(player, listStage.stage);
+
+    expect(draws).toBe(1);
+    expect(calls).toEqual([
+      { object: a0, posX: 1, pose: { x: 1, custom: { flavor: 0 } }, index: 0 },
+      { object: a1, posX: 2, pose: { x: 2 }, index: 1 },
+    ]);
+
+    calls.length = 0;
+    driver.seekMs(500);
+    expect(draws).toBe(2);
+    expect(calls).toEqual([
+      { object: a0, posX: 2, pose: { x: 2, custom: { flavor: 1 } }, index: 0 },
+    ]);
+
+    // Seeking to another time with identical poses skips both transform write and writer.
+    calls.length = 0;
+    driver.seekMs(600);
+    expect(calls).toEqual([]);
+  });
+
+  it("isolates every entry in a mixed material array when fading so an outside mesh sharing one material stays untouched", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 1, transparent: false });
+    const unsharedMat = new MeshBasicMaterial({ opacity: 0.9, transparent: false });
+    const boundMesh = new Mesh(new BoxGeometry(1, 1, 1), [sharedMat, unsharedMat]);
+    boundMesh.name = "box";
+    const siblingMesh = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    siblingMesh.name = "sibling";
+    const root = new Object3D();
+    root.add(boundMesh, siblingMesh);
+    const outsideMesh = new Mesh(new BoxGeometry(1, 1, 1), unsharedMat);
+
+    const compiledStage = compileScene(
+      scene(
+        { length: 1000 },
+        object("box").moves((t) => (t.progress >= 0.5 ? { opacity: 0.5 } : {})),
+      ),
+    );
+    if (!compiledStage.ok) throw new Error(compiledStage.errors.map(formatStageError).join("\n"));
+
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play(
+      (time, events) => frame(compiledStage.stage, { time, events }).targets,
+      driver,
+    );
+    const stop = threeBinder(root).start(player, compiledStage.stage);
+
+    driver.seekMs(500);
+    expect(Array.isArray(boundMesh.material)).toBe(true);
+    if (!Array.isArray(boundMesh.material)) throw new Error("Expected material array.");
+    expect(boundMesh.material[0]).not.toBe(sharedMat);
+    expect(boundMesh.material[1]).not.toBe(unsharedMat);
+    expect(boundMesh.material[0]?.opacity).toBeCloseTo(0.5, 9);
+    expect(boundMesh.material[1]?.opacity).toBeCloseTo(0.45, 9);
+    expect(outsideMesh.material).toBe(unsharedMat);
+    expect(unsharedMat.opacity).toBeCloseTo(0.9, 9);
+    expect(unsharedMat.transparent).toBe(false);
+    expect(siblingMesh.material).toBe(sharedMat);
+    expect(sharedMat.opacity).toBe(1);
+
+    stop();
+    expect(boundMesh.material).toEqual([sharedMat, unsharedMat]);
+    expect(unsharedMat.opacity).toBeCloseTo(0.9, 9);
+    expect(unsharedMat.transparent).toBe(false);
+  });
+
+  it("leaves an app-swapped material untouched and disposes replaced capture clones when swapped before the first opacity change", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 0.8, transparent: false });
+    const origMat = new MeshBasicMaterial({ opacity: 0.5, transparent: false });
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    mesh.name = "box";
+    const plain = new Mesh(new BoxGeometry(1, 1, 1), origMat);
+    plain.name = "plain";
+    const sibling = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    sibling.name = "sibling";
+    const root = new Object3D();
+    root.add(mesh, plain, sibling);
+
+    const compiledStage = compileScene(
+      scene(
+        { length: 1000 },
+        object("box").moves((t) => (t.progress >= 0.5 ? { opacity: 0.25 } : {})),
+        object("plain").moves((t) => (t.progress >= 0.5 ? { opacity: 0.25 } : {})),
+      ),
+    );
+    if (!compiledStage.ok) throw new Error(compiledStage.errors.map(formatStageError).join("\n"));
+
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play(
+      (time, events) => frame(compiledStage.stage, { time, events }).targets,
+      driver,
+    );
+    const stop = threeBinder(root).start(player, compiledStage.stage);
+
+    const captureClone = mesh.material;
+    expect(captureClone).not.toBe(sharedMat);
+    let cloneDisposed = false;
+    captureClone.addEventListener("dispose", () => {
+      cloneDisposed = true;
+    });
+
+    const appMat = new MeshBasicMaterial({ opacity: 0.7, transparent: false });
+    const plainAppMat = new MeshBasicMaterial({ opacity: 0.9, transparent: false });
+    mesh.material = appMat;
+    plain.material = plainAppMat;
+
+    driver.seekMs(500);
+    expect(mesh.material).toBe(appMat);
+    expect(appMat.opacity).toBeCloseTo(0.7, 9);
+    expect(appMat.transparent).toBe(false);
+    expect(plain.material).toBe(plainAppMat);
+    expect(plainAppMat.opacity).toBeCloseTo(0.9, 9);
+
+    stop();
+    expect(mesh.material).toBe(appMat);
+    expect(appMat.opacity).toBeCloseTo(0.7, 9);
+    expect(appMat.transparent).toBe(false);
+    expect(plain.material).toBe(plainAppMat);
+    expect(plainAppMat.opacity).toBeCloseTo(0.9, 9);
+    expect(cloneDisposed).toBe(true);
+  });
+
+  it("leaves an app-swapped material untouched and disposes binder clones when swapped after an opacity change", () => {
+    const origMat = new MeshBasicMaterial({ opacity: 0.8, transparent: false });
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), origMat);
+    mesh.name = "box";
+    const root = new Object3D();
+    root.add(mesh);
+
+    const compiledStage = compileScene(
+      scene(
+        { length: 1000 },
+        object("box").moves((t) => {
+          if (t.progress >= 0.75) return { opacity: 0.25 };
+          if (t.progress >= 0.5) return { opacity: 0.5 };
+          return {};
+        }),
+      ),
+    );
+    if (!compiledStage.ok) throw new Error(compiledStage.errors.map(formatStageError).join("\n"));
+
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play(
+      (time, events) => frame(compiledStage.stage, { time, events }).targets,
+      driver,
+    );
+    const stop = threeBinder(root).start(player, compiledStage.stage);
+
+    driver.seekMs(500);
+    const opacityClone = mesh.material;
+    expect(opacityClone).not.toBe(origMat);
+    expect(opacityClone.opacity).toBeCloseTo(0.4, 9);
+    let cloneDisposed = false;
+    opacityClone.addEventListener("dispose", () => {
+      cloneDisposed = true;
+    });
+
+    const appMat = new MeshBasicMaterial({ opacity: 0.6, transparent: false });
+    mesh.material = appMat;
+
+    driver.seekMs(750);
+    expect(mesh.material).toBe(appMat);
+    expect(appMat.opacity).toBeCloseTo(0.6, 9);
+    expect(appMat.transparent).toBe(false);
+
+    driver.seekMs(0);
+    expect(mesh.material).toBe(appMat);
+    expect(appMat.opacity).toBeCloseTo(0.6, 9);
+
+    stop();
+    expect(mesh.material).toBe(appMat);
+    expect(appMat.opacity).toBeCloseTo(0.6, 9);
+    expect(appMat.transparent).toBe(false);
+    expect(cloneDisposed).toBe(true);
   });
 });

@@ -3,13 +3,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
+  clamp,
   elapsedOf,
+  inputs,
   motion,
+  pageInputs,
   pointer,
   scroll,
+  springTo,
   state,
   transition,
-  type Events,
+  triggers,
+  value,
+  type Input,
   type Pose2d,
   type Pose3d,
   type Time,
@@ -17,7 +23,7 @@ import {
 import { beat, bind, box, object, scene, scrollPoint, stagger } from "@gerak/stage";
 import { afterEach, describe, expect, it } from "vitest";
 import type { MeasureCache } from "../src/page/measure-cache";
-import { defineStage, rawStage, readModule, type CastBuilder } from "./stage-definitions";
+import { NO_INPUTS, directStage, readModule, type MemberInput } from "./stage-definitions";
 import {
   isSceneFile,
   parseSceneReviewArgs,
@@ -38,7 +44,7 @@ const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
 function review(
   module: unknown,
-  options: { to?: number; events?: Events } = {},
+  options: { to?: number; events?: Input } = {},
   measured?: MeasureCache,
 ): SceneReviewResult {
   const read = readModule(module, measured);
@@ -197,32 +203,58 @@ describe("gerak review on a value's shape", () => {
     { id: "a", x0: 0, y0: 0, x1: 5, y1: 0, x2: 10, y2: 0, x3: 20, y3: 0 },
     { id: "b", x0: 20, y0: 0, x1: 25, y1: 5, x2: 30, y2: 5, x3: 40, y3: 0 },
   ];
-  const stage = (
-    cast: (m: CastBuilder<"show">) => Record<string, ReturnType<CastBuilder<"show">["box"]>>,
-  ) =>
-    defineStage({
+  const stage = (mouth: MemberInput) =>
+    directStage({
       beats: { show: [0, 2000] },
-      cast,
+      members: [mouth],
       scene: ({ time }) => ({ mouth: { shape: Math.min(1, time.progress * 4) } }),
     });
 
   it("finds a member given shape that has no shapes, once", () => {
-    const { findings } = review(stage((m) => ({ mouth: m.stroke(line) })));
+    const { findings } = review(
+      stage({
+        name: "mouth",
+        expect: "settle",
+        inputs: NO_INPUTS,
+        kind: "actor",
+        content: { kind: "stroke", path: line },
+      }),
+    );
     expect(findings).toEqual(['cast member "mouth" is given shape, but has no shapes.']);
   });
 
   it("finds nothing when the member has shapes", () => {
     const target = line.map((c) => ({ ...c, y0: c.y0 + 4, y3: c.y3 + 4 }));
-    expect(motionFindings(review(stage((m) => ({ mouth: m.morph(line, [target]) }))))).toEqual([]);
+    expect(
+      motionFindings(
+        review(
+          stage({
+            name: "mouth",
+            expect: "settle",
+            inputs: NO_INPUTS,
+            kind: "actor",
+            content: { kind: "morph", shapes: [line, target] },
+          }),
+        ),
+      ),
+    ).toEqual([]);
   });
 });
 
 describe("gerak review on time itself", () => {
   const ms = (time: Time): number => elapsedOf(time.clock) ?? 0;
   const drifting = (ambient: boolean) =>
-    defineStage({
+    directStage({
       beats: { all: [0, 1000] },
-      cast: (m) => ({ snow: ambient ? m.box().ambient() : m.box().settle() }),
+      members: [
+        {
+          name: "snow",
+          expect: ambient ? "ambient" : "settle",
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
       scene: ({ time }) => ({ snow: { y: ms(time) / 10 } }),
     });
 
@@ -233,9 +265,17 @@ describe("gerak review on time itself", () => {
 
   it("reports a value that differs when sought from when played to", () => {
     let peak = 0;
-    const remembering = defineStage({
+    const remembering = directStage({
       beats: { all: [0, 1000] },
-      cast: (m) => ({ snow: m.box().ambient() }),
+      members: [
+        {
+          name: "snow",
+          expect: "ambient",
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
       scene: ({ time }) => {
         peak = Math.max(peak, ms(time));
         return { snow: { y: peak / 10 } };
@@ -272,6 +312,18 @@ describe("review limits per target", () => {
     expect(moved(blink((time) => Math.min(1, step(time) * 0.5)))).toEqual([]);
     const found = moved(blink((time) => (step(time) === 2 ? 2 : 0)));
     expect(found[0]).toBe("character.custom.blink jumps 2 at 32 ms");
+  });
+
+  it("reads a custom field its target declares under `steps` as a step, and no other field", () => {
+    const flavour = {
+      scene: (time: Time) => ({
+        character: { custom: { flavour: step(time) * 3, blink: step(time) === 2 ? 2 : 0 } },
+      }),
+    };
+    expect(moved(flavour).some((line) => line.startsWith("character.custom.flavour"))).toBe(true);
+    const found = moved({ ...flavour, limits: { character: { steps: ["flavour"] } } });
+    expect(found.some((line) => line.startsWith("character.custom.flavour"))).toBe(false);
+    expect(found).toContain("character.custom.blink jumps 2 at 32 ms");
   });
 
   it("measures a 3D turn owner by its target's turn limit", () => {
@@ -350,9 +402,16 @@ describe("gerak review expectations and shape mismatches", () => {
       frame: { readonly width: number; readonly height: number },
       rest: MeasureCache["rest"] = {},
     ): MeasureCache => ({ page: "orb.html", digest: "", frame, rest, lines: {}, parents: {} });
-    const cleanAmbient = defineStage({
+    const orbMember: MemberInput = {
+      name: "orb",
+      expect: "ambient",
+      inputs: NO_INPUTS,
+      kind: "actor",
+      content: { kind: "box" },
+    };
+    const cleanAmbient = directStage({
       beats: { loop: [0, 1000] },
-      cast: (m) => ({ orb: m.box().ambient() }),
+      members: [orbMember],
       scene: ({ time }) => ({
         orb: { x: 200 + 50 * Math.sin(time.progress * Math.PI * 2), y: 150 },
       }),
@@ -361,9 +420,9 @@ describe("gerak review expectations and shape mismatches", () => {
       [],
     );
 
-    const outOfBounds = defineStage({
+    const outOfBounds = directStage({
       beats: { loop: [0, 1000] },
-      cast: (m) => ({ orb: m.box().ambient() }),
+      members: [orbMember],
       scene: ({ time }) => ({ orb: { x: 350 * time.progress } }),
     });
     const orbRest: MeasureCache["rest"] = {
@@ -377,9 +436,9 @@ describe("gerak review expectations and shape mismatches", () => {
       false,
     );
 
-    const jumpingAmbient = defineStage({
+    const jumpingAmbient = directStage({
       beats: { loop: [0, 1000] },
-      cast: (m) => ({ orb: m.box().ambient() }),
+      members: [orbMember],
       limits: { orb: { jump: 10 } },
       scene: ({ time }) => ({ orb: { x: time.progress < 0.5 ? 100 : 300 } }),
     });
@@ -387,11 +446,20 @@ describe("gerak review expectations and shape mismatches", () => {
   });
 
   it("reports a list item that throws as a finding, and no never-moved noise beside it", () => {
-    const broken = defineStage({
+    const broken = directStage({
       beats: { show: [0, 400] },
-      cast: (m) => ({ row: m.many(), dot: m.box() }),
+      members: [
+        { name: "row", expect: "settle", inputs: NO_INPUTS, kind: "list" },
+        {
+          name: "dot",
+          expect: "settle",
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
       scene: () => ({
-        row: (i) => {
+        row: (i: number) => {
           if (i === 1) throw new Error("boom");
           return { x: i };
         },
@@ -412,9 +480,17 @@ describe("gerak review expectations and shape mismatches", () => {
   });
 
   it("judges an ambient member's bounds only where its box and frame are measured", () => {
-    const unmeasured = defineStage({
+    const unmeasured = directStage({
       beats: { show: [0, 400] },
-      cast: (m) => ({ flake: m.box().ambient() }),
+      members: [
+        {
+          name: "flake",
+          expect: "ambient",
+          inputs: NO_INPUTS,
+          kind: "actor",
+          content: { kind: "box" },
+        },
+      ],
       scene: ({ time }) => ({ flake: { x: -10 + 5 * Math.sin(time.progress * 6) } }),
     });
     expect(review(unmeasured).findings.filter((line) => /bounds/.test(line))).toEqual([]);
@@ -432,9 +508,9 @@ describe("gerak review expectations and shape mismatches", () => {
   });
 
   it("emits findings for frame shape_mismatch errors instead of throwing", () => {
-    const mismatch = rawStage({
+    const mismatch = directStage({
       beats: { show: [0, 400] },
-      cast: (m: CastBuilder<"show">) => ({ dots: m.many() }),
+      members: [{ name: "dots", expect: "settle", inputs: NO_INPUTS, kind: "list" }],
       scene: () => ({ dots: [{ x: 0 }] }),
     });
     expect(review(mismatch).findings).toContain(
@@ -564,16 +640,12 @@ describe("driver probing and --events in gerak review", () => {
     expect(motionFindings(review(piece, {}, cache))).toEqual([]);
   });
 
-  it("probes watched target interaction events on unmoved settle members", () => {
-    const hovered = state(
-      false,
-      (cur, ev) => (ev.name === "enter" ? true : ev.name === "leave" ? false : cur),
-      { target: "btn" },
-    );
+  it("probes pageInputs interaction values on unmoved settle members", () => {
+    const hovered = value(pageInputs, "hovered", "btn");
     const piece = scene(
       { length: 400 },
-      box("btn", { watch: true }),
-      box("lid").moves((_t, ctx) => ({ y: hovered(ctx.time, ctx.events) ? -12 : 0 })),
+      box("btn"),
+      box("lid").moves((_t, ctx) => ({ y: hovered(ctx.time, ctx.events) > 0 ? -12 : 0 })),
     );
     expect(motionFindings(review(piece))).toEqual([]);
   });
@@ -602,7 +674,8 @@ describe("driver probing and --events in gerak review", () => {
       'cast member "cookies" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
     );
     expect(
-      review(piece, { events: [{ name: "jar-add", at: 100, value: 1 }] }, cache).findings,
+      review(piece, { events: [{ kind: "trigger", name: "jar-add", at: 100, value: 1 }] }, cache)
+        .findings,
     ).toEqual([]);
 
     expect(parseSceneReviewArgs(["s.ts", "--events", "jar-add=0@200,jar-seal=1@400"])).toEqual({
@@ -614,10 +687,96 @@ describe("driver probing and --events in gerak review", () => {
       ratio: 1.5,
       budget: 8,
       events: [
-        { name: "jar-add", at: 200, value: 0 },
-        { name: "jar-seal", at: 400, value: 1 },
+        { kind: "value", name: "jar-add", at: 200, value: 0 },
+        { kind: "value", name: "jar-seal", at: 400, value: 1 },
       ],
     });
     expect(parseSceneReviewArgs(["s.ts", "--events", "bad-event"]).kind).toBe("usage");
+  });
+
+  it("exempts a member that moves only on a contract value", () => {
+    const quiz = inputs({ values: { progress: {} } });
+    const progress = value(quiz, "progress");
+
+    const valueDriven = scene(
+      { length: 400 },
+      box("bar").moves((_t, ctx) => ({ scaleX: progress(ctx.time, ctx.events) })),
+      box("springBar").moves(bind({ scaleX: springTo(progress, (v) => v) })),
+    );
+    expect(motionFindings(review(valueDriven))).toEqual([]);
+
+    const onlyMovesFromOne = scene(
+      { length: 400 },
+      box("stepped").moves((_t, ctx) => ({
+        y: progress(ctx.time, ctx.events) === 1 ? 0 : 12,
+      })),
+    );
+    expect(
+      motionFindings(
+        review(onlyMovesFromOne, {
+          events: [{ kind: "value", name: "progress", at: 0, value: 1 }],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("exempts a member that moves only on a contract trigger over 600 ms", () => {
+    const quiz = inputs({ triggers: { finish: {} } });
+    const finish = triggers(quiz, "finish");
+
+    const triggerDriven = scene(
+      { length: 400 },
+      box("card").moves((_t, ctx) => {
+        const last = finish(ctx.time, ctx.events).at(-1);
+        if (last === undefined) return { opacity: 0, y: 20 };
+        const elapsed = (elapsedOf(ctx.time.clock) ?? 0) - last.at;
+        const p = clamp(elapsed / 600, 0, 1);
+        return { opacity: p, y: 20 * (1 - p) };
+      }),
+    );
+    expect(motionFindings(review(triggerDriven))).toEqual([]);
+  });
+
+  it("reports a member that reads a contract value or trigger and ignores it, naming what it read", () => {
+    const quiz = inputs({
+      values: { progress: {}, score: { targets: ["p1", "p2"] } },
+      triggers: { finish: {} },
+    });
+    const progress = value(quiz, "progress");
+    const p1Score = value(quiz, "score", "p1");
+    const finish = triggers(quiz, "finish");
+
+    const ignoredValue = scene(
+      { length: 400 },
+      box("bar").moves((_t, ctx) => {
+        progress(ctx.time, ctx.events);
+        return { scaleX: 1 };
+      }),
+    );
+    expect(review(ignoredValue).findings).toContain(
+      'cast member "bar" never moved, even when its inputs changed (value progress); move it, or mark it .static().',
+    );
+
+    const ignoredBoth = scene(
+      { length: 400 },
+      box("panel").moves((_t, ctx) => {
+        p1Score(ctx.time, ctx.events);
+        finish(ctx.time, ctx.events);
+        return { opacity: 1 };
+      }),
+    );
+    expect(review(ignoredBoth).findings).toContain(
+      'cast member "panel" never moved, even when its inputs changed (value score:p1, trigger finish); move it, or mark it .static().',
+    );
+  });
+
+  it("keeps today's never-moved message when a member reads no app input", () => {
+    const readsNothing = scene(
+      { length: 400 },
+      box("plain").moves(() => ({ x: 0 })),
+    );
+    expect(review(readsNothing).findings).toContain(
+      'cast member "plain" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
+    );
   });
 });

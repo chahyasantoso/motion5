@@ -4,8 +4,9 @@ const BEAT_WINDOW_MS = 20;
 const HISTORY_WINDOWS = 40;
 const REFRACTORY_WINDOWS = 20;
 
-/** A single cue event emitted from audio analysis, with `at` in ms. */
+/** A single cue entry emitted from audio analysis, with `at` in ms. */
 export interface Cue {
+  readonly kind: "value" | "trigger";
   readonly name: string;
   readonly at: number;
   readonly value: number;
@@ -48,6 +49,7 @@ export function levelCues(
     if (from >= samples.length) break;
     const to = Math.min(samples.length, Math.round(((at + everyMs) * sampleRate) / 1000));
     cues.push({
+      kind: "value",
       name,
       at,
       value: round3(levelOf(rms(samples, from, to))),
@@ -88,6 +90,7 @@ export function beatCues(
       i - lastOnset >= REFRACTORY_WINDOWS
     ) {
       cues.push({
+        kind: "trigger",
         name: "beat",
         at: i * BEAT_HOP_MS,
         value: round3(energy),
