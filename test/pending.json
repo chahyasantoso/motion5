@@ -1,17 +1,1 @@
-[
-  {
-    "path": "packages/core/test/inputs.types.test.ts",
-    "phase": 5,
-    "reason": "The typed contract does not exist yet, and eventLog, eventDriver and send are still exported."
-  },
-  {
-    "path": "packages/dom/test/listeners-browser.test.ts",
-    "phase": 5,
-    "reason": "mount still attaches pointer, press and click listeners."
-  },
-  {
-    "path": "test/repo/adapter-boundary.test.ts",
-    "phase": 5,
-    "reason": "The boundary scan has no adapter rule yet."
-  }
-]
+[]
