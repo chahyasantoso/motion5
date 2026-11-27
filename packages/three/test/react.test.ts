@@ -88,14 +88,16 @@ describe("useTarget3d", () => {
     await act(() => {
       probe.driver.seek(0.5);
     });
+    expect(probe.object.position.x).toBeCloseTo(5, 9);
     await act(() => {
       renderer.unmount();
     });
+    expect(probe.object.position.x).toBe(0);
     const count = probe.invalidations;
     await act(() => {
       probe.driver.seek(0.9);
     });
-    expect(probe.object.position.x).toBeCloseTo(5, 9);
+    expect(probe.object.position.x).toBe(0);
     expect(probe.invalidations).toBe(count);
   });
 

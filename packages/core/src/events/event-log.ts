@@ -97,6 +97,17 @@ function recordBaseline(baseline: Map<string, number>, event: MotionEvent): void
   }
 }
 
+function lowerBoundAt(list: Events, minAt: number): number {
+  let low = 0;
+  let high = list.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if ((list[mid]?.at ?? 0) < minAt) low = mid + 1;
+    else high = mid;
+  }
+  return low;
+}
+
 function upperBoundAt(list: Events, maxAt: number): number {
   let low = 0;
   let high = list.length;
@@ -108,9 +119,15 @@ function upperBoundAt(list: Events, maxAt: number): number {
   return low;
 }
 
-function mergeTwoOrdered(a: Events, aLimit: number, b: Events, bLimit: number): MotionEvent[] {
+function mergeTwoOrderedSlice(
+  a: Events,
+  aStart: number,
+  aLimit: number,
+  b: Events,
+  bLimit: number,
+): MotionEvent[] {
   const out: MotionEvent[] = [];
-  let ai = 0;
+  let ai = aStart;
   let bi = 0;
   while (ai < aLimit && bi < bLimit) {
     const ea = a[ai];
@@ -149,15 +166,18 @@ export interface DerivedEvents {
 
 /** Creates a cached `Events` merger/filter that avoids rebuilding unchanged windows across frames. */
 export function derivedEvents(): DerivedEvents {
+  const streamToken = {};
   let prevCues: Events | undefined;
   let prevPage: Events | undefined;
   let prevPageVersion: number | undefined;
   let prevPageGeneration: number | undefined;
   let prevPageBase: number | undefined;
+  let prevPageCompacted: number | undefined;
   let prevMaxAt: number | undefined;
   let nextHiddenAt = Infinity;
   let generation = 0;
   let version = 0;
+  let mergedBase = 0;
   let cached: MotionEvent[] = [];
 
   const nextAfter = (list: Events, limit: number): number => list[limit]?.at ?? Infinity;
@@ -169,6 +189,7 @@ export function derivedEvents(): DerivedEvents {
       const pageVersion = VERSION.get(page);
       const pageGen = GENERATION.get(page);
       const pageBase = BASE_INDEX.get(page) ?? 0;
+      const pageCompacted = COMPACTED_BEFORE.get(page);
 
       if (cuesEmpty) {
         if (maxAt === undefined || pageEmpty) return page;
@@ -183,6 +204,7 @@ export function derivedEvents(): DerivedEvents {
         pageVersion === prevPageVersion &&
         pageGen === prevPageGeneration &&
         pageBase === prevPageBase &&
+        pageCompacted === prevPageCompacted &&
         !(pageVersion === undefined && prevPage !== undefined) &&
         !(VERSION.get(cues) === undefined && cues !== prevCues);
 
@@ -201,7 +223,15 @@ export function derivedEvents(): DerivedEvents {
         return cached;
       }
 
-      const cuesLimit = maxAt === undefined ? cues.length : upperBoundAt(cues, maxAt);
+      const effectiveCompacted =
+        pageVersion !== undefined && pageCompacted !== undefined && Number.isFinite(pageCompacted)
+          ? pageCompacted
+          : -Infinity;
+      const cuesStart = effectiveCompacted > -Infinity ? lowerBoundAt(cues, effectiveCompacted) : 0;
+      const cuesLimit = Math.max(
+        cuesStart,
+        maxAt === undefined ? cues.length : upperBoundAt(cues, maxAt),
+      );
       const pageLimit =
         maxAt === undefined
           ? page.length
@@ -210,37 +240,46 @@ export function derivedEvents(): DerivedEvents {
             : page.length;
 
       const merged =
-        cuesLimit === 0
+        cuesLimit <= cuesStart
           ? pageVersion !== undefined
             ? page.slice(0, pageLimit)
             : maxAt === undefined
               ? page.slice()
               : sortEvents(page.filter((e) => e.at <= maxAt))
           : pageLimit === 0
-            ? cues.slice(0, cuesLimit)
+            ? cues.slice(cuesStart, cuesLimit)
             : pageVersion !== undefined
-              ? mergeTwoOrdered(cues, cuesLimit, page, pageLimit)
+              ? mergeTwoOrderedSlice(cues, cuesStart, cuesLimit, page, pageLimit)
               : sortEvents([
-                  ...cues.slice(0, cuesLimit),
+                  ...cues.slice(cuesStart, cuesLimit),
                   ...(maxAt === undefined ? page : page.filter((e) => e.at <= maxAt)),
                 ]);
 
       const cuesReset = cues !== prevCues;
-      const pageChangedOrder =
+      const pageSwappedOrReordered =
         page !== prevPage ||
         pageGen !== prevPageGeneration ||
-        pageBase !== prevPageBase ||
         (prevMaxAt !== undefined && maxAt !== undefined && maxAt < prevMaxAt);
 
-      if (cuesReset || pageChangedOrder || merged.length < cached.length) {
-        generation += 1;
-      } else {
-        for (let i = 0; i < cached.length; i += 1) {
-          if (merged[i] !== cached[i]) {
-            generation += 1;
+      let drop = 0;
+      while (drop < cached.length && (cached[drop]?.at ?? Infinity) < effectiveCompacted) {
+        drop += 1;
+      }
+      const keep = cached.length - drop;
+      let prefixMatch = !cuesReset && !pageSwappedOrReordered && merged.length >= keep;
+      if (prefixMatch) {
+        for (let i = 0; i < keep; i += 1) {
+          if (merged[i] !== cached[drop + i]) {
+            prefixMatch = false;
             break;
           }
         }
+      }
+      if (prefixMatch) {
+        mergedBase += drop;
+      } else {
+        generation += 1;
+        mergedBase = 0;
       }
       version += 1;
       cached = merged;
@@ -249,6 +288,7 @@ export function derivedEvents(): DerivedEvents {
       prevPageVersion = pageVersion;
       prevPageGeneration = pageGen;
       prevPageBase = pageBase;
+      prevPageCompacted = pageCompacted;
       prevMaxAt = maxAt;
 
       let hidden = nextAfter(cues, cuesLimit);
@@ -271,13 +311,13 @@ export function derivedEvents(): DerivedEvents {
         VERSION.set(cached, version);
         BASE_INDEX.set(cached, pageBase);
       } else {
+        SOURCE_STREAM.set(cached, streamToken);
         GENERATION.set(cached, generation);
         VERSION.set(cached, version);
-        BASE_INDEX.set(cached, 0);
+        BASE_INDEX.set(cached, mergedBase);
       }
       const pageBaseline = BASELINE.get(page);
       if (pageBaseline !== undefined) BASELINE.set(cached, pageBaseline);
-      const pageCompacted = COMPACTED_BEFORE.get(page);
       if (pageCompacted !== undefined) COMPACTED_BEFORE.set(cached, pageCompacted);
       return cached;
     },
@@ -354,12 +394,7 @@ export function eventLog(options: EventLogOptions = {}): EventLog {
     add(event) {
       onEvent?.(event);
       for (const listener of [...listeners]) listener(event);
-      if (event.at < compactedBefore) {
-        baseIndex += 1;
-        BASE_INDEX.set(events, baseIndex);
-        bumped();
-        return;
-      }
+      if (event.at < compactedBefore) return;
       const serial = nextSerial++;
       let index = events.length;
       if (index === 0 || (events[index - 1]?.at ?? -Infinity) <= event.at) {

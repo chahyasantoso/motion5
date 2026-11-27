@@ -1,6 +1,6 @@
 import type { Events } from "../events/event-list";
 import { spring, springMemory } from "../ease/spring";
-import { stillMoving } from "../state/clock-watch";
+import { rawTime, stillMoving } from "../state/clock-watch";
 import { withProbeStore } from "../state/store";
 import { elapsedOf, type Time } from "../time/time";
 import { timeAt } from "../time/time-at";
@@ -73,25 +73,26 @@ export function trail(
 ): (time: Time, events: Events) => number {
   const settings = trailSettings(options, "trail");
   return (time, events) => {
-    const now = elapsedOf(time.clock);
+    const raw = rawTime(time);
+    const now = elapsedOf(raw.clock);
     if (now === undefined) return signal(time, events);
     return withProbeStore(() => {
       let at = trailStart(now, settings);
-      let value = signal(timeAt(time, at), events);
+      let value = signal(timeAt(raw, at), events);
       let speed = 0;
-      let goal = value;
       while (at < now) {
-        goal = signal(timeAt(time, at), events);
+        const goal = signal(timeAt(raw, at), events);
         const dt = Math.min(settings.stepMs, now - at);
         const moved = spring(value - goal, speed, dt / 1000, settings.spring);
         value = goal + moved.offset;
         speed = moved.speed;
         at += dt;
       }
+      const goalNow = signal(timeAt(raw, now), events);
       const resting =
-        Math.abs(value - goal) < settings.rest && Math.abs(speed) < 10 * settings.rest;
+        Math.abs(value - goalNow) < settings.rest && Math.abs(speed) < 10 * settings.rest;
       if (!resting) stillMoving();
-      return resting ? goal : value;
+      return resting ? goalNow : value;
     });
   };
 }

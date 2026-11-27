@@ -160,4 +160,39 @@ describe("Slice 3 foundation react contracts", () => {
     expect(mounts).toBe(2);
     await act(() => renderer?.unmount());
   });
+
+  it("clears useSignal cache when player toggles to undefined and back without flashing stale values", async () => {
+    const log = eventLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    const taps = state(0, (count, event) => (event.name === "tap" ? count + 1 : count));
+    const seen: (number | undefined)[] = [];
+    const basicScene = (time: Time) => ({ x: time.progress * 10 });
+    const createDriver = () => driver;
+    const Probe: FC<{ readonly active: boolean }> = ({ active }) => {
+      const playing = usePlayer(basicScene, createDriver);
+      const val = useSignal(active ? playing?.player : undefined, taps);
+      seen.push(val);
+      return null;
+    };
+
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(createElement(Probe, { active: true }));
+    });
+    expect(seen.at(-1)).toBe(0);
+
+    await act(() => {
+      renderer?.update(createElement(Probe, { active: false }));
+    });
+    expect(seen.at(-1)).toBeUndefined();
+
+    // Advance event log while detached, then re-attach same player.
+    log.add({ name: "tap", at: 100 });
+    driver.seekMs(200);
+    await act(() => {
+      renderer?.update(createElement(Probe, { active: true }));
+    });
+    expect(seen.at(-1)).toBe(1);
+    await act(() => renderer?.unmount());
+  });
 });

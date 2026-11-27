@@ -3,7 +3,7 @@ import type { Pose3d } from "@gerak/core";
 import type { Player } from "@gerak/player";
 import { listPose3d } from "@gerak/stage";
 import type { Object3D } from "three";
-import { applyPose3d, captureRest3d } from "./pose3d";
+import { applyPose3d, captureRest3d, restoreRest3d } from "./pose3d";
 
 type Pose3dListValue = readonly Pose3d[] | ((index: number, count: number) => Pose3d);
 type Pose3dTargets<T> = { [K in keyof T]: T[K] extends Pose3d ? K : never }[keyof T];
@@ -15,7 +15,7 @@ function isPose(value: unknown): value is Pose3d {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Writes a 3D pose target on the object the ref lands on, every step, with no render; its transform then is its rest. */
+/** Writes a 3D pose target on the object the ref lands on, every step, with no render; its transform then is its rest and is restored on cleanup. */
 export function useTarget3d<T extends object, K extends Pose3dTargets<T>>(
   player: Player<T> | undefined,
   target: K,
@@ -43,7 +43,7 @@ export function useTarget3d<T extends object>(
   useEffect(() => {
     if (player === undefined || object === null) return undefined;
     const rest = captureRest3d(object);
-    return player.subscribe(target, (value: unknown) => {
+    const unsubscribe = player.subscribe(target, (value: unknown) => {
       let pose: Pose3d | undefined;
       if (at === undefined) {
         pose = isPose(value) ? value : undefined;
@@ -57,6 +57,10 @@ export function useTarget3d<T extends object>(
       applyPose3d(object, pose, rest);
       invalidate?.();
     });
+    return () => {
+      unsubscribe();
+      restoreRest3d(object, rest);
+    };
   }, [player, object, target, invalidate, at, count]);
   return useCallback((next: Object3D | null) => setObject(next), []);
 }

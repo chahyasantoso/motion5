@@ -136,6 +136,7 @@ export function shot(scene: Scene, options: ShotOptions = {}): Shot {
 
 /** Where a shot sits on the scene's clock. */
 interface ShotClock {
+  readonly name: string;
   readonly from: number;
   readonly length: number;
 }
@@ -1121,7 +1122,7 @@ function shotted(state: State, taken: Shot): State {
       beat(rename(each.name), each.to - each.from, { at: each.from + from }),
     );
   beats.set(name, beat(name, span, { at: from }));
-  const clock: ShotClock = { from, length: span };
+  const clock: ShotClock = { name, from, length: span };
   const shotClocks = new Map(other.shotClocks);
   const sceneOf = new Map(other.sceneOf);
   const shotOf = new Map(other.shotOf);
@@ -1512,18 +1513,20 @@ function wrapRead(
   return read;
 }
 
-/** The context a motion sees: its time tells the clock watcher, `carry` counts as `maybe`, reading
- * an element moves this one with it, and `other` hears a read of events, `carry` or `read`. */
+/** The context a motion sees: watches clock reads, element reads, `carry`/`read`/`events` drives,
+ * and `onEvents` specifically for direct reads of `context.events`. */
 function watched(
   context: MotionContext,
   seen: () => void,
   readOf: (target: string) => void,
   other: () => void,
+  onEvents?: () => void,
 ): MotionContext {
   const time = watchedTime(context.time);
   const seenBy: MotionContext = {
     time,
     get events() {
+      onEvents?.();
       other();
       return context.events;
     },
@@ -1536,8 +1539,7 @@ function watched(
     element: context.element,
     span: context.span,
     read: wrapRead(context.read, (target, probe) => {
-      if (probe) return;
-      readOf(target);
+      if (!probe) readOf(target);
       other();
     }),
     ...(context.index === undefined ? {} : { index: context.index }),
@@ -1749,10 +1751,17 @@ function shotEvents(events: Events, clock: ShotClock | undefined): Events {
   return moved;
 }
 
-function readerOf(env: Env, plan: Plan, local: Time, localEvents: Events): MotionContext["read"] {
-  const time = sceneTime(local, plan.clock, env.total);
+function readerOf(
+  env: Env,
+  plan: Plan,
+  local: Time,
+  localEvents: Events,
+  stepClock?: ShotClock,
+): MotionContext["read"] {
+  const activeClock = stepClock ?? plan.clock;
+  const time = sceneTime(local, activeClock, env.total);
   const events =
-    plan.clock === undefined ? localEvents : (SCENE_EVENTS.get(localEvents) ?? localEvents);
+    activeClock === undefined ? localEvents : (SCENE_EVENTS.get(localEvents) ?? localEvents);
   function read(element: ObjectElement, at?: ReadAt): Pose3d;
   function read(element: Element | string, at?: ReadAt): Pose2d;
   function read(element: ObjectElement | Element | string, at?: ReadAt): Pose3d | Pose2d {
@@ -1770,14 +1779,24 @@ function readerOf(env: Env, plan: Plan, local: Time, localEvents: Events): Motio
     const part = target.parts ? (at?.index ?? 0) : undefined;
     const parts = target.parts ? (at?.count ?? env.counts?.[name] ?? 1) : undefined;
     const isProbe = at?.time !== undefined;
-    const when = isProbe ? sceneTime(at.time, plan.clock, env.total) : time;
+    const when = isProbe ? sceneTime(at.time, activeClock, env.total) : time;
     const length = when.clock.kind === "timed" ? when.clock.length : "";
     const key = `${name}|${part}|${parts}|${when.clock.kind}|${elapsedOf(when.clock)}|${length}|${when.progress}`;
+    const probeInputs =
+      isProbe && env.inputs !== undefined ? new Map<string, InputNeed>() : undefined;
     const evalEnv: Env = isProbe
-      ? { ...env, moves: undefined, drives: undefined, inputs: undefined }
+      ? { ...env, moves: undefined, drives: undefined, inputs: probeInputs }
       : env;
     const mergeTargetInputs = (): void => {
-      if (isProbe || env.inputs === undefined) return;
+      if (env.inputs === undefined) return;
+      mergeInputNeed(env.inputs, plan.name, target.staticInputs);
+      if (probeInputs !== undefined) {
+        const probed = probeInputs.get(target.name);
+        if (probed !== undefined) {
+          mergeInputNeed(env.inputs, target.name, probed);
+          mergeInputNeed(env.inputs, plan.name, probed);
+        }
+      }
       const targetInputs = env.inputs.get(target.name);
       if (targetInputs !== undefined) mergeInputNeed(env.inputs, plan.name, targetInputs);
     };
@@ -1835,17 +1854,17 @@ function runStepWithWatches<T>(
   const used =
     moves === undefined && drives === undefined && inputs === undefined
       ? baseContext
-      : travels && moves === undefined && drives === undefined
-        ? baseContext
-        : watched(
-            baseContext,
-            () => note(moves, planName, "maybe"),
-            (target) => note(moves, planName, moves?.get(target) === "time" ? "time" : "maybe"),
-            () => {
-              sawEventsGetter = true;
-              if (!travels) noteDrive(drives, planName, MORE);
-            },
-          );
+      : watched(
+          baseContext,
+          () => note(moves, planName, "maybe"),
+          (target) => note(moves, planName, moves?.get(target) === "time" ? "time" : "maybe"),
+          () => {
+            if (!travels) noteDrive(drives, planName, MORE);
+          },
+          () => {
+            sawEventsGetter = true;
+          },
+        );
 
   const execute = (): T =>
     moves === undefined
@@ -1930,7 +1949,7 @@ function buildStack3d(
             carry: env.carry,
             element: plan.name,
             span: step.span,
-            read: readerOf(env, plan, stepTime, stepEvents),
+            read: readerOf(env, plan, stepTime, stepEvents, step.shotClock),
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
           };
@@ -1991,7 +2010,7 @@ function buildStack3d(
             carry: env.carry,
             element: plan.name,
             span: step.span,
-            read: readerOf(env, plan, stepTime, stepEvents),
+            read: readerOf(env, plan, stepTime, stepEvents, step.shotClock),
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
           };
@@ -2083,7 +2102,7 @@ function buildStack2d(
             carry: env.carry,
             element: plan.name,
             span: step.span,
-            read: readerOf(env, plan, stepTime, stepEvents),
+            read: readerOf(env, plan, stepTime, stepEvents, step.shotClock),
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
             ...(line === undefined ? {} : { line }),
@@ -2244,7 +2263,9 @@ export function provenanceOf(scene: Scene): ScenePlan {
   for (const name of state.order) {
     const entry = state.entries.get(name) ?? NO_ENTRY;
     const shot = state.shotOf.get(name);
-    const steps: StepSummary[] = entry.steps.map((step) => stepSummary(step, shot));
+    const steps: StepSummary[] = entry.steps.map((step) =>
+      stepSummary(step, step.shotClock?.name ?? shot),
+    );
     const windows: ShowSummary[] = [
       ...entry.show.map(showSummary),
       ...entry.scrollShow.map((): ShowSummary => ({ kind: "scroll" })),

@@ -224,8 +224,18 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
         const target = objects[name];
         if (target === undefined) continue;
         const classified = classifyTarget(target);
-        if (classified.kind === "node") extraRoots.push(classified.node);
-        else if (classified.kind === "list") extraRoots.push(...classified.items);
+        switch (classified.kind) {
+          case "node":
+            extraRoots.push(classified.node);
+            break;
+          case "list":
+            extraRoots.push(...classified.items);
+            break;
+          case "writer":
+            break;
+          default:
+            unreachable(classified);
+        }
       }
       const sharedMaterials = findSharedMaterials(extraRoots);
       const restores: (() => void)[] = [];

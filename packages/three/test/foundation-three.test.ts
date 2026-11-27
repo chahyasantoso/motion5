@@ -7,6 +7,7 @@ import { manualDriver, play } from "@gerak/player";
 import { compileScene, formatStageError, frame, object, scene } from "@gerak/stage";
 import { usePlayer } from "@gerak/react";
 import { applyPose2d, applyPose3d, captureRest3d, restoreRest3d, threeBinder } from "../src/index";
+import { findSharedMaterials } from "../src/materials";
 import { useTarget3d } from "../src/react";
 
 describe("Slice 3 foundation three contracts", () => {
@@ -167,5 +168,23 @@ describe("Slice 3 foundation three contracts", () => {
     expect(obj.position.x).toBeCloseTo(33.5, 9);
 
     await act(() => renderer?.unmount());
+    // Unmount restores captured Rest3d transforms and materials.
+    expect(obj.position.x).toBe(1);
+    expect(obj.position.y).toBe(2);
+    expect(obj.scale.x).toBe(2);
+  });
+
+  it("restores materials and deduplicates override nodes when finding shared materials", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 1, transparent: false });
+    const uniqueMat = new MeshBasicMaterial({ opacity: 1, transparent: false });
+    const root = new Group();
+    const overrideChild = new Mesh(new BoxGeometry(1, 1, 1), uniqueMat);
+    const sharedA = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    const sharedB = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    root.add(overrideChild, sharedA, sharedB);
+
+    const detected = findSharedMaterials([root, overrideChild]);
+    expect(detected.has(sharedMat)).toBe(true);
+    expect(detected.has(uniqueMat)).toBe(false);
   });
 });

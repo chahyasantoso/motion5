@@ -1,6 +1,7 @@
 import type { Ease } from "../ease/ease";
 import { span, type Span } from "../time/span";
 import type { Time } from "../time/time";
+import { unreachable } from "../utility/unreachable";
 
 /** One keyframe: the value reached at `at` ms, eased from the key before; with no `ease` it is linear. */
 export interface Key<T> {
@@ -24,17 +25,27 @@ export function keyframes<T>(
     from = key.at;
   }
   return (time) => {
-    const resolved =
-      time.clock.kind === "untimed"
-        ? {
-            progress: Math.max(0, Math.min(1, time.progress)),
-            clock: {
-              kind: "timed" as const,
-              elapsed: Math.max(0, Math.min(1, time.progress)) * from,
-              length: from,
-            },
-          }
-        : time;
+    let resolved: Time;
+    switch (time.clock.kind) {
+      case "untimed": {
+        const clamped = Math.max(0, Math.min(1, time.progress));
+        resolved = {
+          progress: clamped,
+          clock: {
+            kind: "timed" as const,
+            elapsed: clamped * from,
+            length: from,
+          },
+        };
+        break;
+      }
+      case "timed":
+      case "live":
+        resolved = time;
+        break;
+      default:
+        return unreachable(time.clock);
+    }
     let value = start;
     for (const { span: part, key } of segments)
       value = blend(value, key.to, part.of(resolved, key.ease).progress);

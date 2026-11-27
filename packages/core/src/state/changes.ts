@@ -1,3 +1,4 @@
+import { unreachable } from "../utility/unreachable";
 import { timeAt } from "../time/time-at";
 import type { Time } from "../time/time";
 import type { Events } from "../events/event-list";
@@ -64,14 +65,30 @@ export function changesOf<S, V = number>(
 
     let cell: ChangesCell<V>;
     if (resets || existing === undefined) {
-      const start =
-        meta !== undefined && meta.base > 0
-          ? now.length === 0
-            ? withProbeStore(() => pick(source(time, events)))
-            : time.clock.kind !== "untimed"
-              ? withProbeStore(() => pick(source(timeAt(time, (now[0]?.at ?? 0) - 0.0001), events)))
-              : pick(source.start)
-          : pick(source.start);
+      let start: V;
+      if (meta !== undefined && meta.base > 0) {
+        if (now.length === 0) {
+          start = withProbeStore(() => pick(source(time, events)));
+        } else {
+          switch (time.clock.kind) {
+            case "timed":
+            case "live": {
+              const probeAt = Number.isFinite(meta.anchorAt)
+                ? meta.anchorAt
+                : (now[0]?.at ?? 0) - 0.0001;
+              start = withProbeStore(() => pick(source(timeAt(time, probeAt), events)));
+              break;
+            }
+            case "untimed":
+              start = pick(source.start);
+              break;
+            default:
+              return unreachable(time.clock);
+          }
+        }
+      } else {
+        start = pick(source.start);
+      }
       const list: Change<V>[] = [];
       const resetId = (existing?.resetId ?? 0) + 1;
       cell = {

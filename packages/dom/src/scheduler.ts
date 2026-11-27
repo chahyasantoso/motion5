@@ -216,11 +216,43 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   let activeUntil = introMs;
   let frameHandle: number | undefined;
   let live = true;
+  let inTick = false;
+  let frameInputs: Map<string, InputNeed> = new Map();
   const listeners = new Set<() => void>();
   let lastScrollY = readScrollYOf(scrollTarget, root);
 
+  const memberInputs = new Map<string, InputNeed>();
+  const seedInputs = (targetStage: Stage): void => {
+    for (const member of targetStage.members) {
+      memberInputs.set(member.name, {
+        scroll: member.inputs.scroll || member.onScroll !== undefined,
+        pointer: member.inputs.pointer,
+        events: member.inputs.events,
+      });
+    }
+  };
+  seedInputs(stage);
+
+  let pointerAttached = false;
+  const needsPointer = (): boolean => {
+    for (const need of memberInputs.values()) if (need.pointer) return true;
+    return false;
+  };
+  let syncPointerListener: () => void = () => undefined;
+
+  const drainFrameInputs = (): void => {
+    if (frameInputs.size === 0) return;
+    let discoveredPointer = false;
+    for (const [name, need] of frameInputs) {
+      if (mergeMemberInput(memberInputs, name, need)) discoveredPointer = true;
+    }
+    frameInputs.clear();
+    if (discoveredPointer) syncPointerListener();
+  };
+
   const notify = (): void => {
     for (const listener of [...listeners]) listener();
+    drainFrameInputs();
   };
 
   let fresh = false;
@@ -248,18 +280,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     .filter((member) => member.expect === "ambient")
     .map((member) => member.name);
 
-  const memberInputs = new Map<string, InputNeed>();
-  const seedInputs = (targetStage: Stage): void => {
-    for (const member of targetStage.members) {
-      memberInputs.set(member.name, {
-        scroll: member.inputs.scroll || member.onScroll !== undefined,
-        pointer: member.inputs.pointer,
-        events: member.inputs.events,
-      });
-    }
-  };
-  seedInputs(stage);
-
   let pendingScroll: { readonly value: number; readonly at: number } | undefined;
   let pendingPointer: { readonly x: number; readonly y: number; readonly at: number } | undefined;
   let activeChannel: "scroll" | "pointer" | "events" = "events";
@@ -281,8 +301,11 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
         default:
           return unreachable(activeChannel);
       }
-      if (given === undefined) schedule();
-      else notify();
+      if (given === undefined) {
+        if (!inTick) schedule();
+      } else {
+        notify();
+      }
     },
     {
       retention: policy,
@@ -332,8 +355,19 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   const compactHistoryAt = (at: number): void => {
     if (windowMs === undefined) return;
     const cutoff = at - windowMs;
-    recorder.compact(cutoff);
-    pruneMeasures(measures, cutoff);
+    switch (policy.kind) {
+      case "all":
+        return;
+      case "live":
+        recorder.compact(cutoff);
+        pruneMeasures(measures, cutoff);
+        return;
+      case "window":
+        pruneMeasures(measures, cutoff);
+        return;
+      default:
+        return unreachable(policy);
+    }
   };
 
   const sceneEvents = (): Events => {
@@ -351,9 +385,14 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     frameHandle = undefined;
     if (!live) return;
     const nowMs = elapsed();
-    compactHistoryAt(nowMs);
-    syncScrollPoll(nowMs);
-    flushPendingInputs();
+    inTick = true;
+    try {
+      compactHistoryAt(nowMs);
+      syncScrollPoll(nowMs);
+      flushPendingInputs();
+    } finally {
+      inTick = false;
+    }
 
     const scrollChanged = dirtyScroll;
     const pointerChanged = dirtyPointer;
@@ -423,6 +462,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   }
   const watchTarget = (name: string, node: PageElement): (() => void) => {
     if (timed !== undefined) return timed.watch(name, node);
+    const readRect = node.getBoundingClientRect;
     const wrapped: typeof node = {
       addEventListener: (type, listener) => {
         const onEvent = (event: StageEvent): void => {
@@ -437,9 +477,9 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
         node.removeEventListener(type, stored);
         wrappedListeners.delete(listener);
       },
-      ...(node.getBoundingClientRect === undefined
+      ...(readRect === undefined
         ? {}
-        : { getBoundingClientRect: () => node.getBoundingClientRect!() }),
+        : { getBoundingClientRect: () => Reflect.apply(readRect, node, []) }),
       style: node.style,
       textContent: node.textContent,
     };
@@ -503,12 +543,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   };
 
   const pointerTarget = eventTargetOf(root, doc);
-  let pointerAttached = false;
-  const needsPointer = (): boolean => {
-    for (const need of memberInputs.values()) if (need.pointer) return true;
-    return false;
-  };
-  const syncPointerListener = (): void => {
+  syncPointerListener = (): void => {
     if (!live || timed !== undefined) {
       if (pointerAttached) {
         pointerTarget.remove(onPointerMove);
@@ -544,10 +579,14 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       events: sceneEvents,
       ...(source.options === undefined ? {} : { options: source.options }),
       subscribe(listener) {
-        listeners.add(listener);
-        const stop = source.subscribe(listener);
+        const wrapped = (): void => {
+          listener();
+          drainFrameInputs();
+        };
+        listeners.add(wrapped);
+        const stop = source.subscribe(wrapped);
         return () => {
-          listeners.delete(listener);
+          listeners.delete(wrapped);
           stop();
         };
       },
@@ -589,11 +628,8 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       inputs,
       ...(only === undefined ? {} : { only }),
     });
-    let discoveredPointer = false;
-    for (const [name, need] of inputs) {
-      if (mergeMemberInput(memberInputs, name, need)) discoveredPointer = true;
-    }
-    if (discoveredPointer) syncPointerListener();
+    frameInputs = inputs;
+    drainFrameInputs();
 
     earlierMoves = lastMoves();
     frameMoves = moves;
@@ -621,11 +657,12 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     return out.targets;
   };
 
-  const player = play<StageValues>(
-    sceneSignal,
-    driver,
-    stage.cues.length === 0 ? {} : { cues: stage.cues },
-  );
+  const player = play<StageValues>(sceneSignal, driver, {
+    ...(stage.cues.length === 0 ? {} : { cues: stage.cues }),
+    retention: policy,
+    settleMs,
+  });
+  drainFrameInputs();
   syncPointerListener();
   options.onDriver?.(driver);
   let stops = (options.binders ?? []).map((binder) => binder.start(player, stage));
@@ -644,8 +681,10 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       if (!visible || value === undefined) return;
       if (ran !== undefined && !ran.has(target.member.name)) return;
       writer.applyTargetPose(target, value);
+      drainFrameInputs();
     });
   }
+  drainFrameInputs();
 
   let remeasureQueued = false;
   const cancelRemeasure = (): void => {
@@ -785,8 +824,10 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       remeasure(true);
       for (const stop of stops) stop();
       player.replace(sceneSignal, nextStage.cues);
+      drainFrameInputs();
       syncPointerListener();
       stops = (options.binders ?? []).map((binder) => binder.start(player, stage));
+      drainFrameInputs();
     },
     send(name, value, target) {
       if (!live) return;

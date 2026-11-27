@@ -58,7 +58,14 @@ export interface HandoffInput {
 }
 
 function nodesOf(target: BoundTarget): readonly PageElement[] {
-  return target.member.kind === "list" ? target.items : [target.node];
+  switch (target.member.kind) {
+    case "list":
+      return target.items;
+    case "actor":
+      return [target.node];
+    default:
+      return unreachable(target.member);
+  }
 }
 
 /** Coordinates Web Animations scroll-timeline and trigger handoff for compositor-eligible elements. */

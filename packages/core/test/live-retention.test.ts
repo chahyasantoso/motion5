@@ -7,7 +7,9 @@ import {
   atProgress,
   baseIndexOf,
   baselineOf,
+  compactedBeforeOf,
   createStore,
+  derivedEvents,
   easeTo,
   eventLog,
   generationOf,
@@ -20,6 +22,7 @@ import {
   scroll,
   shared,
   snapshot,
+  sourceStreamOf,
   span,
   springTo,
   state,
@@ -29,6 +32,7 @@ import {
   transition,
   velocity,
   watchClock,
+  watchedTime,
   withProbeStore,
   withStore,
   type MotionEvent,
@@ -262,5 +266,140 @@ describe("RuntimeStore and live retention", () => {
       () => trailed(liveAt(10_000), log.events),
     );
     expect(usesSettled).toEqual([]);
+  });
+
+  it("keeps sourceStreamOf, generation, and non-continuous state intact across derivedEvents live compaction", () => {
+    let folds = 0;
+    const score = state(0, (current, ev) => {
+      folds += 1;
+      return ev.name === "point" || ev.name === "cue-bonus"
+        ? current + (typeof ev.value === "number" ? ev.value : 1)
+        : current;
+    });
+    const cues: MotionEvent[] = [
+      { name: "cue-bonus", at: 200, value: 10 },
+      { name: "cue-bonus", at: 4500, value: 5 },
+    ];
+    const log = eventLog({ retention: { kind: "live", windowMs: 1000 } });
+    const merger = derivedEvents();
+    const store = createStore();
+
+    withStore(store, () => {
+      log.add({ name: "point", at: 500, value: 2 });
+      const m1 = merger.resolve(cues, log.events, 600);
+      expect(sourceStreamOf(m1)).toBeDefined();
+      const gen1 = generationOf(m1);
+      expect(score(liveAt(600), m1)).toBe(12);
+      const folds1 = folds;
+
+      log.add({ name: "point", at: 2500, value: 3 });
+      const m2 = merger.resolve(cues, log.events, 2600);
+      expect(sourceStreamOf(m2)).toBe(sourceStreamOf(m1));
+      expect(generationOf(m2)).toBe(gen1);
+      expect(compactedBeforeOf(m2)).toBe(1500);
+      expect(score(liveAt(2600), m2)).toBe(15);
+      expect(folds).toBe(folds1 + 1);
+
+      log.add({ name: "point", at: 4600, value: 4 });
+      const m3 = merger.resolve(cues, log.events, 4600);
+      expect(sourceStreamOf(m3)).toBe(sourceStreamOf(m1));
+      expect(generationOf(m3)).toBe(gen1);
+      expect(score(liveAt(4600), m3)).toBe(24);
+    });
+  });
+
+  it("ignores late events before compactedBefore without incrementing baseIndex or double-folding", () => {
+    const log = eventLog({ retention: { kind: "live", windowMs: 1000 } });
+    const count = state(0, (current, ev) => (ev.name === "tap" ? current + 1 : current));
+    const store = createStore();
+
+    log.add({ name: "tap", at: 100 });
+    log.add({ name: "tap", at: 500 });
+    withStore(store, () => {
+      expect(count(liveAt(600), log.events)).toBe(2);
+    });
+    log.add({ name: "tap", at: 2000 });
+    const baseBeforeLate = baseIndexOf(log.events);
+    withStore(store, () => {
+      expect(count(liveAt(2100), log.events)).toBe(3);
+    });
+
+    // Late event strictly older than compactedBefore (1000) is dropped cleanly.
+    log.add({ name: "tap", at: 400 });
+    expect(baseIndexOf(log.events)).toBe(baseBeforeLate);
+    withStore(store, () => {
+      expect(count(liveAt(2200), log.events)).toBe(3);
+      log.add({ name: "tap", at: 2250 });
+      expect(count(liveAt(2300), log.events)).toBe(4);
+    });
+  });
+
+  it("propagates continuous baseline jumps after skipped compaction into springTo without clobbering anchorValue", () => {
+    const log = eventLog({ retention: { kind: "live", windowMs: 1000 } });
+    const sprung = springTo(scroll.y, (y) => y, { stiffness: 170, damping: 26 });
+    const store = createStore();
+
+    withStore(store, () => {
+      log.add({ name: INPUT_EVENTS.scroll, at: 100, value: 50 });
+      expect(sprung(liveAt(2000), log.events)).toBeCloseTo(50, 2);
+
+      // Multiple events + compaction advance log completely past previous cursor without evaluation in between.
+      log.add({ name: INPUT_EVENTS.scroll, at: 5000, value: 300 });
+      log.add({ name: INPUT_EVENTS.scroll, at: 9000, value: 300 });
+      // At t = 8050, baseline compacted to 300 at 8000; spring must be transitioning toward 300, not stuck at 50 or snapped.
+      const mid = sprung(liveAt(8050), log.events);
+      expect(mid).toBeGreaterThan(50);
+      expect(mid).toBeLessThan(300);
+
+      // Fresh downstream reader started after compaction also probes anchorValue cleanly without crashing.
+      const store2 = createStore();
+      const freshSprung = springTo(scroll.y, (y) => y, { stiffness: 170, damping: 26 });
+      log.add({ name: INPUT_EVENTS.scroll, at: 9100, value: 400 });
+      const stepsBefore = scroll.y.steps(liveAt(9100), log.events);
+      expect(stepsBefore.length).toBeGreaterThan(0);
+      const startVal = withStore(store2, () => freshSprung(liveAt(9150), log.events));
+      expect(Number.isFinite(startVal)).toBe(true);
+    });
+  });
+
+  it("unwraps watchedTime and catches same-ms goal changes at now in trail and trailTurn", () => {
+    const step = state(0, (c, e) => (e.name === "jump" ? 100 : c));
+    const trailed = trail((t, e) => step(t, e), { stiffness: 120, damping: 14 });
+    const turned = trailTurn((t, e) => ({ rotation: step(t, e) }), { stiffness: 120, damping: 14 });
+    const log = eventLog();
+    log.add({ name: "jump", at: 100 });
+
+    // Settled far past memoryMs: wrapped watchedTime must NOT receive "maybe".
+    const settledUses: string[] = [];
+    watchClock(
+      (use) => settledUses.push(use),
+      () => {
+        trailed(watchedTime(liveAt(10_000)), log.events);
+        turned(watchedTime(liveAt(10_000)), log.events);
+      },
+    );
+    expect(settledUses).toEqual([]);
+
+    // On the exact ms a new jump arrives, trail and trailTurn must report stillMoving().
+    log.add({ name: "jump2", at: 10_500 });
+    const step2 = state(0, (c, e) => (e.name === "jump2" ? 100 : c));
+    const t2 = trail((t, e) => step2(t, e), { stiffness: 120, damping: 14 });
+    const r2 = trailTurn((t, e) => ({ rotation: step2(t, e) }), { stiffness: 120, damping: 14 });
+    const onArriveUses: string[] = [];
+    watchClock(
+      (use) => onArriveUses.push(use),
+      () => {
+        t2(liveAt(10_500), log.events);
+        r2(liveAt(10_500), log.events);
+      },
+    );
+    expect(onArriveUses).toEqual(["time", "time"]);
+  });
+
+  it("reports loopsForever according to pipeline order between .in(Span) and .loop(ms)", () => {
+    const base = motion((t): { readonly x: number } => ({ x: t.progress * 10 }));
+    expect(base.in(span(0, 1000)).loop(200).loopsForever).toBe(false);
+    expect(base.loop(200).in(span(0, 1000)).loopsForever).toBe(true);
+    expect(base.loop(200).loopsForever).toBe(true);
   });
 });

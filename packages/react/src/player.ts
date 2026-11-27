@@ -285,12 +285,18 @@ export function useSignal<T extends object, V>(
         }
       });
       subscribed = true;
-      return stop;
+      return () => {
+        stop();
+        cache.current = undefined;
+      };
     },
     [player, signal],
   );
   const getSnapshot = (): V | undefined => {
-    if (player === undefined) return undefined;
+    if (player === undefined) {
+      cache.current = undefined;
+      return undefined;
+    }
     const held = cache.current;
     if (held !== undefined && held.player === player && held.signal === signal) return held.value;
     let seeded: { readonly value: V } | undefined;

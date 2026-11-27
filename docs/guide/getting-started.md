@@ -50,7 +50,7 @@ export function PieceFrame() {
 ```
 
 Define `scene` and `clock` outside the component, or `usePlayer` restarts. `useTarget` writes the pose every frame
-with no render, `useSignal` follows scene state synchronously, and `useMount` / `<Stage>` mount compiled stage scenes onto a React ref with zero wrapper nodes.
+with no render, `useSignal` follows scene state synchronously, `useMount` mounts compiled stage scenes onto a React ref with zero wrapper nodes, and `<Stage>` renders a container `<div>` around its children.
 
 ## Seeking by hand
 

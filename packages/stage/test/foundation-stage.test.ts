@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { provenanceOf } from "../src/provenance/index";
 import {
   INPUT_EVENTS,
   createStore,
@@ -24,6 +25,7 @@ import {
   object,
   partCounts,
   placementOf,
+  poseOf,
   restReader,
   scene,
   scrollPoint,
@@ -32,7 +34,9 @@ import {
   stayWith,
   travel,
   withPlacement,
+  type Drive,
   type InputNeed,
+  type MotionContext,
   type Moves,
   type Stage,
 } from "../src/index";
@@ -286,5 +290,92 @@ describe("Slice 2 foundation stage contracts", () => {
     expect(inputs.get("pointerBox")).toEqual({ scroll: false, pointer: true, events: false });
     expect(inputs.get("clickBox")).toEqual({ scroll: false, pointer: false, events: true });
     expect(inputs.get("clockBox")).toEqual({ scroll: false, pointer: false, events: false });
+  });
+
+  it("propagates InputNeed and marks MORE drive through stayWith and historical context.read without polluting moves", () => {
+    const a = box("a");
+    const b = box("b");
+    const followB = beat("followB", 400);
+    const readB = beat("readB", 400);
+    const scrollBeat = beat("sc", { scroll: [scrollPoint(0), scrollPoint(500)] });
+    const stg = compile(
+      scene(
+        { length: 1000 },
+        a.moves(bind({ x: (t, ev) => scroll.y(t, ev) })),
+        b.moves(
+          stayWith(a).in(followB),
+          motion<Pose2d, MotionContext>((t, ctx) => {
+            const past = ctx?.read(a, { time: t });
+            return { y: (past?.x ?? 0) * 0.5 };
+          }).in(readB),
+        ),
+      ),
+    );
+    expect(scrollBeat).toBeDefined();
+
+    const moves = new Map<string, Moves>();
+    const drives = new Map<string, Drive>();
+    const inputs = new Map<string, InputNeed>();
+    const log = eventLog();
+    log.add({ name: INPUT_EVENTS.scroll, at: 100, value: 80 });
+
+    const out = frame(stg, {
+      time: { progress: 1, clock: { kind: "timed", elapsed: 1000, length: 1000 } },
+      events: log.events,
+      moves,
+      drives,
+      inputs,
+    });
+    expect(out.targets.b).toEqual({ x: 80, y: 40 });
+    expect(moves.get("b")).toBeUndefined();
+    expect(drives.get("b")?.kind).toBe("more");
+    expect(inputs.get("b")).toEqual({ scroll: true, pointer: false, events: false });
+  });
+
+  it("shifts multi-shot element context.read probes by the active shot clock and records per-step provenance shot names", () => {
+    const target = box("target");
+    const reader = box("reader");
+    const b1 = beat("b1", 500);
+    const b2 = beat("b2", 500);
+
+    const shot1 = scene(
+      { name: "s1", length: 500 },
+      target.moves(motion((t): Pose2d => ({ x: 100 * t.progress })).in(b1)),
+      reader.moves(
+        motion<Pose2d, MotionContext>((t, ctx) => {
+          const readPrev = ctx?.read(target, { time: t });
+          return { x: readPrev?.x ?? 0 };
+        }).in(b1),
+      ),
+    );
+    const shot2 = scene(
+      { name: "s2", length: 500 },
+      target.moves(motion((t): Pose2d => ({ x: 200 * t.progress })).in(b2)),
+      reader.moves(
+        motion<Pose2d, MotionContext>((t, ctx) => {
+          const readPrev = ctx?.read(target, { time: t });
+          return { y: readPrev?.x ?? 0 };
+        }).in(b2),
+      ),
+    );
+    const combined = scene({}, shot(shot1, { name: "intro" }), shot(shot2, { name: "outro" }));
+    const prov = provenanceOf(combined);
+    expect(
+      prov.members.reader?.steps
+        .filter((s) => s.kind === "motion")
+        .map((s) => (s.kind === "motion" && s.window?.kind === "beat" ? s.window.beat : undefined)),
+    ).toEqual(["intro.b1", "outro.b2"]);
+
+    const stg = compile(combined);
+    const halfIntro = frame(stg, {
+      time: { progress: 0.25, clock: { kind: "timed", elapsed: 250, length: 1000 } },
+    });
+    expect(poseOf(halfIntro.targets.reader)?.x).toBeCloseTo(50, 6);
+
+    const halfOutro = frame(stg, {
+      time: { progress: 0.75, clock: { kind: "timed", elapsed: 750, length: 1000 } },
+    });
+    // At scene 750ms, shot2 reads target at 750ms (shot1 rested 100 + shot2 half 100 = 200).
+    expect(poseOf(halfOutro.targets.reader)?.y).toBeCloseTo(200, 6);
   });
 });

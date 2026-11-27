@@ -207,4 +207,35 @@ describe("Player retention, snapshots, and event announcements", () => {
     expect(elapsedMs).toBeLessThan(5000);
     vi.fn();
   });
+
+  it("does not announce player.on handlers when seeking backward across a checkpoint under window retention", () => {
+    const md = manualDriver({ durationMs: 2000 });
+    const log = eventLog();
+    const hits: string[] = [];
+    const player = play(
+      (t, ev) => ({ clicks: state(0, (n, e) => (e.name === "pageHit" ? n + 1 : n))(t, ev) }),
+      { ...md, events: () => log.events },
+      { retention: { kind: "window", windowMs: 1200, maxCheckpoints: 3 } },
+    );
+    player.on("cueHit", (ev) => hits.push(`cue@${ev.at}`));
+    player.on("pageHit", (ev) => hits.push(`page@${ev.at}`));
+    player.replace(
+      (t, ev) => ({ clicks: state(0, (n, e) => (e.name === "pageHit" ? n + 1 : n))(t, ev) }),
+      [
+        { name: "cueHit", at: 200 },
+        { name: "cueHit", at: 700 },
+      ],
+    );
+
+    log.add({ name: "pageHit", at: 250 });
+    md.seekMs(400);
+    md.seekMs(800);
+    expect(hits).toEqual(["cue@200", "page@250", "cue@700"]);
+
+    // Seeking backward across checkpoint@0 to 750ms must replay state internally without re-firing events in (0, 750].
+    hits.length = 0;
+    md.seekMs(750);
+    expect(hits).toEqual([]);
+    expect(player.values.clicks).toBe(1);
+  });
 });

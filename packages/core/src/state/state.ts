@@ -30,6 +30,7 @@ export interface State<S> extends Signal<S> {
 export interface StepMeta {
   readonly resetId: number;
   readonly base: number;
+  readonly anchorAt: number;
 }
 
 const STEP_META = new WeakMap<readonly Step<unknown>[], StepMeta>();
@@ -117,7 +118,11 @@ export function buildState<S>(
       steps: clonedSteps,
       taken: existing.taken?.slice(),
     };
-    STEP_META.set(clonedSteps, { resetId: next.resetId, base: next.stepBase });
+    STEP_META.set(clonedSteps, {
+      resetId: next.resetId,
+      base: next.stepBase,
+      anchorAt: next.anchorAt,
+    });
     cellSlot.set(next);
     return next;
   };
@@ -167,7 +172,11 @@ export function buildState<S>(
         seenStream: stream,
         seenGeneration: generation,
       };
-      STEP_META.set(sliced, { resetId, base: existing.stepBase });
+      STEP_META.set(sliced, {
+        resetId,
+        base: existing.stepBase,
+        anchorAt: existing.anchorAt,
+      });
       cellSlot.set(rewound);
       return rewound;
     }
@@ -193,6 +202,21 @@ export function buildState<S>(
       }
     }
 
+    const trimStepsBefore = (cell: StateCell<S>, cutoff: number): void => {
+      const trim = upperBoundStrictlyBefore(cell.steps, cutoff);
+      if (trim === 0) return;
+      const lastTrimmed = cell.steps[trim - 1];
+      cell.anchorValue = lastTrimmed === undefined ? cell.anchorValue : lastTrimmed.value;
+      cell.anchorAt = lastTrimmed === undefined ? cutoff : Math.min(cutoff, lastTrimmed.at);
+      cell.steps.splice(0, trim);
+      cell.stepBase += trim;
+      STEP_META.set(cell.steps, {
+        resetId: cell.resetId,
+        base: cell.stepBase,
+        anchorAt: cell.anchorAt,
+      });
+    };
+
     let work: StateCell<S>;
     if (!resumes || existing === undefined) {
       const initial = initialOf === undefined ? start : initialOf(events);
@@ -213,7 +237,7 @@ export function buildState<S>(
         seenStream: stream,
         seenGeneration: generation,
       };
-      STEP_META.set(steps, { resetId, base: 0 });
+      STEP_META.set(steps, { resetId, base: 0, anchorAt: -Infinity });
       cellSlot.set(work);
     } else {
       work = ensureOwned(existing, epoch) ?? existing;
@@ -221,10 +245,43 @@ export function buildState<S>(
       work.seenStream = stream;
       work.seenGeneration = generation;
       if (generation !== undefined && work.cursorLogical < base) {
-        // Events between previous cursor and compacted base were evicted; re-seed continuous baseline if available.
+        if (
+          compactedBefore !== undefined &&
+          compactedBefore > work.anchorAt &&
+          work.steps.length > 0
+        ) {
+          trimStepsBefore(work, compactedBefore);
+        }
+        // Re-seed continuous baseline after compaction outpaced the cursor without clobbering anchors.
         if (initialOf !== undefined) {
-          work.current = initialOf(events);
-          work.anchorValue = work.current;
+          const prevCurrent = work.current;
+          const reseeded = initialOf(events);
+          const boundedNow =
+            now === undefined
+              ? compactedBefore !== undefined && Number.isFinite(compactedBefore)
+                ? compactedBefore
+                : Math.max(0, work.latest)
+              : Math.min(
+                  now,
+                  compactedBefore !== undefined && Number.isFinite(compactedBefore)
+                    ? compactedBefore
+                    : now,
+                );
+          if (!Object.is(reseeded, prevCurrent)) {
+            work.anchorValue = prevCurrent;
+            work.anchorAt = boundedNow - 1e-6;
+            work.current = reseeded;
+            work.steps.push({ at: boundedNow, value: reseeded });
+            work.latest = Math.max(work.latest, boundedNow);
+          } else {
+            work.anchorValue = reseeded;
+            work.anchorAt = Math.max(work.anchorAt, boundedNow - 1e-6);
+          }
+          STEP_META.set(work.steps, {
+            resetId: work.resetId,
+            base: work.stepBase,
+            anchorAt: work.anchorAt,
+          });
         }
         work.cursorLogical = base;
       }
@@ -248,16 +305,7 @@ export function buildState<S>(
     }
 
     if (compactedBefore !== undefined && compactedBefore > work.anchorAt && work.steps.length > 0) {
-      const trim = upperBoundStrictlyBefore(work.steps, compactedBefore);
-      if (trim > 0) {
-        const lastTrimmed = work.steps[trim - 1];
-        work.anchorValue = lastTrimmed === undefined ? work.anchorValue : lastTrimmed.value;
-        work.anchorAt =
-          lastTrimmed === undefined ? compactedBefore : Math.min(compactedBefore, lastTrimmed.at);
-        work.steps.splice(0, trim);
-        work.stepBase += trim;
-        STEP_META.set(work.steps, { resetId: work.resetId, base: work.stepBase });
-      }
+      trimStepsBefore(work, compactedBefore);
     }
 
     return work;

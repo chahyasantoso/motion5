@@ -2,7 +2,7 @@
 
 Examples of the calls a scene makes; every export with its signature is in [the reference](./reference/README.md).
 
-Hooks and components that play a scene without extra DOM wrappers or extra renders. `useMount(ref, scene, options)` mounts onto an existing element ref (`<Stage>` wraps `useMount` directly with no extra `<div>`); `useSignal` reads scene signals synchronously via `useSyncExternalStore`. Define the scene, driver factory and cues outside the component. For a list target, give each element its own `useTarget` on the list with a `render` that picks its index.
+Hooks and components that play a scene without extra renders. `useMount(ref, scene, options)` mounts onto an existing element ref with zero wrapper DOM nodes (`<Stage>` wraps `useMount` inside a container `<div>` around its children); `useSignal` reads scene signals synchronously via `useSyncExternalStore`. Define the scene, driver factory and cues outside the component. For a list target, give each element its own `useTarget` on the list with a `render` that picks its index.
 
 ```tsx
 const rootRef = useRef<HTMLDivElement>(null);

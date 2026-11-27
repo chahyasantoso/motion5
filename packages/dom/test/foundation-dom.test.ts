@@ -738,4 +738,87 @@ describe("Slice 4 foundation: @gerak/dom retention, coalescing, routing, SVG pla
     expect((driver.events?.() ?? []).length).toBeLessThanOrEqual(1050);
     driver.dispose();
   });
+
+  it("tracks lazy 2D list part inputs for pointermove attachment and per-channel routing", () => {
+    const part0 = new FakeNode("items");
+    const part1 = new FakeNode("items");
+    const scrollTarget = new FakeScrollTarget();
+    const root = new FakeRoot([part0, part1], scrollTarget);
+    const frames = fakeFrames();
+    let ms = 0;
+
+    const piece = scene(
+      { length: 1000 },
+      box("items", { parts: true }).moves(
+        motion((t, ctx): Pose2d => {
+          const ev = ctx?.events ?? [];
+          return { x: pointer.x(t, ev) * 100 + (ctx?.index ?? 0) * 10, y: scroll.y(t, ev) };
+        }),
+      ),
+    );
+    const mounted = mount(piece, { root, scrollTarget, frames, clock: "live", now: () => ms });
+    expect(root.listenerCount("pointermove")).toBe(1);
+
+    ms = 50;
+    scrollTarget.scrollY = 45;
+    scrollTarget.fireScroll();
+    frames.tick(ms);
+    expect(part0.style.transform).toBe("translate3d(50px, 45px, 0px)");
+
+    ms = 80;
+    root.fire("pointermove", { clientX: 800, clientY: 100 });
+    frames.tick(ms);
+    expect(part0.style.transform).toBe("translate3d(80px, 45px, 0px)");
+    expect(part1.style.transform).toBe("translate3d(90px, 45px, 0px)");
+
+    mounted.dispose();
+  });
+
+  it("wires window retention into Player and skips redundant rAF scheduling after tick flush", () => {
+    const card = new FakeNode("card");
+    const scrollTarget = new FakeScrollTarget();
+    const root = new FakeRoot([card], scrollTarget);
+    const frames = fakeFrames();
+    let ms = 0;
+
+    const piece = scene(
+      { length: 1000 },
+      box("card").moves(motion((t, ctx): Pose2d => ({ y: scroll.y(t, ctx?.events ?? []) }))),
+    );
+    const mounted = mount(piece, {
+      root,
+      scrollTarget,
+      frames,
+      clock: "live",
+      settleMs: 100,
+      retention: { kind: "window", windowMs: 600, maxCheckpoints: 3 },
+      now: () => ms,
+    });
+
+    // Advance past introMs cleanly so frame loop rests unless an external input schedules it.
+    ms = 1200;
+    frames.tick(ms);
+    expect(frames.pending).toBe(0);
+
+    // Send event between cp@0 and later cp@1000 / cp@1700, ensuring Player owns window compaction.
+    ms = 1000;
+    mounted.send("mark", 1, "card");
+    frames.tick(1000);
+    ms = 1050;
+    mounted.send("between", 2, "card");
+    ms = 1700;
+    frames.tick(1700);
+    // Player checkpoint anchor at 1700 with floor=1100 is cp@1000, so event@1050 must still be retained.
+    expect(mounted.events().some((ev) => ev.name === "between" && ev.at === 1050)).toBe(true);
+
+    // Flushing a scroll sample in tick() when already settled should not schedule an extra empty rAF.
+    ms = 3000;
+    scrollTarget.scrollY = 200;
+    scrollTarget.fireScroll();
+    expect(frames.pending).toBe(1);
+    frames.tick(3000);
+    expect(frames.pending).toBe(0);
+
+    mounted.dispose();
+  });
 });

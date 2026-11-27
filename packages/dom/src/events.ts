@@ -146,11 +146,10 @@ function windowMsOf(policy: RetentionPolicy | undefined): number | undefined {
   if (policy === undefined) return undefined;
   switch (policy.kind) {
     case "all":
+    case "window":
       return undefined;
     case "live":
       return policy.windowMs ?? 4000;
-    case "window":
-      return policy.windowMs;
     default:
       return unreachable(policy);
   }

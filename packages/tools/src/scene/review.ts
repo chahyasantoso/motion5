@@ -442,6 +442,7 @@ function sampleStageFrames(
   let latest: EvaluatedSample | undefined;
   const driver = manualDriver({ durationMs: stage.durationMs });
   let at = 0;
+  const playStart = performance.now();
   play(
     (time, seen) => {
       latest = evaluate(stage, input, time, seen, at);
@@ -450,11 +451,16 @@ function sampleStageFrames(
     driver,
     { cues: mergeEvents(stage.cues, events) },
   );
+  const initialCost = performance.now() - playStart;
   const costs: number[] = [];
   const evaluated = ms.map((next, index) => {
     at = next;
+    if (index === 0 && next === 0 && latest !== undefined) {
+      costs.push(initialCost);
+      return latest;
+    }
     const start = performance.now();
-    if (!(index === 0 && next === 0 && latest !== undefined)) driver.seekMs(next);
+    driver.seekMs(next);
     costs.push(performance.now() - start);
     return latest ?? evaluate(stage, input, driver.now(), NO_EVENTS, next);
   });

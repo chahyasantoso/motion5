@@ -84,10 +84,13 @@ export function captureMaterials(
 
 /** Collects materials referenced by more than one node across `roots`. */
 export function findSharedMaterials(roots: Iterable<Object3D>): ReadonlySet<Material> {
+  const visited = new Set<Object3D>();
   const counts = new Map<Material, number>();
   const shared = new Set<Material>();
   for (const root of roots) {
     root.traverse((node) => {
+      if (visited.has(node)) return;
+      visited.add(node);
       const raw: unknown = Reflect.get(node, "material");
       const list = asMaterialList(raw);
       if (list === undefined) return;

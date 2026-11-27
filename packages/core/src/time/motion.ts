@@ -37,7 +37,7 @@ export interface Motion<T, C = unknown> {
   readonly isAmbient: boolean;
   /** Plays over `window`: holds start before and end after, and runs `ease(progress)` inside when `ease` is given. */
   in(window: InWindow, ease?: Ease): Motion<T, C>;
-  /** Repeats every `ms`, before `in` is applied. */
+  /** Repeats every `ms`, applied in call order with `in`. */
   loop(ms: number): Motion<T, C>;
   /** Replaces the fields it sets, from the start of its span or window on. */
   take(): Motion<T, C>;
@@ -85,21 +85,20 @@ function isMotionWindow(value: unknown): value is MotionWindow {
 
 function build<T, C>(fn: (time: Time, context?: C) => T, traits: Traits): Motion<T, C> {
   const { steps } = traits;
-  let hasLoop = false;
-  let hasSpan = false;
+  let seenSpan = false;
+  let loopsForever = false;
   for (const step of steps) {
     switch (step.kind) {
       case "loop":
-        hasLoop = true;
+        if (!seenSpan) loopsForever = true;
         break;
       case "in":
-        if (isSpan(step.window)) hasSpan = true;
+        if (isSpan(step.window)) seenSpan = true;
         break;
       default:
         unreachable(step);
     }
   }
-  const loopsForever = hasLoop && !hasSpan;
   const run = (time: Time, context?: C): T => {
     let current = time;
     for (let index = 0; index < steps.length; index += 1) {

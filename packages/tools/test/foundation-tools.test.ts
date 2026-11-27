@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   createStore,
+  elapsedOf,
   liveAt,
   motion,
   snapshot,
@@ -364,5 +365,47 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
     expect(snapshot(callerStore)).toEqual(before);
     // 6 passes used >= 50 evaluations (44 forward + 6 seek); 3 passes uses <= 28 evaluations.
     expect(evals).toBeLessThanOrEqual(28);
+  });
+
+  it("counts frame-0 evaluation cost against budget and tracks @import inside sibling css files", () => {
+    const dir = tempDir("sibling-css-import-");
+    mkdirSync(join(dir, "tokens"), { recursive: true });
+    const page = join(dir, "demo.html");
+    const siblingCss = join(dir, "demo.css");
+    const importedCss = join(dir, "tokens", "colors.css");
+    writeFileSync(importedCss, ":root { --bg: #000; }\n");
+    writeFileSync(siblingCss, '@import "./tokens/colors.css";\nbody { background: var(--bg); }\n');
+    writeFileSync(page, "<!doctype html><html><body></body></html>");
+
+    const before = pageDigest(page);
+    writeFileSync(importedCss, ":root { --bg: #fff; }\n");
+    expect(pageDigest(page)).not.toBe(before);
+
+    // Simulate an expensive frame-0 evaluation in a stage module while keeping subsequent steps fast.
+    const built = compileScene(
+      scene(
+        { length: 64 },
+        box("slow").moves(
+          motion((t): Pose2d => {
+            if ((elapsedOf(t.clock) ?? 0) === 0) {
+              const until = performance.now() + 25;
+              while (performance.now() < until) {
+                /* spin only on frame 0 */
+              }
+            }
+            return { x: 10 * t.progress };
+          }),
+        ),
+      ),
+    );
+    if (!built.ok) throw new Error(built.errors.map(formatStageError).join("\n"));
+    const reviewed = reviewSceneModule(moduleFromStage(built.stage), {
+      ...SCENE_LIMITS,
+      jump: DEFAULT_LIMITS.jump,
+      hold: 0,
+      budget: 5,
+    });
+    expect(reviewed.kind).toBe("reviewed");
+    expect(reviewed.findings.some((f) => f.includes("budget") || f.includes("ms"))).toBe(true);
   });
 });

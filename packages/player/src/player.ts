@@ -164,11 +164,11 @@ export function play<T extends object>(
     for (const handler of [...set]) handler(event);
   };
 
-  const announce = (now: number | undefined, page: Events): void => {
+  const announce = (now: number | undefined, page: Events, forcedSeekBack = false): void => {
     const from = reached;
     reached = now;
     if (now === undefined) return;
-    const seekBack = from !== undefined && now < from;
+    const seekBack = forcedSeekBack || (from !== undefined && now < from);
 
     if (!seekBack && from !== undefined && now > from && handlers.size > 0) {
       for (const cue of cues) {
@@ -306,14 +306,9 @@ export function play<T extends object>(
     const prevNow = elapsedOf(time.clock);
     const nextTime = driver.now();
     const nextNow = elapsedOf(nextTime.clock);
+    const isSeekBack = nextNow !== undefined && prevNow !== undefined && nextNow < prevNow;
 
-    if (
-      retention.kind === "window" &&
-      nextNow !== undefined &&
-      prevNow !== undefined &&
-      nextNow < prevNow &&
-      checkpoints.length > 0
-    ) {
+    if (retention.kind === "window" && isSeekBack && checkpoints.length > 0) {
       let pickIdx = 0;
       for (let i = 0; i < checkpoints.length; i += 1) {
         const cp = checkpoints[i];
@@ -346,7 +341,7 @@ export function play<T extends object>(
         for (const notify of [...listeners]) notify();
       }
     });
-    announce(nextNow, page);
+    announce(nextNow, page, isSeekBack);
     runRetention(nextNow, page);
   };
 

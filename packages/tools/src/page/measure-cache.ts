@@ -154,31 +154,39 @@ export function pageDigest(page: string): string {
   ]);
   const assets = new Set<string>();
 
-  for (const name of readdirSync(folder)
+  const siblingCss = readdirSync(folder)
     .filter((file) => file.endsWith(".css"))
-    .sort()) {
-    const cssPath = resolve(folder, name);
+    .sort()
+    .map((file) => resolve(folder, file));
+  for (const cssPath of siblingCss) {
     visitedFiles.add(cssPath);
-    hash.update(name).update(readFileSync(cssPath));
+    const cssText = readFileSync(cssPath, "utf8");
+    hash.update(basename(cssPath)).update(cssText);
   }
 
   const { css, scripts, assets: htmlAssets } = collectHtmlDeps(htmlText, folder);
   for (const asset of htmlAssets) assets.add(asset);
 
-  const cssQueue = [...css].sort();
-  while (cssQueue.length > 0) {
-    const cssPath = cssQueue.shift();
-    if (cssPath === undefined || visitedFiles.has(cssPath)) continue;
-    visitedFiles.add(cssPath);
-    const cssText = readFileSync(cssPath, "utf8");
-    hash.update(relative(folder, cssPath).replaceAll("\\", "/")).update(cssText);
-    const cssDir = dirname(cssPath);
+  const cssQueue: string[] = [];
+  const enqueueCssImports = (cssText: string, cssDir: string): void => {
     for (const match of cssText.matchAll(/@import\s+(?:url\()?["']([^"']+)["']/g)) {
       const target = match[1];
       if (target === undefined) continue;
       const imported = resolvePageAsset(cssDir, target);
       if (imported !== undefined && !visitedFiles.has(imported)) cssQueue.push(imported);
     }
+  };
+  for (const cssPath of siblingCss) {
+    enqueueCssImports(readFileSync(cssPath, "utf8"), dirname(cssPath));
+  }
+  cssQueue.push(...[...css].sort());
+  while (cssQueue.length > 0) {
+    const cssPath = cssQueue.shift();
+    if (cssPath === undefined || visitedFiles.has(cssPath)) continue;
+    visitedFiles.add(cssPath);
+    const cssText = readFileSync(cssPath, "utf8");
+    hash.update(relative(folder, cssPath).replaceAll("\\", "/")).update(cssText);
+    enqueueCssImports(cssText, dirname(cssPath));
   }
 
   const scriptQueue = [...scripts].sort();

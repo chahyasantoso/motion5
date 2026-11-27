@@ -7,7 +7,7 @@ import {
 } from "../geometry/rotation3d";
 import type { Events } from "../events/event-list";
 import type { Pose3d } from "../fields/pose3d";
-import { stillMoving } from "../state/clock-watch";
+import { rawTime, stillMoving } from "../state/clock-watch";
 import { withProbeStore } from "../state/store";
 import { elapsedOf, type Time } from "../time/time";
 import { timeAt } from "../time/time-at";
@@ -72,15 +72,15 @@ export function trailTurn(
   const stableMs =
     1000 * Math.min(0.1 / Math.sqrt(stiffness), damping > 0 ? 0.2 / damping : Infinity);
   return (time, events) => {
-    const now = elapsedOf(time.clock);
+    const raw = rawTime(time);
+    const now = elapsedOf(raw.clock);
     if (now === undefined) return turnFields(signal(time, events));
     return withProbeStore(() => {
       let at = trailStart(now, settings);
-      let goal = signal(timeAt(time, at), events);
-      let turn = quaternionOf(goal);
+      let turn = quaternionOf(signal(timeAt(raw, at), events));
       let spin: Vec3 = [0, 0, 0];
       while (at < now) {
-        goal = signal(timeAt(time, at), events);
+        const goal = signal(timeAt(raw, at), events);
         const stepMs = Math.min(settings.stepMs, now - at);
         const parts = Math.ceil(stepMs / stableMs);
         const dt = stepMs / parts / 1000;
@@ -96,10 +96,11 @@ export function trailTurn(
         }
         at += stepMs;
       }
-      const [ex, ey, ez] = errorOf(turn, quaternionOf(goal));
+      const goalNow = signal(timeAt(raw, now), events);
+      const [ex, ey, ez] = errorOf(turn, quaternionOf(goalNow));
       const off = Math.hypot(ex, ey, ez) * DEGREES;
       const speed = Math.hypot(spin[0], spin[1], spin[2]) * DEGREES;
-      if (off < settings.rest && speed < 10 * settings.rest) return turnFields(goal);
+      if (off < settings.rest && speed < 10 * settings.rest) return turnFields(goalNow);
       stillMoving();
       return eulerFromMatrix3d(matrixFromQuaternion(turn));
     });
