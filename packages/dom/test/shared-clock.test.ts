@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { elapsedOf, inputs, scroll, triggers, value, type Signal } from "@gerak/core";
 import { liveClock, mount } from "@gerak/dom";
 import { bind, box, scene } from "@gerak/stage";

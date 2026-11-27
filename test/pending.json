@@ -1,1 +1,47 @@
-[]
+[
+  {
+    "path": "packages/core/test/retention.test.ts",
+    "phase": 4,
+    "reason": "inputLog and its live window do not exist yet."
+  },
+  {
+    "path": "packages/core/test/value-at.test.ts",
+    "phase": 4,
+    "reason": "inputLog, triggers and valueAt do not exist yet."
+  },
+  {
+    "path": "packages/dom/test/live-equivalence.test.ts",
+    "phase": 4,
+    "reason": "The typed port on Mounted and the value and trigger readers do not exist yet."
+  },
+  {
+    "path": "packages/dom/test/live-window.test.ts",
+    "phase": 4,
+    "reason": "Mounted.set, Driver.input and the liveClock window do not exist yet."
+  },
+  {
+    "path": "packages/dom/test/soak.test.ts",
+    "phase": 4,
+    "reason": "The typed port, pageInputs and the dropping input log do not exist yet."
+  },
+  {
+    "path": "packages/dom/test/shared-clock.test.ts",
+    "phase": 5,
+    "reason": "liveClock and mounts sharing one clock do not exist yet."
+  },
+  {
+    "path": "packages/core/test/inputs.types.test.ts",
+    "phase": 5,
+    "reason": "The typed contract does not exist yet, and eventLog, eventDriver and send are still exported."
+  },
+  {
+    "path": "packages/dom/test/listeners-browser.test.ts",
+    "phase": 5,
+    "reason": "mount still attaches pointer, press and click listeners."
+  },
+  {
+    "path": "test/repo/adapter-boundary.test.ts",
+    "phase": 5,
+    "reason": "The boundary scan has no adapter rule yet."
+  }
+]

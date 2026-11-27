@@ -248,7 +248,7 @@ function listen(port: Pick<Driver, "set">, options: { readonly elements?: readon
 - Soak, in `packages/dom/test/soak.test.ts` on a live mount with injected `now` and `frames`: three simulated
   hours of 60 Hz `pointer-x` and scroll values plus one jar trigger and its slot values a second. It gates on
   counters, not wall time:
-  - retained input stays at or below the window times the input rate, plus one per name and target;
+  - retained input stays at or below twice the window times the input rate, since drops run in batches, plus one per name and target;
   - rule calls per frame, averaged over each drop, stay within the retained input count;
   - the jar the scene shows matches the jar the app holds.
 - Tokens: one interactive brief, a small cart or quiz page whose own state drives motion, built by a Claude Sonnet
@@ -265,7 +265,7 @@ One pull request for the plan. Each slice gets its own cold review. A slice that
 | 1 | The cookie builder proof | Same poses at every sample; jar rules in the app; no motion bookkeeping in the app |
 | 2 | Tests first: I1–I10 and the soak test, written against Decision 11 | I1 passes on `main`; the others fail on the branch for the reasons above, and only for those, and sit in `test/pending.json` under the slice that turns them green, which removes them |
 | 3 | Decisions 6–7 (input-list record, store helper) | I1 green; existing tests green |
-| 4 | Decisions 1, 2 and 5 (the port and contract, readers, retention) | I2, I4–I6, I8, I10 and the soak test green |
-| 5 | Decisions 3–4 and 5b (stop listening, `liveClock`, the adapter, the shared clock, pieces moved) | I3, I7 and I9 green; every piece and browser test green |
+| 4 | Decisions 1, 2 and 5 (the port and contract, readers, retention) | I2, I4–I6, I10 and the soak test green |
+| 5 | Decisions 3–4 and 5b (stop listening, `liveClock`, the adapter, the shared clock, pieces moved) | I3, I7, I8 and I9 green; every piece and browser test green |
 | 6 | Decision 8 | Each fix has a test that failed before it |
 | 7 | Decision 9 reviews, Decision 10 records, the token measure | Cold reviews done; tokens recorded; `check`, `test:browser` and `pack:check` green |

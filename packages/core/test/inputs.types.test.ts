@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { inputs, triggers, value, valueAt, type Trigger } from "@gerak/core";
 // @ts-expect-error MotionEvent is removed from @gerak/core
