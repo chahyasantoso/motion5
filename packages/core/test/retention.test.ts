@@ -104,6 +104,7 @@ describe("inputLog retention", () => {
       (entry) => entry.kind === "trigger" && entry.name === "jar-add",
     );
     const readAddTriggers = triggers(jar, "jar-add")(nowTime, entries);
+    expect(retainedAddTriggers.length).toBeGreaterThan(0);
     expect(readAddTriggers.map((t) => t.serial)).toEqual(retainedAddTriggers.map((t) => t.serial));
   });
 

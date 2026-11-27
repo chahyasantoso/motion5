@@ -81,6 +81,16 @@ export function typeChecks(mounted: Mounted, driver: Driver, sampleTrigger: Trig
   // @ts-expect-error undeclared target on trigger with declared targets
   void triggers(jar, "jar-remove", "slot-9");
 
+  // The same contract checks on a mount's port
+  mounted.set(jar, "jar-slot", 3, "slot-1");
+  mounted.trigger(jar, "jar-add");
+  // @ts-expect-error trigger name passed to set
+  mounted.set(jar, "jar-add", 1);
+  // @ts-expect-error value name passed to trigger
+  mounted.trigger(jar, "jar-sealed");
+  // @ts-expect-error undeclared target on value with declared targets
+  mounted.set(jar, "jar-slot", 1, "slot-9");
+
   // Old API removed from Mounted and Driver
   // @ts-expect-error send is removed from Mounted
   void mounted.send;

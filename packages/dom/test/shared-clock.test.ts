@@ -59,14 +59,14 @@ describe("shared liveClock across mounts", () => {
 
     ms = 100;
     clock.set(jar, "jar-slot", 42, "slot-0");
-    expect(frames.pending).toBeLessThanOrEqual(1);
+    expect(frames.pending).toBe(1);
     frames.tick(ms);
     expect(mountedA.player.values["slot-0"]).toEqual({ x: 42 });
     expect(mountedB.player.values["slot-0"]).toEqual({ x: 42 });
 
     ms = 200;
     mountedA.set(jar, "jar-sealed", 1);
-    expect(frames.pending).toBeLessThanOrEqual(1);
+    expect(frames.pending).toBe(1);
     frames.tick(ms);
     expect(mountedA.player.values["lid"]).toMatchObject({ rotation: 90 });
     expect(mountedB.player.values["lid"]).toMatchObject({ rotation: 90 });
@@ -74,7 +74,7 @@ describe("shared liveClock across mounts", () => {
     ms = 300;
     view.scrollY = 120;
     view.fireScroll();
-    expect(frames.pending).toBeLessThanOrEqual(1);
+    expect(frames.pending).toBe(1);
     view.scrollYReads = 0;
     frames.tick(ms);
     expect(view.scrollYReads).toBe(1);
@@ -92,7 +92,7 @@ describe("shared liveClock across mounts", () => {
     mountedA.dispose();
     ms = 500;
     mountedB.set(jar, "jar-slot", 99, "slot-1");
-    expect(frames.pending).toBeLessThanOrEqual(1);
+    expect(frames.pending).toBe(1);
     frames.tick(ms);
     expect(mountedB.player.values["slot-1"]).toEqual({ x: 99 });
 
