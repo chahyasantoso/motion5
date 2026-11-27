@@ -95,12 +95,16 @@ function isPassive(options: boolean | AddEventListenerOptions | undefined): bool
   return typeof options === "object" && options !== null && options.passive === true;
 }
 
+function isGerakSource(stack: string): boolean {
+  return /\\/packages\\/[^/]+\\/src\\//.test(stack);
+}
+
 EventTarget.prototype.addEventListener = function (
   type: string,
   listener: EventListenerOrEventListenerObject | null,
   options?: boolean | AddEventListenerOptions,
 ): void {
-  if (listener !== null) {
+  if (listener !== null && isGerakSource(new Error().stack ?? "")) {
     const entry: RecordedAdd = { target: this, type, listener, passive: isPassive(options) };
     added.push(entry);
     active.push(entry);
