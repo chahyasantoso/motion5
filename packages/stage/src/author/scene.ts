@@ -963,7 +963,7 @@ function included(state: State, scene: unknown): State {
 }
 
 function mergedEntry(first: Entry, second: Entry): Entry {
-  for (const field of ["jump", "turn", "ratio"] as const)
+  for (const field of ["jump", "turn", "ratio", "steps"] as const)
     if (first.limits[field] !== undefined && second.limits[field] !== undefined)
       throw new TypeError(`scene: sequential shots set limit \`${field}\` twice.`);
   return {
@@ -2505,7 +2505,7 @@ function shown(state: State, windows: readonly ShowWindow[]): State {
 /** The state after `.limits(limits)` on the bound element. */
 function limited(state: State, limits: Limits): State {
   const [name, entry] = entryOf(state);
-  for (const field of ["jump", "turn", "ratio"] as const)
+  for (const field of ["jump", "turn", "ratio", "steps"] as const)
     if (limits[field] !== undefined && entry.limits[field] !== undefined)
       throw new TypeError(`scene: "${name}" sets limit \`${field}\` twice.`);
   const merged = {

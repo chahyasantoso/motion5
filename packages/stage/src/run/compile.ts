@@ -336,11 +336,20 @@ function compileLimits(
   limits: Readonly<Record<string, Limits>>,
   errors: StageError[],
 ): Readonly<Record<string, Limits>> {
-  const valid = Object.values(limits).every((own) =>
-    Object.values(own).every((limit) => limit === undefined || (finite(limit) && limit >= 0)),
+  const valid = Object.values(limits).every(
+    (own) =>
+      [own.jump, own.turn, own.ratio].every(
+        (limit) => limit === undefined || (finite(limit) && limit >= 0),
+      ) &&
+      (own.steps === undefined ||
+        own.steps.every((name) => typeof name === "string" && name !== "")),
   );
   if (!valid)
-    errors.push({ kind: "invalid", field: "limits", reason: "each limit must be a number >= 0." });
+    errors.push({
+      kind: "invalid",
+      field: "limits",
+      reason: "each limit must be a number >= 0, and steps a list of custom field names.",
+    });
   return Object.freeze({ ...limits });
 }
 

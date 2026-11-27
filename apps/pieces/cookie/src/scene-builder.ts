@@ -785,10 +785,10 @@ export const builderScene: Scene = scene(
   builderCookies
     .moves(builderCookiesMotion)
     .shows(builderWindow)
-    .limits({ jump: 2.5, turn: 360, ratio: 2.1 }),
+    .limits({ jump: 2.5, turn: 360, ratio: 2.1, steps: ["flavor"] }),
   builderExitCookies
     .moves(builderExitCookiesMotion)
     .shows(builderWindow)
-    .limits({ jump: 2.5, turn: 360, ratio: 2.1 }),
+    .limits({ jump: 2.5, turn: 360, ratio: 2.1, steps: ["flavor"] }),
   builderCrumbs.moves(builderCrumbsMotion).shows(builderWindow).limits({ jump: 2.5, turn: 180 }),
 );

@@ -70,7 +70,7 @@ On an element, and on each binding it returns:
 
 - `.moves(...)` appends motions to its list; `.modifies(principle)` wraps every motion written before it.
 - `.shows(beat | scrollBeat | [from, to] | { from } | { until })` shows it only then: during a clock or scroll beat, across two beats or `scrollPoint`s, from a beat or scroll point on, or until one ends; hidden, it and its DOM descendants are hidden and may jump.
-- `.limits({ jump, turn, ratio })` sets its review limits; each field once.
+- `.limits({ jump, turn, ratio, steps })` sets its review limits; each field once. `steps` names custom fields that change in whole steps, such as an index, which review does not judge as a ratio.
 
 Each call returns a new binding and never changes the element, so a list spreads: `scene(options, ...cards.map((card) => card.moves(rise)))`. Only the order of `.moves` and `.modifies` matters.
 

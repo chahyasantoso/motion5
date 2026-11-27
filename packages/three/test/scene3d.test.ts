@@ -434,6 +434,45 @@ describe("threeBinder", () => {
     expect(sharedMat.transparent).toBe(false);
   });
 
+  it("leaves a clone alive when a later binder captured it and the first binder disposes first", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 0.8, transparent: false });
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    mesh.name = "box";
+    const root = new Object3D();
+    root.add(mesh);
+    const fading = (at: number) =>
+      compileScene(
+        scene(
+          { length: 1000 },
+          object("box").moves((t) => ({ opacity: t.progress >= at ? 0.5 : 1 })),
+        ),
+      );
+    const stageA = fading(0.25);
+    const stageB = fading(0.5);
+    if (!stageA.ok) throw new Error(stageA.errors.map(formatStageError).join("\n"));
+    if (!stageB.ok) throw new Error(stageB.errors.map(formatStageError).join("\n"));
+    const driverA = manualDriver({ durationMs: 1000 });
+    const driverB = manualDriver({ durationMs: 1000 });
+    const playerA = play((time, events) => frame(stageA.stage, { time, events }).targets, driverA);
+    const playerB = play((time, events) => frame(stageB.stage, { time, events }).targets, driverB);
+
+    const stopA = threeBinder(root).start(playerA, stageA.stage);
+    driverA.seekMs(500);
+    const cloneA = mesh.material;
+    expect(cloneA).not.toBe(sharedMat);
+    let disposedA = false;
+    cloneA.addEventListener("dispose", () => {
+      disposedA = true;
+    });
+    const stopB = threeBinder(root).start(playerB, stageB.stage);
+    driverB.seekMs(500);
+
+    stopA();
+    expect(disposedA).toBe(false);
+    stopB();
+    expect(mesh.material).toBe(cloneA);
+  });
+
   it("calls a parts list writer once per member per written frame after writing transforms, skipping other lists", () => {
     const a0 = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
     const a1 = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());

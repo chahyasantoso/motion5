@@ -30,8 +30,8 @@ Run from your project's folder. A page is a path inside the site with no leading
   frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout
   function that throws. Unmoved `"settle"` members driven by scroll, sticky ranges, trigger, pointer, or `pageInputs` interaction values (`hovered`, `pressed`, `focused`) are probed across their
   reported drivers before being flagged as never moved. A step while an element, its parent or its parts are hidden by `.shows` is not a jump. An
-  element's `.limits({ jump?, turn?, ratio? })` judges it by its own limits instead of the flags; a `custom` value is
-  judged as a ratio.
+  element's `.limits({ jump?, turn?, ratio?, steps? })` judges it by its own limits instead of the flags; a `custom` value is
+  judged as a ratio, except a field named in `steps`, such as a flavour index, which changes in whole steps unjudged.
 - **`gerak check <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--safe-zone tiktok|reels|shorts|youtube] [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other), text off the page's

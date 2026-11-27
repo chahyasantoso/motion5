@@ -168,8 +168,8 @@ branch as it stands.
   accepts a custom writer for a `parts: true` object list, so a piece sets a list member's look from its pose (the
   cookie app subscribes to `builderExitCookies` only for want of this; it moves to the writer).
 - `stage`: the shot-events cache keys on `version` and `generation`.
-- `tools`: `gerak review` reads a whole-number custom field (a flavour index) as a step, not as a jump past its
-  ratio limit.
+- `tools`: a custom field an element names in `.limits({ steps })`, such as a flavour index, is a step that
+  `gerak review` does not judge as a ratio. The element declares it; review does not guess from the values.
 - `onEvent` is deleted from `eventLog`, `clockDriver` and `mount`.
 
 ### 9. Work already on the branch that stays as built

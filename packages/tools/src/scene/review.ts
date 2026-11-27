@@ -175,28 +175,20 @@ function numbersOf(value: unknown, path: string, into: Map<string, number>): voi
 
 type FieldKind = "position" | "turn" | "ratio";
 
-function isCustomPath(path: string): boolean {
-  return /(^|\.)custom(\.|\[|$)/.test(path);
-}
-
 function kindOf(path: string): FieldKind {
-  if (isCustomPath(path)) return "ratio";
+  if (/(^|\.)custom(\.|\[|$)/.test(path)) return "ratio";
   return valueField(path.slice(path.lastIndexOf(".") + 1))?.judged ?? "position";
 }
 
-function fractionalCustomPaths(
-  numbers: readonly ReadonlyMap<string, number>[],
-): ReadonlySet<string> {
-  const fractional = new Set<string>();
-  for (const sample of numbers) {
-    for (const [path, value] of sample) {
-      if (isCustomPath(path) && !Number.isInteger(value)) fractional.add(path);
-    }
-  }
-  return fractional;
-}
+type Limits = Pick<SceneReviewRequest, "hold" | "jump" | "turn" | "ratio"> & {
+  readonly steps?: readonly string[] | undefined;
+};
 
-type Limits = Pick<SceneReviewRequest, "hold" | "jump" | "turn" | "ratio">;
+/** Whether `path` is a custom field its target declares as changing in whole steps. */
+function isDeclaredStep(path: string, limits: Limits): boolean {
+  const field = /\.custom\.([^.[]+)$/.exec(path)?.[1];
+  return field !== undefined && (limits.steps?.includes(field) ?? false);
+}
 
 /** The target a path belongs to: its first segment. */
 function targetOf(path: string): string {
@@ -211,6 +203,7 @@ function limitsFor(flags: Limits, perTarget: SceneModule["limits"], target: stri
     jump: own?.jump ?? flags.jump,
     turn: own?.turn ?? flags.turn,
     ratio: own?.ratio ?? flags.ratio,
+    steps: own?.steps,
   };
 }
 
@@ -284,7 +277,6 @@ export function reviewValues(
     for (const [name, value] of Object.entries(targets)) numbersOf(value, name, found);
     return found;
   });
-  const fractionalCustom = fractionalCustomPaths(numbers);
   numbers.forEach((now, index) => {
     const before = numbers[index - 1];
     if (before === undefined) return;
@@ -307,14 +299,10 @@ export function reviewValues(
     for (const [path, value] of now) {
       const earlier = before.get(path);
       if (earlier === undefined) continue;
-      if (isCustomPath(path) && !fractionalCustom.has(path)) continue;
       if (kindOf(path) === "turn" && turned3d.has(ownerOf(path))) continue;
-      const [step, limit] = stepAndLimit(
-        path,
-        earlier,
-        value,
-        limitsFor(limits, perTarget, targetOf(path)),
-      );
+      const own = limitsFor(limits, perTarget, targetOf(path));
+      if (isDeclaredStep(path, own)) continue;
+      const [step, limit] = stepAndLimit(path, earlier, value, own);
       if (step > limit && !hidden(path, from) && !hidden(path, at))
         jumps.push(`${path} jumps ${Math.round(step * 100) / 100} at ${at} ms`);
     }

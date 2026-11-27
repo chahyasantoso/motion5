@@ -53,14 +53,22 @@ function readLimits(
   for (const [target, entry] of Object.entries(value)) {
     if (typeof entry !== "object" || entry === null || Array.isArray(entry))
       return {
-        reason: `The module's \`limits.${target}\` must be { jump?, turn?, ratio? }.`,
+        reason: `The module's \`limits.${target}\` must be { jump?, turn?, ratio?, steps? }.`,
       };
-    const own: { jump?: number; turn?: number; ratio?: number } = {};
+    const own: { jump?: number; turn?: number; ratio?: number; steps?: readonly string[] } = {};
     for (const [field, limit] of Object.entries(entry)) {
+      if (field === "steps") {
+        if (!Array.isArray(limit) || !limit.every((name) => typeof name === "string"))
+          return {
+            reason: `The module's \`limits.${target}.steps\` must be a list of custom field names.`,
+          };
+        own.steps = limit.filter((name): name is string => typeof name === "string");
+        continue;
+      }
       const known = LIMIT_FIELDS.find((name) => name === field);
       if (known === undefined)
         return {
-          reason: `The module's \`limits.${target}.${field}\` is not a limit; use jump, turn or ratio.`,
+          reason: `The module's \`limits.${target}.${field}\` is not a limit; use jump, turn, ratio or steps.`,
         };
       if (typeof limit !== "number" || !Number.isFinite(limit) || limit < 0)
         return {

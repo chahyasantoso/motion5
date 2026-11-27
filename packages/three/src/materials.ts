@@ -182,6 +182,7 @@ export function applyObjectOpacity(
 export function restoreMaterials(target: Object3D, store: MaterialStore = DEFAULT_STORE): void {
   const state = store.objects.get(target);
   if (state === undefined) return;
+  const takenOff = new Set<Material>();
   for (const slot of state.slots) {
     if (state.applied || slot.replaced) {
       slot.materials.forEach((mat, index) => {
@@ -199,8 +200,10 @@ export function restoreMaterials(target: Object3D, store: MaterialStore = DEFAUL
     }
     if (slot.replaced && hasCurrentMaterials(slot.node, slot.materials)) {
       Reflect.set(slot.node, "material", slot.original);
+      for (const mat of slot.materials) takenOff.add(mat);
     }
   }
-  for (const mat of state.cloned) mat.dispose();
+  // A clone another mount has since captured as its original stays alive for that mount to restore.
+  for (const mat of state.cloned) if (takenOff.has(mat)) mat.dispose();
   store.objects.delete(target);
 }

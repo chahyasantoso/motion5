@@ -56,6 +56,8 @@ export interface Limits {
   readonly jump?: number | undefined;
   readonly turn?: number | undefined;
   readonly ratio?: number | undefined;
+  /** Custom fields that change in whole steps, such as an index; review skips their ratio check. */
+  readonly steps?: readonly string[] | undefined;
 }
 
 /** One shot of a scene made with `shot`: its name, place in order, and its ms on the scene's clock. */
