@@ -59,7 +59,6 @@ export {
   type ClockUse,
   type InputChannel,
 } from "./state/clock-watch";
-export { epochOf } from "./state/store";
 export { stepMetaOf, type StepMeta } from "./state/state";
 export { lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./time/lanes";
 export { CUSTOM_FIELD, POSE_2D_FIELDS, VALUE_FIELDS } from "./fields/pose";

@@ -91,11 +91,6 @@ export function storeFor(): RuntimeStore {
   return activeStore;
 }
 
-/** Current mutation epoch of `store` (bumped on snapshot, restore, and probe). */
-export function epochOf(store: RuntimeStore = activeStore): number {
-  return implOf(store).epoch;
-}
-
 /** Runs `fn` with `store` bound as the active RuntimeStore. */
 export function withStore<T>(store: RuntimeStore, fn: () => T): T {
   const previous = activeStore;

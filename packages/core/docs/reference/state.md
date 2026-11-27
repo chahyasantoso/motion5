@@ -10,7 +10,6 @@ State from events: a fold of the event log up to a time, and values that spring 
 - **`watchInputs`** `<T>(onInput: (channel: InputChannel) => void, run: () => T): T`: Runs `run`, telling `onInput` each time a scroll, pointer, or event state primitive is evaluated.
 - **`ClockUse`** `type ClockUse = "time" | "maybe"`: How a value can change with the clock alone: `time` while it is still on its way; `maybe` when code read the clock and nothing says whether it settles.
 - **`InputChannel`** `type InputChannel = "scroll" | "pointer" | "events"`: Which dynamic input channel a signal read during evaluation.
-- **`epochOf`** `(store?: RuntimeStore): number`: Current mutation epoch of `store` (bumped on snapshot, restore, and probe).
 - **`stepMetaOf`** `(steps: readonly Step<unknown>[]): StepMeta | undefined`: Internal step stream metadata (reset generation and compacted prefix count).
 - **`StepMeta`** `type StepMeta = { resetId: number; base: number; anchorAt: number }`: Monotonic compaction metadata attached to a state step list.
 - **`state`** `<S>(start: S, rule: (current: S, event: MotionEvent) => S, options?: StateOptions): State<S>`: The state `rule` folds the events into, from `start`, up to the time asked. Pure in time and events: it folds only new events, and starts again when an earlier one differs or time goes back.
@@ -18,6 +17,7 @@ State from events: a fold of the event log up to a time, and values that spring 
 - **`StateOptions`** `type StateOptions = { target?: string | readonly string[] }`: Settings of a `state`: `target`, the event target, or targets, whose events reach the rule.
 - **`Step`** `type Step<S> = { at: number; value: S }`: The moment a state changed, and what it became.
 - **`createStore`** `(): RuntimeStore`: Allocates a fresh store for an independent player or scene run.
+- **`ownCell`** `<T>(cell: StoreCell<T>, reset: (current: T) => boolean, create: (previous: T | undefined) => T, copy: (current: T) => T, store?: RuntimeStore): T`: Returns `cell`'s value owned by the active store epoch, resetting or copying on write as needed.
 - **`restore`** `(store: RuntimeStore, snap: RuntimeSnapshot): void`: Restores `store` to the state captured in `snap`.
 - **`snapshot`** `(store: RuntimeStore): RuntimeSnapshot`: Captures every cell populated in `store` as an immutable snapshot.
 - **`storeCell`** `<T>(): StoreCell<T>`: Declares an isolated cell backed per RuntimeStore without closure mutation.

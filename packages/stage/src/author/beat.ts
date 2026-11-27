@@ -3,7 +3,7 @@ import {
   UNTIMED,
   clamp,
   elapsedOf,
-  epochOf,
+  ownCell,
   scroll,
   span,
   springTo,
@@ -284,7 +284,6 @@ type TriggerFold = (
 };
 
 interface TriggerCell {
-  ownerEpoch: number;
   readonly resetId: number | undefined;
   readonly fallbackList: readonly unknown[] | undefined;
   limit: number;
@@ -304,38 +303,30 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
     const steps = scroll.y.steps(time, events);
     const meta = stepMetaOf(steps);
     const stepBase = meta?.base ?? 0;
-    const epoch = epochOf();
-    const existing = cellSlot.get();
 
-    const resets =
-      existing === undefined ||
-      threshold !== existing.limit ||
-      (meta !== undefined
-        ? meta.resetId !== existing.resetId
-        : steps !== existing.fallbackList || steps.length < existing.doneLogical);
-
-    let cell: TriggerCell;
-    if (resets || existing === undefined) {
-      const initial = scroll.y.start >= threshold;
-      cell = {
-        ownerEpoch: epoch,
-        resetId: meta?.resetId,
-        fallbackList: steps,
-        limit: threshold,
-        doneLogical: 0,
-        reached: initial,
-        started: initial ? 0 : undefined,
-        progress: 0,
-        since: 0,
-        active: initial,
-      };
-      cellSlot.set(cell);
-    } else if (existing.ownerEpoch !== epoch) {
-      cell = { ...existing, ownerEpoch: epoch, fallbackList: steps };
-      cellSlot.set(cell);
-    } else {
-      cell = existing;
-    }
+    const cell = ownCell(
+      cellSlot,
+      (existing) =>
+        threshold !== existing.limit ||
+        (meta !== undefined
+          ? meta.resetId !== existing.resetId
+          : steps !== existing.fallbackList || steps.length < existing.doneLogical),
+      () => {
+        const initial = scroll.y.start >= threshold;
+        return {
+          resetId: meta?.resetId,
+          fallbackList: steps,
+          limit: threshold,
+          doneLogical: 0,
+          reached: initial,
+          started: initial ? 0 : undefined,
+          progress: 0,
+          since: 0,
+          active: initial,
+        };
+      },
+      (existing) => ({ ...existing, fallbackList: steps }),
+    );
 
     const totalSteps = stepBase + steps.length;
     if (cell.doneLogical < stepBase) cell.doneLogical = stepBase;
