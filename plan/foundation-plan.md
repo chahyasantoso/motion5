@@ -189,6 +189,60 @@ moved into `scheduler.ts` is deleted by Decision 3, not reviewed.
   and triggers at times.
 - `docs/SESSION-STATUS.md` is rewritten for the merged state. This plan carries no status.
 
+### 11. Target API
+
+The tests of slice 2 are written against these signatures; later slices build them as written.
+
+```ts
+// @gerak/core
+interface InputSpec { readonly targets?: readonly string[] }        // no targets: any target, or none
+interface Contract<V extends Record<string, InputSpec>, T extends Record<string, InputSpec>> {
+  readonly values: V; readonly triggers: T;
+}
+function inputs<const V, const T>(spec: { readonly values?: V; readonly triggers?: T }): Contract<V, T>;
+type TargetOf<S> = S extends { targets: readonly (infer U extends string)[] } ? U : string;
+
+interface InputEntry {                       // replaces MotionEvent; `serial` is arrival order in its log
+  readonly kind: "value" | "trigger"; readonly name: string; readonly at: number;
+  readonly value: number; readonly target?: string; readonly serial: number;
+}
+type Input = readonly InputEntry[];          // replaces Events
+type Signal<T = Pose2d> = (time: Time, input: Input) => T;
+interface Trigger { readonly at: number; readonly value: number; readonly target?: string; readonly serial: number }
+
+function value(contract, name, target?): State<number>;            // 0 before any set
+function valueAt(contract, name, trigger: Trigger, target?): Signal<number>;
+function triggers(contract, name, target?): Signal<readonly Trigger[]>;  // arrival order, `at` <= now
+const pageInputs: Contract<{ scroll: {}; "pointer-x": {}; "pointer-y": {};
+  hovered: {}; pressed: {}; focused: {} }, {}>;                    // read by scroll.y, pointer.x, pointer.y
+
+interface InputLog {
+  set(at: number, contract, name, value: number, target?): void;   // records only a changed number
+  trigger(at: number, contract, name, value?: number, target?): void;  // value defaults to 1
+  readonly input: Input;
+}
+function inputLog(options?: { readonly windowMs?: number }): InputLog;  // no window: drops nothing
+
+// @gerak/player
+interface Driver {
+  now(): Time; input(): Input; subscribe(listener: () => void): () => void;
+  set(contract, name, value: number, target?): void;               // recorded at now()
+  trigger(contract, name, value?: number, target?): void;
+  readonly options?: object;
+}
+// manualDriver({ durationMs? }) implements all of Driver.
+
+// @gerak/dom
+interface LiveClock extends Driver { dispose(): void }
+function liveClock(options?: { readonly introMs?: number; readonly settleMs?: number;
+  readonly now?: () => number; readonly frames?: FrameSource }): LiveClock;   // window max(settleMs ?? 2000, 4000)
+// mount(piece, { clock: "live", settleMs, now, frames }) builds a liveClock; a LiveClock is handed to
+// one or more mounts as { kind: "driver", driver }. Mounted gains set and trigger, forwarding to
+// mounted.driver, and loses send and events.
+function listen(port: Pick<Driver, "set">, options: { readonly elements?: readonly string[];
+  readonly pointer?: boolean }): () => void;                       // in packages/dom/src/adapter/
+```
+
 ## Measure
 
 - Soak, in `packages/dom/test/soak.test.ts` on a live mount with injected `now` and `frames`: three simulated
@@ -209,7 +263,7 @@ One pull request for the plan. Each slice gets its own cold review. A slice that
 | Slice | Scope | Done when |
 | --- | --- | --- |
 | 1 | The cookie builder proof | Same poses at every sample; jar rules in the app; no motion bookkeeping in the app |
-| 2 | Tests first: I1–I10 and the soak test | I1 passes on `main`; the others fail on the branch for the reasons above, and only for those |
+| 2 | Tests first: I1–I10 and the soak test, written against Decision 11 | I1 passes on `main`; the others fail on the branch for the reasons above, and only for those, and sit in `test/pending.json` under the slice that turns them green, which removes them |
 | 3 | Decisions 6–7 (input-list record, store helper) | I1 green; existing tests green |
 | 4 | Decisions 1, 2 and 5 (the port and contract, readers, retention) | I2, I4–I6, I8, I10 and the soak test green |
 | 5 | Decisions 3–4 and 5b (stop listening, `liveClock`, the adapter, the shared clock, pieces moved) | I3, I7 and I9 green; every piece and browser test green |
