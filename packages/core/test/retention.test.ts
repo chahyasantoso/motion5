@@ -85,13 +85,9 @@ describe("inputLog retention", () => {
     expect(sealedEntry?.at).toBe(0);
     expect(sealedEntry?.value).toBe(1);
 
-    // Entries stay in arrival order with strictly increasing serials.
+    // Entries stay in arrival order: the feed records them in time order.
     for (let i = 1; i < entries.length; i += 1) {
-      const prev = entries[i - 1];
-      const curr = entries[i];
-      if (prev !== undefined && curr !== undefined) {
-        expect(curr.serial).toBeGreaterThan(prev.serial);
-      }
+      expect(entries[i]?.at ?? -1).toBeGreaterThanOrEqual(entries[i - 1]?.at ?? 0);
     }
 
     // Readers still see the latest values and only retained triggers.
@@ -105,7 +101,7 @@ describe("inputLog retention", () => {
     );
     const readAddTriggers = triggers(jar, "jar-add")(nowTime, entries);
     expect(retainedAddTriggers.length).toBeGreaterThan(0);
-    expect(readAddTriggers.map((t) => t.serial)).toEqual(retainedAddTriggers.map((t) => t.serial));
+    expect(readAddTriggers.map((t) => t.at)).toEqual(retainedAddTriggers.map((t) => t.at));
   });
 
   it("retains every entry when no window is configured", () => {

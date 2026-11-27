@@ -203,13 +203,15 @@ interface Contract<V extends Record<string, InputSpec>, T extends Record<string,
 function inputs<const V, const T>(spec: { readonly values?: V; readonly triggers?: T }): Contract<V, T>;
 type TargetOf<S> = S extends { targets: readonly (infer U extends string)[] } ? U : string;
 
-interface InputEntry {                       // replaces MotionEvent; `serial` is arrival order in its log
-  readonly kind: "value" | "trigger"; readonly name: string; readonly at: number;
-  readonly value: number; readonly target?: string; readonly serial: number;
+interface InputEntry {                       // replaces MotionEvent; a physics contact is a trigger with
+  readonly kind: "value" | "trigger";        // `other` and `point`; pointer `x`/`y` go
+  readonly name: string; readonly at: number; readonly value: number; readonly target?: string;
+  readonly other?: string; readonly point?: EventPoint;
 }
-type Input = readonly InputEntry[];          // replaces Events
+type Input = readonly InputEntry[];          // replaces Events; arrival order (`serial`) lives in the list's record
 type Signal<T = Pose2d> = (time: Time, input: Input) => T;
-interface Trigger { readonly at: number; readonly value: number; readonly target?: string; readonly serial: number }
+interface Trigger { readonly at: number; readonly value: number; readonly target?: string; readonly serial: number;
+  readonly other?: string; readonly point?: EventPoint }
 
 function value(contract, name, target?): State<number>;            // 0 before any set
 function valueAt(contract, name, trigger: Trigger, target?): Signal<number>;
