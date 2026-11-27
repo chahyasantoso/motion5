@@ -120,6 +120,9 @@ mount(piece, { clock: "live" });
           await page.addInitScript(() => {
             const driver = {
               now: () => ({ progress: 0, clock: { kind: "live" as const, elapsed: 0 } }),
+              input: () => [],
+              set: () => undefined,
+              trigger: () => undefined,
               subscribe: () => () => undefined,
             };
             Reflect.set(globalThis, Symbol.for("@gerak/dom/driver"), () => driver);

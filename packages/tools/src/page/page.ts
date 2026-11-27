@@ -264,8 +264,44 @@ async function openPageSession(
       Reflect.set(globalThis, Symbol.for("@gerak/dom/held-clock"), true);
       let currentMs = 0;
       const listeners = new Set<() => void>();
+      interface HeldEntry {
+        readonly kind: "value" | "trigger";
+        readonly name: string;
+        readonly at: number;
+        readonly value: number;
+        readonly target?: string;
+      }
+      let entries: HeldEntry[] = [];
+      const latestValues = new Map<string, number>();
+      const insertEntry = (entry: HeldEntry): void => {
+        let index = entries.length;
+        while (index > 0 && (entries[index - 1]?.at ?? 0) > entry.at) index -= 1;
+        entries = [...entries.slice(0, index), entry, ...entries.slice(index)];
+      };
       const sharedDriver = {
         now: () => ({ progress: 0, clock: { kind: "live" as const, elapsed: currentMs } }),
+        input: () => entries,
+        set: (_contract: unknown, name: string, value: number, target?: string) => {
+          const key = `${name}\0${target ?? ""}`;
+          if (Object.is(latestValues.get(key), value)) return;
+          latestValues.set(key, value);
+          insertEntry({
+            kind: "value",
+            name,
+            at: currentMs,
+            value,
+            ...(target === undefined ? {} : { target }),
+          });
+        },
+        trigger: (_contract: unknown, name: string, value = 1, target?: string) => {
+          insertEntry({
+            kind: "trigger",
+            name,
+            at: currentMs,
+            value,
+            ...(target === undefined ? {} : { target }),
+          });
+        },
         subscribe(listener: () => void) {
           listeners.add(listener);
           return () => {

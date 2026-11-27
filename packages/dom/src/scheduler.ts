@@ -1,11 +1,12 @@
 import {
   INPUT_EVENTS,
-  NO_INPUT,
   clamp,
-  derivedInput,
   elapsedOf,
+  inputLog,
+  inputs,
   liveAt,
-  type Input,
+  pageInputs,
+  versionOf,
   type Signal,
   type Time,
 } from "@gerak/core";
@@ -25,7 +26,6 @@ import {
 import { withFrameVisible } from "@gerak/stage/render";
 import type { DomWriter } from "./bind-dom";
 import { clockDriver, type ClockDriver } from "./drivers";
-import { eventRecorder, type EventRecorder } from "./events";
 import { HELD_CLOCK, hostDriver, pageFrames, type FrameSource } from "./frames";
 import type { HandoffState } from "./handoff";
 import {
@@ -49,6 +49,34 @@ import {
   type StageValues,
 } from "./host";
 import { sameRest } from "./measure-dom";
+
+const WATCHED_TRIGGERS = [
+  ["pointerenter", "enter"],
+  ["pointerleave", "leave"],
+  ["pointerdown", "down"],
+  ["pointerup", "up"],
+  ["click", "click"],
+  ["focusin", "focus"],
+  ["focusout", "blur"],
+] as const;
+
+const WATCHED_CONTRACT = inputs({
+  triggers: {
+    enter: {},
+    leave: {},
+    down: {},
+    up: {},
+    click: {},
+    focus: {},
+    blur: {},
+  },
+});
+
+function channelOfPageInput(name: string): "scroll" | "pointer" | "events" {
+  if (name === INPUT_EVENTS.scroll) return "scroll";
+  if (name === INPUT_EVENTS.pointerX || name === INPUT_EVENTS.pointerY) return "pointer";
+  return "events";
+}
 
 function mergeMemberInput(map: Map<string, InputNeed>, name: string, added: InputNeed): boolean {
   const prev = map.get(name);
@@ -96,8 +124,6 @@ export interface MountRuntime {
   getLines(): Readonly<Record<string, readonly number[]>>;
   remeasure(forceHandOff?: boolean): void;
   replace(nextStage: Stage, rebind: () => void): void;
-  send(name: string, value: number, target?: string): void;
-  events(): Input;
   dispose(allNodes: readonly PageElement[]): void;
 }
 
@@ -241,52 +267,69 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
 
   let pendingScroll: { readonly value: number; readonly at: number } | undefined;
   let pendingPointer: { readonly x: number; readonly y: number; readonly at: number } | undefined;
-  let activeChannel: "scroll" | "pointer" | "events" = "events";
 
-  const liveWindowMs =
-    timed === undefined && given === undefined ? Math.max(settleMs, 4000) : undefined;
-  const recorder: EventRecorder = eventRecorder(
-    () => (given === undefined ? elapsed() : driverMs(given)),
-    (at) => {
-      activeUntil = Math.max(activeUntil, at + settleMs);
-      switch (activeChannel) {
-        case "scroll":
-          dirtyScroll = true;
-          break;
-        case "pointer":
-          dirtyPointer = true;
-          break;
-        case "events":
-          dirtyEvents = true;
-          break;
-        default:
-          return unreachable(activeChannel);
-      }
-      if (given === undefined) {
-        if (!inTick) schedule();
-      } else {
-        notify();
-      }
-    },
-    liveWindowMs === undefined ? undefined : { windowMs: liveWindowMs },
-  );
+  const markLiveInput = (at: number, channel: "scroll" | "pointer" | "events"): void => {
+    activeUntil = Math.max(activeUntil, at + settleMs);
+    switch (channel) {
+      case "scroll":
+        dirtyScroll = true;
+        break;
+      case "pointer":
+        dirtyPointer = true;
+        break;
+      case "events":
+        dirtyEvents = true;
+        break;
+      default:
+        return unreachable(channel);
+    }
+    if (!inTick) schedule();
+  };
+
+  const makeLiveDriver = (): Driver => {
+    const log = inputLog({ windowMs: Math.max(settleMs, 4000) });
+    return {
+      now: (): Time => liveAt(elapsed()),
+      input: () => log.input,
+      options,
+      set(contract, name, value, target) {
+        if (!live) return;
+        const at = elapsed();
+        const before = versionOf(log.input);
+        log.set(at, contract, name, value, target);
+        if (versionOf(log.input) !== before) {
+          markLiveInput(at, Object.is(contract, pageInputs) ? channelOfPageInput(name) : "events");
+        }
+      },
+      trigger(contract, name, value, target) {
+        if (!live) return;
+        const at = elapsed();
+        log.trigger(at, contract, name, value, target);
+        markLiveInput(at, "events");
+      },
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    };
+  };
+
+  const driver: Driver = timed !== undefined ? timed : given !== undefined ? given : makeLiveDriver();
 
   const flushPendingInputs = (): void => {
     const scrollSample = pendingScroll;
     if (scrollSample !== undefined) {
       pendingScroll = undefined;
       lastScrollY = scrollSample.value;
-      activeChannel = "scroll";
-      recorder.sample(INPUT_EVENTS.scroll, scrollSample.value, undefined, scrollSample.at);
-      activeChannel = "events";
+      driver.set(pageInputs, INPUT_EVENTS.scroll, scrollSample.value);
     }
     const pointerSample = pendingPointer;
     if (pointerSample !== undefined) {
       pendingPointer = undefined;
-      activeChannel = "pointer";
-      recorder.sample(INPUT_EVENTS.pointerX, pointerSample.x, undefined, pointerSample.at);
-      recorder.sample(INPUT_EVENTS.pointerY, pointerSample.y, undefined, pointerSample.at);
-      activeChannel = "events";
+      driver.set(pageInputs, INPUT_EVENTS.pointerX, pointerSample.x);
+      driver.set(pageInputs, INPUT_EVENTS.pointerY, pointerSample.y);
     }
   };
 
@@ -308,14 +351,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       }
     }
     return names;
-  };
-
-  const mergedEvents = derivedInput();
-  const sceneEvents = (): Input => {
-    const handed = given?.events?.() ?? NO_INPUT;
-    return handed.length === 0
-      ? recorder.log
-      : mergedEvents.resolve(recorder.log, handed, undefined);
   };
 
   const syncScrollPoll = (at: number): void => {
@@ -348,13 +383,13 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
 
     const heldTriggers = hostedLive || Reflect.get(globalThis, HELD_CLOCK) === true;
     if (whole) {
-      handoff.syncTriggers(clockMs(), sceneEvents(), currentReader, heldTriggers);
+      handoff.syncTriggers(clockMs(), driver.input(), currentReader, heldTriggers);
       runOnly = handoff.engineOnly;
       notify();
       runOnly = undefined;
     } else {
       if (scrollChanged || eventsChanged) {
-        handoff.syncTriggers(clockMs(), sceneEvents(), currentReader, heldTriggers);
+        handoff.syncTriggers(clockMs(), driver.input(), currentReader, heldTriggers);
       }
       const names = movingNow(maybeNext);
       for (const member of stage.members) {
@@ -390,43 +425,28 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   }
 
   if (lastScrollY !== 0) {
-    activeChannel = "scroll";
-    recorder.sample(INPUT_EVENTS.scroll, lastScrollY, undefined, 0);
-    activeChannel = "events";
+    inTick = true;
+    try {
+      driver.set(pageInputs, INPUT_EVENTS.scroll, lastScrollY);
+    } finally {
+      inTick = false;
+    }
     dirtyScroll = false;
   }
 
   const unwatch: (() => void)[] = [];
-  const forgets: unknown = given === undefined ? undefined : Reflect.get(given, "forgets");
-  if (typeof forgets === "function") {
-    const stop: unknown = Reflect.apply(forgets, given, [() => recorder.clear()]);
-    if (typeof stop === "function") unwatch.push(() => void Reflect.apply(stop, undefined, []));
-  }
   const watchTarget = (name: string, node: PageElement): (() => void) => {
-    if (timed !== undefined) return timed.watch(name, node);
-    const readRect = node.getBoundingClientRect;
-    const wrapped: typeof node = {
-      addEventListener: (type, listener) => {
-        const onEvent = (event: StageEvent): void => {
-          flushPendingInputs();
-          listener(event);
-        };
-        node.addEventListener(type, onEvent);
-        wrappedListeners.set(listener, onEvent);
-      },
-      removeEventListener: (type, listener) => {
-        const stored = wrappedListeners.get(listener) ?? listener;
-        node.removeEventListener(type, stored);
-        wrappedListeners.delete(listener);
-      },
-      ...(readRect === undefined
-        ? {}
-        : { getBoundingClientRect: () => Reflect.apply(readRect, node, []) }),
-      style: node.style,
-      textContent: node.textContent,
+    const removers = WATCHED_TRIGGERS.map(([type, triggerName]) => {
+      const listener = (): void => {
+        flushPendingInputs();
+        driver.trigger(WATCHED_CONTRACT, triggerName, 1, name);
+      };
+      node.addEventListener(type, listener);
+      return () => node.removeEventListener(type, listener);
+    });
+    return () => {
+      for (const remove of removers) remove();
     };
-    const wrappedListeners = new WeakMap<(e: StageEvent) => void, (e: StageEvent) => void>();
-    return recorder.watch(name, wrapped);
   };
   for (const target of targets) {
     const member = target.member;
@@ -449,14 +469,12 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     const nextY = readScrollYOf(scrollTarget, root);
     const known = pendingScroll?.value ?? lastScrollY;
     if (nextY === known) return;
-    const at = given === undefined ? elapsed() : driverMs(given);
     if (given !== undefined) {
       lastScrollY = nextY;
-      activeChannel = "scroll";
-      recorder.sample(INPUT_EVENTS.scroll, nextY, undefined, at);
-      activeChannel = "events";
+      driver.set(pageInputs, INPUT_EVENTS.scroll, nextY);
       return;
     }
+    const at = elapsed();
     pendingScroll = { value: nextY, at };
     activeUntil = Math.max(activeUntil, at + settleMs);
     maybeNext = true;
@@ -470,14 +488,12 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     if (!(vp.width > 0 && vp.height > 0)) return;
     const x = clamp(event.clientX / vp.width, 0, 1);
     const y = clamp(event.clientY / vp.height, 0, 1);
-    const at = given === undefined ? elapsed() : driverMs(given);
     if (given !== undefined) {
-      activeChannel = "pointer";
-      recorder.sample(INPUT_EVENTS.pointerX, x, undefined, at);
-      recorder.sample(INPUT_EVENTS.pointerY, y, undefined, at);
-      activeChannel = "events";
+      driver.set(pageInputs, INPUT_EVENTS.pointerX, x);
+      driver.set(pageInputs, INPUT_EVENTS.pointerY, y);
       return;
     }
+    const at = elapsed();
     pendingPointer = { x, y, at };
     activeUntil = Math.max(activeUntil, at + settleMs);
     maybeNext = true;
@@ -509,46 +525,10 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
         const at = clockMs();
         syncScrollPoll(at);
         flushPendingInputs();
-        handoff.syncTriggers(at, sceneEvents(), currentReader, hostedLive);
+        handoff.syncTriggers(at, given.input(), currentReader, hostedLive);
       }),
     );
   }
-
-  function handedOver(source: Driver): Driver {
-    return {
-      now: () => source.now(),
-      events: sceneEvents,
-      ...(source.options === undefined ? {} : { options: source.options }),
-      subscribe(listener) {
-        const wrapped = (): void => {
-          listener();
-          drainFrameInputs();
-        };
-        listeners.add(wrapped);
-        const stop = source.subscribe(wrapped);
-        return () => {
-          listeners.delete(wrapped);
-          stop();
-        };
-      },
-    };
-  }
-
-  const driver: Driver =
-    timed ??
-    (given === undefined
-      ? {
-          now: (): Time => liveAt(elapsed()),
-          events: (): Input => recorder.log,
-          options,
-          subscribe(listener) {
-            listeners.add(listener);
-            return () => {
-              listeners.delete(listener);
-            };
-          },
-        }
-      : handedOver(given));
 
   let lastFrame: FrameOutput | undefined;
   let lastSceneMs = 0;
@@ -650,7 +630,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       readMaxScroll: () => readMaxScrollOf(doc),
       readScrollY: () => readScrollYOf(scrollTarget, root),
       clockMs,
-      events: sceneEvents,
+      events: () => driver.input(),
     });
   };
   runHandOff();
@@ -685,7 +665,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     else if (handoff.hasTriggers) {
       handoff.syncTriggers(
         at,
-        sceneEvents(),
+        driver.input(),
         currentReader,
         hostedLive || Reflect.get(globalThis, HELD_CLOCK) === true,
       );
@@ -769,27 +749,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       stops = (options.binders ?? []).map((binder) => binder.start(player, stage));
       drainFrameInputs();
     },
-    send(name, value, target) {
-      if (!live) return;
-      flushPendingInputs();
-      const channel =
-        name === INPUT_EVENTS.scroll
-          ? "scroll"
-          : name === INPUT_EVENTS.pointerX || name === INPUT_EVENTS.pointerY
-            ? "pointer"
-            : "events";
-      if (timed === undefined) {
-        activeChannel = channel;
-        recorder.sample(name, value, target);
-        activeChannel = "events";
-      } else {
-        timed.send(name, value, target);
-      }
-    },
-    events() {
-      flushPendingInputs();
-      return timed === undefined ? recorder.log : timed.events();
-    },
     dispose(allNodes) {
       if (!live) return;
       live = false;
@@ -812,7 +771,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       fonts?.removeEventListener("loadingdone", fontsLoaded);
       for (const stop of unwatch) stop();
       handoff.release();
-      recorder.dispose();
       player.dispose();
       timed?.dispose();
       for (const stop of stops) stop();
