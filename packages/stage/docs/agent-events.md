@@ -19,7 +19,7 @@ const lift = springTo(over, (on) => (on ? -14 : 0));
 export default scene({ length: 900 }, card.moves(bind({ y: lift })));
 ```
 
-With `@gerak/moves`, `follow({ start: 0, on: { enter: -14, leave: 0 }, target: "card" })` is the same spring from an event table.
+With `@gerak/moves`, `follow(goalState)` (or `follow(value(contract, "lift", "card"))`) is the same spring towards a `State<number>`.
 
 - `input` holds every `InputEntry` up to the current time, oldest first: `{ kind, name, at, value, target?, other?, point? }` in ms.
 - Watch a still wrapper element if the moving child leaves under the cursor.

@@ -74,6 +74,14 @@ On an element, and on each binding it returns:
 
 Each call returns a new binding and never changes the element, so a list spreads: `scene(options, ...cards.map((card) => card.moves(rise)))`. Only the order of `.moves` and `.modifies` matters.
 
+## App input
+
+The app owns rules and every state that lasts (what is selected, what is in a jar, what a click means); a scene only describes motion from two kinds of input declared once in a typed `Contract` via `inputs({ values?, triggers? })`:
+
+- **Values** (`value(contract, name, target?)`): how something is now, as a `State<number>` starting at 0 (`springTo`, `easeTo`, `transition`, and `follow` take it). `valueAt(contract, name, trigger, target?)` reads the value as it was when `trigger` arrived.
+- **Triggers** (`triggers(contract, name, target?)`): discrete moments with `at <= now` in arrival order (the retention window on a live clock, all of them on a timed clock), which `react` plays on.
+- `state` and `tally` stay as folds for timed scenes; on a live page a fold sees only each name-and-target's latest entry and the retention window.
+
 ## Motions
 
 A motion is a core `Motion` or a plain `(time, context) => pose`.

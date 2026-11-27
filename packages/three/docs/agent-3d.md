@@ -88,7 +88,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
   `{ Jaw: (pose) => { poses["Jaw"] = pose; } }`, and call `applyBones(skeleton, poses)` in `draw` before rendering.
   Capture before moving or turning the model; place the model by a parent group instead.
 - **Talking:** drive a jaw bone (`{ rotationX: open * 18 }`) or a morph target from
-  `follow({ start: 0, on: { mouthOpen: "value" } })(time, events)`, with the samples (`talk.json`, imported with
+  `follow(value(voice, "mouthOpen"))(time, events)`, with `voice = inputs({ values: { mouthOpen: {} } })` and the samples (`talk.json`, imported with
   `with { type: "json" }`) exported as `cues`. Morph targets are custom numbers: `morphTargets(gltf.scene)` from
   `"@gerak/three"` is the fourth argument to `applyPose3d`, and `pose.custom` names the targets, clamped to `[0, 1]`.
 - **Readiness:** a page that awaits an async asset before calling `mount` registers `ready(bootstrap())` from `"@gerak/dom"`, warming shaders synchronously via `renderer.compile(world, camera)` + `draw()` + `renderer.getContext().finish()` (never `compileAsync` or `requestAnimationFrame`: timer-polled waits stall paused-clock page tools) so the promise settles right after mounting, and rejects from the loader's error callback, so the frame tools fail at once on a missing model instead of timing out.

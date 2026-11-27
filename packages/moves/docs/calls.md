@@ -74,7 +74,7 @@ overshoot({ share, amount })((t) => anticipation({ share, amount })((u) => slide
 `trail`, `follow` and `velocity` take the scene's time, never an eased one (`@gerak/core` owns `ease`, `mix`, `keyframes`, `along`, `combine`, `velocity` and `seeded`).
 
 ```ts
-import { along, combine, combine3d, lift2d, mix, mixPoint, mixPose3d, seeded, smear, smear3d, toCubics, toCubics3d, trail, trailTurn, velocity, velocity3d } from "@gerak/core";
+import { along, combine, combine3d, inputs, lift2d, mix, mixPoint, mixPose3d, seeded, smear, smear3d, toCubics, toCubics3d, trail, trailTurn, triggers, value, velocity, velocity3d } from "@gerak/core";
 import { follow, react, squashed, squashed3d } from "@gerak/moves";
 
 const tail = trail((t) => body(t).rotation ?? 0, { damping: 10 });
@@ -91,8 +91,9 @@ tailTurn(time, events);
 combine3d([squashed3d({ squash: 0.3 })(landing), ball]);
 const { pose: pose3d, turn } = smear3d(velocity3d(body, time, events), { stretch: 0.08, max: 1.8 });
 
-const lift = follow({ start: 0, on: { enter: -12, leave: 0 }, target: "card" });
-const give = react({ on: ["catch"], kind: "wobble", amplitude: 26 });
+const ui = inputs({ values: { lift: { targets: ["card"] } }, triggers: { catch: {} } });
+const lift = follow(value(ui, "lift", "card"));
+const give = react(triggers(ui, "catch"), { kind: "wobble", amplitude: 26 });
 ```
 
 Writing a move: a plain function from options to a function of time. It checks its options when it is built and fills their defaults.

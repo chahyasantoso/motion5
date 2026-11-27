@@ -13,4 +13,4 @@ Generated from doc comments by `npm run reference -- --write`; one page per sour
 - [events](./events.md), 19 exports: An event is something that happened at a moment, such as a hover, a press or a landing, carried beside the scene's time.
 - [utility](./utility.md), 3 exports: Small shared helpers: a seeded random, a clamp and an exhaustive-switch guard.
 - [principles](./principles.md), 25 exports: The motion principles as signal transforms: squash and stretch, anticipation, follow-through, overlap, arcs, exaggeration and secondary action, each built from its options then given a signal.
-- [state](./state.md), 34 exports: State from events: a fold of the event log up to a time, and values that spring or ease when the state changes.
+- [state](./state.md), 38 exports: State from events: a fold of the event log up to a time, and values that spring or ease when the state changes.
