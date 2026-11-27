@@ -2,6 +2,7 @@
 
 **Date:** 2026-11-26
 **Status:** Accepted and built, 2026-11-26.
+**Superseded in part by [ADR-209](./ADR-209-app-state-and-motion-boundary.md), 2026-11-27:** a mount on a handed driver no longer records pointer, watched-element, or `send` input (`scroll` is still read there); every driver owns its own typed `inputLog`.
 
 ## Context
 

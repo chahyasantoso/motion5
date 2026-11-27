@@ -185,7 +185,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-178 — Layouts the stage measures, and carrying between boxes — Accepted, 2026-11-13 — superseded in part
 - ADR-179 — Installable outside the repository, and not published — Accepted, 2026-11-13 — superseded in part
 - ADR-180 — Rigging vector artwork — Accepted, 2026-11-13
-- ADR-181 — Live inputs — Accepted, 2026-11-14
+- ADR-181 — Live inputs — Accepted, 2026-11-14 — superseded in part
 - ADR-182 — Rigged 3D characters and bodies in depth — Accepted, 2026-11-14
 - ADR-183 — 2D over 3D on one clock — Accepted, 2026-11-14
 - ADR-184 — Scenes that stay fast — Accepted, 2026-11-14
@@ -211,5 +211,6 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-204 — Exact held frames and fast capture — Accepted, 2026-11-25
 - ADR-205 — The Studio canvas as its own package — Accepted, 2026-11-25
 - ADR-206 — The Studio command bus, follow mode and pins — Accepted and built, 2026-11-25.
-- ADR-207 — A mount runs on a driver it is handed — Accepted and built, 2026-11-26.
-- ADR-208 — Per-player runtime store, bounded live retention, and foundation consolidation — Accepted and built, 2026-11-27.
+- ADR-207 — A mount runs on a driver it is handed — Accepted and built, 2026-11-26. — superseded in part
+- ADR-208 — Per-player runtime store, bounded live retention, and foundation consolidation — Accepted and built, 2026-11-27. — superseded in part
+- ADR-209 — App-owned state, typed input port, and opt-in DOM listening — Accepted and built, 2026-11-27.

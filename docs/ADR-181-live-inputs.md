@@ -1,6 +1,7 @@
 # ADR-181: Live inputs
 
 **Status:** Accepted, 2026-11-14
+**Superseded in part by [ADR-209](./ADR-209-app-state-and-motion-boundary.md), 2026-11-27:** `MountedStage.send`, `events()`, raw `MotionEvent` samples, and `follow` reading `"value"` streams; app input now goes through `set`/`trigger` against a typed `Contract`.
 
 ## Context
 

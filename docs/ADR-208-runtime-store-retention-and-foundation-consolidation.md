@@ -2,6 +2,7 @@
 
 **Date:** 2026-11-27
 **Status:** Accepted and built, 2026-11-27.
+**Superseded in part by [ADR-209](./ADR-209-app-state-and-motion-boundary.md), 2026-11-27:** `RetentionPolicy` (`"live" | "window" | "all"`), `baseIndex` compaction, `RuntimeStore`/`Player` `snapshot`/`restore`, `epochOf` export, `onEvent`, and `eventDriver`/mount pointer listeners.
 
 ## Context
 

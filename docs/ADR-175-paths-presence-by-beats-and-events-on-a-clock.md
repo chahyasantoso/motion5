@@ -3,6 +3,7 @@
 **Status:** Accepted, 2026-11-12
 **Superseded in part by ADR-190:** the cast, list values, visibility and frame evaluation of stage v3.
 **Superseded in part by ADR-193:** how a piece is written.
+**Superseded in part by [ADR-209](./ADR-209-app-state-and-motion-boundary.md), 2026-11-27:** events on a clock and `watch` listening; drivers own typed `inputLog`s and `mount` attaches no user-interaction DOM listeners beyond passive `scroll`.
 
 ## Context
 
