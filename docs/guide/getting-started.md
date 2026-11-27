@@ -31,10 +31,11 @@ if (title !== null) player.subscribe("title", (pose) => applyValue(title, pose))
 
 ```tsx
 import { useRef } from "react";
-import { clockDriver } from "@gerak/dom";
+import { clockDriver, liveClock } from "@gerak/dom";
 import { useMount, usePlayer, useTarget } from "@gerak/react";
 
 const clock = () => clockDriver({ duration: durationMs });
+const live = liveClock();
 
 export function Title() {
   const playing = usePlayer(scene, clock);
@@ -44,7 +45,7 @@ export function Title() {
 
 export function PieceFrame() {
   const rootRef = useRef<HTMLDivElement>(null);
-  useMount(rootRef, stageScene, { clock: "live" });
+  useMount(rootRef, stageScene, { clock: { kind: "driver", driver: live } });
   return <div ref={rootRef}><h1 data-cast="title">Hello</h1></div>;
 }
 ```
