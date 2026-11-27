@@ -3,6 +3,7 @@ import { basename, dirname, resolve } from "node:path";
 import {
   INPUT_EVENTS,
   NO_INPUT,
+  elapsedOf,
   liveAt,
   mergeInput,
   pathBounds,
@@ -874,14 +875,22 @@ function timedScenePass(
   events: Input = NO_INPUT,
 ): { readonly samples: Samples; readonly costs: readonly number[] } {
   const driver = manualDriver({ durationMs: module.durationMs });
+  const initStart = performance.now();
   const player = play(module.scene, driver, { cues: mergeInput(module.cues, events) });
+  const initCost = performance.now() - initStart;
   const samples: { readonly at: number; readonly targets: Readonly<Record<string, unknown>> }[] =
     [];
   const costs: number[] = [];
-  for (const at of ms) {
-    const start = performance.now();
-    driver.seekMs(at);
-    costs.push(performance.now() - start);
+  for (let index = 0; index < ms.length; index += 1) {
+    const at = ms[index];
+    if (at === undefined) continue;
+    if (index === 0 && at === 0) {
+      costs.push(initCost);
+    } else {
+      const start = performance.now();
+      driver.seekMs(at);
+      costs.push(performance.now() - start);
+    }
     samples.push({ at, targets: Object.fromEntries(Object.entries(player.values)) });
   }
   return { samples, costs };
@@ -894,8 +903,11 @@ function timedSteps(
   events: Input = NO_INPUT,
 ): readonly number[] {
   const driver = manualDriver({ durationMs: module.durationMs });
+  const initStart = performance.now();
   play(module.scene, driver, { cues: mergeInput(module.cues, events) });
-  return ms.map((at) => {
+  const initCost = performance.now() - initStart;
+  return ms.map((at, index) => {
+    if (index === 0 && at === 0) return initCost;
     const start = performance.now();
     driver.seekMs(at);
     return performance.now() - start;
@@ -947,13 +959,14 @@ function verifyOverBudgetSeeks(
 ): readonly number[] {
   if (!seeks.some((cost) => cost > budget)) return seeks;
   const checkDriver = manualDriver({ durationMs: module.durationMs });
-  play(module.scene, checkDriver, { cues: mergeInput(module.cues, events) });
+  const checkPlayer = play(module.scene, checkDriver, { cues: mergeInput(module.cues, events) });
   return seeks.map((cost, index) => {
     if (cost <= budget) return cost;
     const at = order[index];
     if (at === undefined) return cost;
     const start = performance.now();
-    checkDriver.seekMs(at);
+    if (elapsedOf(checkPlayer.time.clock) === at) checkPlayer.refresh();
+    else checkDriver.seekMs(at);
     return Math.min(cost, performance.now() - start);
   });
 }
