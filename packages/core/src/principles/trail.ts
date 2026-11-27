@@ -1,4 +1,4 @@
-import type { Events } from "../events/event-list";
+import type { Input } from "../events/event-list";
 import { spring, springMemory } from "../ease/spring";
 import { rawTime, stillMoving } from "../state/clock-watch";
 import { withProbeStore } from "../state/store";
@@ -68,9 +68,9 @@ export function trailStart(now: number, settings: TrailSettings): number {
 /** A value chasing `signal(time, events)` on a spring, for follow-through and drag. Pass the scene's
  * time: the signal applies its own spans and eases. */
 export function trail(
-  signal: (time: Time, events: Events) => number,
+  signal: (time: Time, events: Input) => number,
   options: TrailOptions,
-): (time: Time, events: Events) => number {
+): (time: Time, events: Input) => number {
   const settings = trailSettings(options, "trail");
   return (time, events) => {
     const raw = rawTime(time);

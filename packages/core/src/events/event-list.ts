@@ -1,45 +1,40 @@
-/** Something that happened at `at` ms on the scene's clock: a hover, a press, a landing, or a sample of a
- * live number; `target` names where. */
-export interface MotionEvent {
+/** Something sampled or triggered at `at` ms on the scene's clock: a continuous `"value"` or discrete `"trigger"`. */
+export interface InputEntry {
+  readonly kind: "value" | "trigger";
   readonly name: string;
   readonly at: number;
+  readonly value: number;
   readonly target?: string;
-  /** Where a pointer event happened, in px from the watched element's top left corner. */
-  readonly x?: number;
-  readonly y?: number;
-  /** A sample's number, such as how far a mouth is open; `follow` reads it with `"value"`. */
-  readonly value?: number;
-  /** Where a contact touched, in the scene's units: px in 2D, with `z` in 3D. */
-  readonly point?: EventPoint;
   /** The other body or collider a contact touched. */
   readonly other?: string;
+  /** Where a contact or action happened, in the scene's units: px in 2D, with `z` in 3D. */
+  readonly point?: EventPoint;
 }
 
-/** A point an event happened at, in the scene's units; `z` only in 3D. */
+/** A point an entry happened at, in the scene's units; `z` only in 3D. */
 export interface EventPoint {
   readonly x: number;
   readonly y: number;
   readonly z?: number;
 }
 
-/** Every event so far, oldest first; a scene reads it beside its time. */
-export type Events = readonly MotionEvent[];
+/** Every input entry so far, oldest first; a scene reads it beside its time. */
+export type Input = readonly InputEntry[];
 
-/** Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y`, a
- * `value`, a `point` of numbers and an `other`. */
-export function isMotionEvent(value: unknown): value is MotionEvent {
+/** Whether `value` is an `InputEntry`: `kind`, `name`, `at`, `value` and optional `target`, `point` and `other`. */
+export function isInputEntry(value: unknown): value is InputEntry {
   if (typeof value !== "object" || value === null) return false;
-  const optional = (key: string, kind: "string" | "number") => {
+  const kind: unknown = Reflect.get(value, "kind");
+  if (kind !== "value" && kind !== "trigger") return false;
+  const optional = (key: string, expected: "string") => {
     const field: unknown = Reflect.get(value, key);
-    return field === undefined || typeof field === kind;
+    return field === undefined || typeof field === expected;
   };
   return (
     typeof Reflect.get(value, "name") === "string" &&
     typeof Reflect.get(value, "at") === "number" &&
+    typeof Reflect.get(value, "value") === "number" &&
     optional("target", "string") &&
-    optional("x", "number") &&
-    optional("y", "number") &&
-    optional("value", "number") &&
     isOptionalPoint(Reflect.get(value, "point")) &&
     optional("other", "string")
   );
@@ -56,10 +51,10 @@ function isOptionalPoint(point: unknown): boolean {
   );
 }
 
-/** The empty event list; share it rather than allocating one. */
-export const NO_EVENTS: Events = Object.freeze([]);
+/** The empty input list; share it rather than allocating one. */
+export const NO_INPUT: Input = Object.freeze([]);
 
-/** Several event lists as one, oldest first; a scene's own cues joined with the page's events. */
-export function mergeEvents(...lists: readonly Events[]): Events {
+/** Several input lists as one, oldest first; a scene's own cues joined with the page's input. */
+export function mergeInput(...lists: readonly Input[]): Input {
   return lists.flat().sort((a, b) => a.at - b.at);
 }

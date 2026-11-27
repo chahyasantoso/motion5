@@ -1,4 +1,4 @@
-import type { Events } from "../events/event-list";
+import type { Input } from "../events/event-list";
 import { versionOf } from "../events/event-log";
 import {
   notifyClockUse,
@@ -28,7 +28,7 @@ function sameClock(a: Clock, b: Clock): boolean {
 
 interface SharedCell<T> {
   readonly time: Time;
-  readonly events: Events;
+  readonly events: Input;
   readonly version: number | undefined;
   readonly value: T;
   readonly usedTime: boolean;

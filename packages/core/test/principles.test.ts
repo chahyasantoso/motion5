@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  NO_EVENTS,
+  NO_INPUT,
   anticipation,
   anticipation3d,
   arc,
@@ -33,13 +33,13 @@ const running3d = (time: Time): Pose3d => ({ x: Math.min(ms(time), 1000) / 5 });
 
 describe("squashStretch", () => {
   it("keeps the area while it stretches along the travel", () => {
-    const pose = squashStretch({ stretch: 0.5, max: 3 })(running)(liveAt(500), NO_EVENTS);
+    const pose = squashStretch({ stretch: 0.5, max: 3 })(running)(liveAt(500), NO_INPUT);
     expect(pose.scaleX).toBeGreaterThan(1);
     expect((pose.scaleX ?? 0) * (pose.scaleY ?? 0)).toBeCloseTo(1);
   });
 
   it("keeps the volume in 3D", () => {
-    const pose = squashStretch3d({ stretch: 0.01, max: 3 })(running3d)(liveAt(500), NO_EVENTS);
+    const pose = squashStretch3d({ stretch: 0.01, max: 3 })(running3d)(liveAt(500), NO_INPUT);
     expect(pose.scaleX).toBeGreaterThan(1);
     expect((pose.scaleX ?? 0) * (pose.scaleY ?? 0) * (pose.scaleZ ?? 0)).toBeCloseTo(1);
   });
@@ -62,19 +62,19 @@ describe("anticipation", () => {
       [1, 200],
     ];
     for (const [progress, x] of recorded)
-      expect(wound(timed(progress), NO_EVENTS).x).toBeCloseTo(x, 9);
+      expect(wound(timed(progress), NO_INPUT).x).toBeCloseTo(x, 9);
   });
 
   it("goes the other way first and ends where the signal ends", () => {
     const wound = anticipation(options)(line);
-    expect(wound(timed(0.1), NO_EVENTS).x).toBeCloseTo(-0.15 * 200);
-    expect(wound(timed(1), NO_EVENTS).x).toBeCloseTo(200);
+    expect(wound(timed(0.1), NO_INPUT).x).toBeCloseTo(-0.15 * 200);
+    expect(wound(timed(1), NO_INPUT).x).toBeCloseTo(200);
   });
 
   it("winds up a 3D signal the same way", () => {
     const wound = anticipation3d(options)(line3d);
-    expect(wound(timed(0.1), NO_EVENTS).x).toBeCloseTo(-30);
-    expect(wound(timed(1), NO_EVENTS).x).toBeCloseTo(200);
+    expect(wound(timed(0.1), NO_INPUT).x).toBeCloseTo(-30);
+    expect(wound(timed(1), NO_INPUT).x).toBeCloseTo(200);
   });
 
   it("refuses a bad option", () => {
@@ -87,20 +87,20 @@ describe("followThrough", () => {
   const spring = { stiffness: 170, damping: 26 };
   it("lags the signal, then ends on its end", () => {
     const followed = followThrough(spring)(running);
-    expect(followed(liveAt(500), NO_EVENTS).x).toBeLessThan(100);
-    expect(followed(liveAt(8000), NO_EVENTS).x).toBe(200);
+    expect(followed(liveAt(500), NO_INPUT).x).toBeLessThan(100);
+    expect(followed(liveAt(8000), NO_INPUT).x).toBe(200);
   });
 
   it("turns the short way across the seam", () => {
     const turning = (time: Time): Pose2d => ({ rotation: ms(time) < 500 ? 350 : 10 });
-    const rotation = followThrough(spring)(turning)(liveAt(560), NO_EVENTS).rotation ?? 0;
+    const rotation = followThrough(spring)(turning)(liveAt(560), NO_INPUT).rotation ?? 0;
     expect(Math.abs(rotation)).toBeLessThan(40);
   });
 
   it("follows a 3D signal and ends on it", () => {
     const followed = followThrough3d(spring)(running3d);
-    expect(followed(liveAt(500), NO_EVENTS).x).toBeLessThan(100);
-    expect(followed(liveAt(8000), NO_EVENTS).x).toBe(200);
+    expect(followed(liveAt(500), NO_INPUT).x).toBeLessThan(100);
+    expect(followed(liveAt(8000), NO_INPUT).x).toBe(200);
   });
 
   it("refuses a bad option", () => {
@@ -112,13 +112,13 @@ describe("followThrough", () => {
 describe("overlap", () => {
   it("holds the start before the lag, then plays the signal late", () => {
     const late = overlap({ lagMs: 100 })(running);
-    expect(late(liveAt(50), NO_EVENTS).x).toBe(0);
-    expect(late(liveAt(300), NO_EVENTS).x).toBeCloseTo(40);
+    expect(late(liveAt(50), NO_INPUT).x).toBe(0);
+    expect(late(liveAt(300), NO_INPUT).x).toBeCloseTo(40);
   });
 
   it("holds a 3D signal the same way", () => {
     const late = overlap({ lagMs: 100 })(running3d);
-    expect(late(liveAt(50), NO_EVENTS).x).toBe(0);
+    expect(late(liveAt(50), NO_INPUT).x).toBe(0);
   });
 
   it("refuses a negative lag", () => {
@@ -129,16 +129,16 @@ describe("overlap", () => {
 describe("arc", () => {
   it("is 0 at both ends and bend at the middle", () => {
     const bowed = arc({ bend: 40 })(line);
-    expect(bowed(timed(0), NO_EVENTS).y ?? 0).toBeCloseTo(0);
-    expect(bowed(timed(1), NO_EVENTS).y ?? 0).toBeCloseTo(0);
-    expect(Math.abs(bowed(timed(0.5), NO_EVENTS).y ?? 0)).toBeCloseTo(40);
-    expect(bowed(timed(0.5), NO_EVENTS).x).toBeCloseTo(100);
+    expect(bowed(timed(0), NO_INPUT).y ?? 0).toBeCloseTo(0);
+    expect(bowed(timed(1), NO_INPUT).y ?? 0).toBeCloseTo(0);
+    expect(Math.abs(bowed(timed(0.5), NO_INPUT).y ?? 0)).toBeCloseTo(40);
+    expect(bowed(timed(0.5), NO_INPUT).x).toBeCloseTo(100);
   });
 
   it("adds the 3D offset vector scaled by the arch", () => {
     const bowed = arc3d({ bend: { x: 0, y: 30, z: 10 } })(line3d);
-    expect(bowed(timed(0.5), NO_EVENTS)).toMatchObject({ y: 30, z: 10 });
-    expect(bowed(timed(0), NO_EVENTS).y ?? 0).toBeCloseTo(0);
+    expect(bowed(timed(0.5), NO_INPUT)).toMatchObject({ y: 30, z: 10 });
+    expect(bowed(timed(0), NO_INPUT).y ?? 0).toBeCloseTo(0);
   });
 
   it("refuses a bad option", () => {
@@ -150,11 +150,11 @@ describe("arc", () => {
 describe("exaggerate", () => {
   const pose = (): Pose2d => ({ x: 10, scale: 1.2, rotation: -5 });
   it("changes nothing at amount 0", () => {
-    expect(exaggerate({ amount: 0 })(pose)(timed(0.5), NO_EVENTS)).toEqual(pose());
+    expect(exaggerate({ amount: 0 })(pose)(timed(0.5), NO_INPUT)).toEqual(pose());
   });
 
   it("scales each field's distance from its rest", () => {
-    expect(exaggerate({ amount: 1 })(pose)(timed(0.5), NO_EVENTS)).toEqual({
+    expect(exaggerate({ amount: 1 })(pose)(timed(0.5), NO_INPUT)).toEqual({
       x: 20,
       scale: 1.4,
       rotation: -10,
@@ -163,8 +163,8 @@ describe("exaggerate", () => {
 
   it("does the same in 3D", () => {
     const pose3d = (): Pose3d => ({ x: 10, z: 4, scale: 1.2 });
-    expect(exaggerate3d({ amount: 0 })(pose3d)(timed(0.5), NO_EVENTS)).toEqual(pose3d());
-    expect(exaggerate3d({ amount: 1 })(pose3d)(timed(0.5), NO_EVENTS)).toEqual({
+    expect(exaggerate3d({ amount: 0 })(pose3d)(timed(0.5), NO_INPUT)).toEqual(pose3d());
+    expect(exaggerate3d({ amount: 1 })(pose3d)(timed(0.5), NO_INPUT)).toEqual({
       x: 20,
       z: 8,
       scale: 1.4,
@@ -180,12 +180,12 @@ describe("exaggerate", () => {
 describe("secondary", () => {
   it("answers respond of the primary's velocity", () => {
     const tilt = secondary(({ vx }) => ({ rotation: vx / 100 }))(running);
-    expect(tilt(liveAt(500), NO_EVENTS).rotation).toBeCloseTo(2);
+    expect(tilt(liveAt(500), NO_INPUT).rotation).toBeCloseTo(2);
   });
 
   it("answers respond of the 3D velocity", () => {
     const lean = secondary3d(({ vx, vz }) => ({ rotationY: vx / 100 + vz }))(running3d);
-    expect(lean(liveAt(500), NO_EVENTS).rotationY).toBeCloseTo(2);
+    expect(lean(liveAt(500), NO_INPUT).rotationY).toBeCloseTo(2);
   });
 
   it("refuses a respond that is not a function", () => {

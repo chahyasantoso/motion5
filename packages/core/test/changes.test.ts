@@ -1,17 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { createStore, liveAt, state, withProbeStore, withStore } from "../src/index";
-import type { Events } from "../src/index";
+import type { Input } from "../src/index";
 import { changeMetaOf, changesOf } from "../src/state/changes";
 
 function counter() {
-  return state(0, (current, event) =>
-    event.name === "inc" ? current + (event.value ?? 1) : current,
-  );
+  return state(0, (current, event) => (event.name === "inc" ? current + event.value : current));
 }
 
-const EVENTS: Events = [
-  { name: "inc", at: 100, value: 1 },
-  { name: "inc", at: 300, value: 2 },
+const EVENTS: Input = [
+  { kind: "value", name: "inc", at: 100, value: 1 },
+  { kind: "value", name: "inc", at: 300, value: 2 },
 ];
 
 describe("changesOf", () => {

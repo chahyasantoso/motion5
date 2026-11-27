@@ -1,5 +1,5 @@
 import type { Time } from "../time/time";
-import type { Events } from "../events/event-list";
+import type { Input } from "../events/event-list";
 import { storeCell } from "./store";
 import { stepMetaOf, type State } from "./state";
 
@@ -40,7 +40,7 @@ interface ChangesCell<V> {
 export function changesOf<S, V = number>(
   source: State<S>,
   pick: (state: S) => V,
-): (time: Time, events: Events) => Changes<V> {
+): (time: Time, events: Input) => Changes<V> {
   const cellSlot = storeCell<ChangesCell<V>>();
 
   return (time, events) => {

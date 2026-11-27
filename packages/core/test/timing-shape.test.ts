@@ -39,7 +39,7 @@ const SHAPES = {
   wrapper: (name: string) => {
     const made = call(name, (t: core.Time) => t.progress);
     if (typeof made !== "function") throw new TypeError(name + " is not callable");
-    expect(Reflect.apply(made, undefined, [time, core.NO_EVENTS]), name).toBe(0.5);
+    expect(Reflect.apply(made, undefined, [time, core.NO_INPUT]), name).toBe(0.5);
   },
   picker: (name: string, args: readonly unknown[]) => {
     expect(call(name, ...args), name).toBe(0.5);

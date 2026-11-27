@@ -1,25 +1,26 @@
 import { clamp } from "../utility/clamp";
+import { unreachable } from "../utility/unreachable";
 import type { InputChannel } from "./clock-watch";
 import { buildState, type State } from "./state";
 
-/** Sample event names folded by `scroll` and `pointer`: `"scroll"`, `"pointer-x"` and `"pointer-y"`. */
+/** Value input names folded by `scroll` and `pointer`: `"scroll"`, `"pointer-x"` and `"pointer-y"`. */
 export const INPUT_EVENTS = Object.freeze({
   scroll: "scroll",
   pointerX: "pointer-x",
   pointerY: "pointer-y",
 } as const);
 
-/** Vertical scroll position in px, folded from `"scroll"` sample events. */
+/** Vertical scroll position in px, folded from `"scroll"` value entries. */
 export interface ScrollState {
-  /** Scroll offset in px from the top of the page; 0 before any `"scroll"` sample. */
+  /** Scroll offset in px from the top of the page; 0 before any `"scroll"` value. */
   readonly y: State<number>;
 }
 
-/** Viewport pointer position from 0 to 1, folded from `"pointer-x"` and `"pointer-y"` sample events. */
+/** Viewport pointer position from 0 to 1, folded from `"pointer-x"` and `"pointer-y"` value entries. */
 export interface PointerState {
-  /** Horizontal pointer position across the viewport, 0 left to 1 right; 0.5 before any `"pointer-x"` sample. */
+  /** Horizontal pointer position across the viewport, 0 left to 1 right; 0.5 before any `"pointer-x"` value. */
   readonly x: State<number>;
-  /** Vertical pointer position across the viewport, 0 top to 1 bottom; 0.5 before any `"pointer-y"` sample. */
+  /** Vertical pointer position across the viewport, 0 top to 1 bottom; 0.5 before any `"pointer-y"` value. */
   readonly y: State<number>;
 }
 
@@ -35,14 +36,16 @@ function sampleState(
   };
   return buildState(
     start,
-    (current, event) => {
-      if (
-        event.name !== eventName ||
-        typeof event.value !== "number" ||
-        !Number.isFinite(event.value)
-      )
-        return current;
-      return normalize(event.value);
+    (current, entry) => {
+      switch (entry.kind) {
+        case "trigger":
+          return current;
+        case "value":
+          if (entry.name !== eventName || !Number.isFinite(entry.value)) return current;
+          return normalize(entry.value);
+        default:
+          return unreachable(entry.kind);
+      }
     },
     {},
     channel,

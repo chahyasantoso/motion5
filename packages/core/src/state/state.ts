@@ -2,7 +2,7 @@ import { notifyInputUse, rawTime, type InputChannel } from "./clock-watch";
 import { storeCell } from "./store";
 import { elapsedOf, type Time } from "../time/time";
 import type { Signal } from "../time/shapes";
-import type { Events, MotionEvent } from "../events/event-list";
+import type { Input, InputEntry } from "../events/event-list";
 import { generationOf, sourceStreamOf } from "../events/event-log";
 
 /** The moment a state changed, and what it became. */
@@ -11,19 +11,19 @@ export interface Step<S> {
   readonly value: S;
 }
 
-/** Settings of a `state`: `target`, the event target, or targets, whose events reach the rule. */
+/** Settings of a `state`: `target`, the entry target, or targets, whose entries reach the rule. */
 export interface StateOptions {
-  /** Only events with this target, or one of these, reach the rule; with none, every event does. */
+  /** Only entries with this target, or one of these, reach the rule; with none, every entry does. */
   readonly target?: string | readonly string[];
 }
 
-/** What the scene is in at a time, given its events: a signal of that, with `start` and the `steps`. */
+/** What the scene is in at a time, given its input: a signal of that, with `start` and the `steps`. */
 export interface State<S> extends Signal<S> {
-  /** The state before any event. */
+  /** The state before any entry. */
   readonly start: S;
   /** The moments the state changed up to `time`, oldest first. The state owns the list and grows it on later
    * calls, so copy it to keep it. */
-  steps(time: Time, events: Events): readonly Step<S>[];
+  steps(time: Time, input: Input): readonly Step<S>[];
 }
 
 /** Step stream metadata tracking reset generation across rewinds and stream changes. */
@@ -44,7 +44,7 @@ interface StateCell<S> {
   steps: Step<S>[];
   cursor: number;
   latest: number;
-  seen: Events | undefined;
+  seen: Input | undefined;
   seenStream: object | undefined;
   seenGeneration: number;
 }
@@ -60,7 +60,7 @@ function upperBoundStep<S>(steps: readonly Step<S>[], at: number): number {
   return low;
 }
 
-function upperBoundEvent(events: Events, at: number): number {
+function upperBoundEvent(events: Input, at: number): number {
   let low = 0;
   let high = events.length;
   while (low < high) {
@@ -74,19 +74,19 @@ function upperBoundEvent(events: Events, at: number): number {
 /** Internal `state` builder tagging reads with an input channel for per-channel frame routing. */
 export function buildState<S>(
   start: S,
-  rule: (current: S, event: MotionEvent) => S,
+  rule: (current: S, entry: InputEntry) => S,
   options: StateOptions = {},
   channel: InputChannel = "events",
 ): State<S> {
   const { target } = options;
-  const accepts = (event: MotionEvent): boolean => {
+  const accepts = (event: InputEntry): boolean => {
     if (target === undefined) return true;
     if (typeof target === "string") return event.target === target;
     return event.target !== undefined && target.includes(event.target);
   };
   const cellSlot = storeCell<StateCell<S>>();
 
-  const fold = (time: Time, events: Events): StateCell<S> => {
+  const fold = (time: Time, events: Input): StateCell<S> => {
     notifyInputUse(channel);
     const now = elapsedOf(rawTime(time).clock);
     const generation = generationOf(events);
@@ -169,16 +169,16 @@ export function buildState<S>(
     return work;
   };
 
-  const at = (time: Time, events: Events): S => fold(time, events).current;
-  const listed = (time: Time, events: Events): readonly Step<S>[] => fold(time, events).steps;
+  const at = (time: Time, events: Input): S => fold(time, events).current;
+  const listed = (time: Time, events: Input): readonly Step<S>[] => fold(time, events).steps;
   return Object.assign(at, { start, steps: listed });
 }
 
-/** The state `rule` folds the events into, from `start`, up to the time asked. Pure in time and events: it
- * folds only new events, and starts again when an earlier one differs or time goes back. */
+/** The state `rule` folds the input into, from `start`, up to the time asked. Pure in time and input: it
+ * folds only new entries, and starts again when an earlier one differs or time goes back. */
 export function state<S>(
   start: S,
-  rule: (current: S, event: MotionEvent) => S,
+  rule: (current: S, entry: InputEntry) => S,
   options: StateOptions = {},
 ): State<S> {
   return buildState(start, rule, options);

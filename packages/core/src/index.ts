@@ -45,10 +45,17 @@ export { mix, mixAngle, mixPoint, mixPose } from "./blend/mix";
 export { keyframes, type Key } from "./blend/keyframes";
 export { sequence, type Phase } from "./time/sequence";
 export { seeded } from "./utility/random";
-export { NO_EVENTS } from "./events/event-list";
-export { isMotionEvent, mergeEvents } from "./events/event-list";
-export { type EventPoint, type Events } from "./events/event-list";
-export { type MotionEvent } from "./events/event-list";
+export { NO_INPUT } from "./events/event-list";
+export { isInputEntry, mergeInput } from "./events/event-list";
+export { type EventPoint, type Input } from "./events/event-list";
+export { type InputEntry } from "./events/event-list";
+export {
+  inputs,
+  pageInputs,
+  type Contract,
+  type InputSpec,
+  type TargetOf,
+} from "./events/contract";
 export {
   notifyInputUse,
   rawTime,
@@ -134,14 +141,14 @@ export {
   type StoreCell,
 } from "./state/store";
 export {
-  derivedEvents,
-  eventLog,
-  eventSerialsOf,
+  derivedInput,
   generationOf,
+  inputLog,
+  inputSerialsOf,
   sourceStreamOf,
   versionOf,
-  type DerivedEvents,
-  type EventLog,
+  type DerivedInput,
+  type InputLog,
 } from "./events/event-log";
 export { INPUT_EVENTS, pointer, scroll, type PointerState, type ScrollState } from "./state/inputs";
 export { springTo, type SpringToOptions } from "./state/spring-to";

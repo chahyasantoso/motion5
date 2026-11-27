@@ -5,7 +5,7 @@ import {
   type Quaternion,
   type Vec3,
 } from "../geometry/rotation3d";
-import type { Events } from "../events/event-list";
+import type { Input } from "../events/event-list";
 import type { Pose3d } from "../fields/pose3d";
 import { rawTime, stillMoving } from "../state/clock-watch";
 import { withProbeStore } from "../state/store";
@@ -64,9 +64,9 @@ function turnFields(pose: Pose3d): Pose3d {
 /** A turn chasing a `Pose3d` signal's turn on a spring, the short way round, resting exactly on it;
  * pass the scene's time. Trail a position with three `trail` calls. */
 export function trailTurn(
-  signal: (time: Time, events: Events) => Pose3d,
+  signal: (time: Time, events: Input) => Pose3d,
   options: TrailOptions,
-): (time: Time, events: Events) => Pose3d {
+): (time: Time, events: Input) => Pose3d {
   const settings = trailSettings(options, "trailTurn");
   const { stiffness, damping } = settings.spring;
   const stableMs =

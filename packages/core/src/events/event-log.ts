@@ -1,55 +1,80 @@
-import type { Events, MotionEvent } from "./event-list";
+import type { Contract, InputSpec, TargetOf } from "./contract";
+import type { Input, InputEntry } from "./event-list";
 
-/** A log that only grows: each event goes in at its time, after any at the same ms, and none is replaced. */
-export interface EventLog {
-  readonly events: Events;
-  /** Puts `event` in at its time; an event earlier than the last one moves the later ones along. */
-  add(event: MotionEvent): void;
+/** A log that grows as values change or triggers fire: typed writes go through a `Contract`. */
+export interface InputLog {
+  readonly input: Input;
+  /** Records a `"value"` entry only when `value` differs from the latest recorded for `name` and `target`. */
+  set<
+    V extends Record<string, InputSpec>,
+    T extends Record<string, InputSpec>,
+    K extends keyof V & string,
+  >(
+    at: number,
+    contract: Contract<V, T>,
+    name: K,
+    value: number,
+    target?: TargetOf<V[K]> | undefined,
+  ): void;
+  /** Records a `"trigger"` entry for `name` and `target`; `value` defaults to 1. */
+  trigger<
+    V extends Record<string, InputSpec>,
+    T extends Record<string, InputSpec>,
+    K extends keyof T & string,
+  >(
+    at: number,
+    contract: Contract<V, T>,
+    name: K,
+    value?: number,
+    target?: TargetOf<T[K]> | undefined,
+  ): void;
+  /** Records an entry with no contract. */
+  add(entry: InputEntry): void;
   /** Empties the log. */
   clear(): void;
 }
 
-/** Metadata attached to an event list created by `eventLog` or `derivedEvents`. */
-interface EventRecord {
+/** Metadata attached to an input list created by `inputLog` or `derivedInput`. */
+interface InputRecord {
   readonly version: number;
   readonly generation: number;
   readonly serials: readonly number[] | undefined;
   readonly sourceStream: object | undefined;
 }
 
-const RECORDS = new WeakMap<Events, EventRecord>();
-const DEFAULT_RECORD: EventRecord = Object.freeze({
+const RECORDS = new WeakMap<Input, InputRecord>();
+const DEFAULT_RECORD: InputRecord = Object.freeze({
   version: 0,
   generation: 0,
   serials: undefined,
   sourceStream: undefined,
 });
 
-function recordOf(events: Events): EventRecord {
-  return RECORDS.get(events) ?? DEFAULT_RECORD;
+function recordOf(input: Input): InputRecord {
+  return RECORDS.get(input) ?? DEFAULT_RECORD;
 }
 
-/** Stream identity token preserved across `derivedEvents` time-window slicing of a single log. */
-export function sourceStreamOf(events: Events): object | undefined {
-  return recordOf(events).sourceStream;
+/** Stream identity token preserved across `derivedInput` time-window slicing of a single log. */
+export function sourceStreamOf(input: Input): object | undefined {
+  return recordOf(input).sourceStream;
 }
 
-/** An `eventLog` list's count of every change, adding included, or 0 for a plain array. */
-export function versionOf(events: Events): number {
-  return recordOf(events).version;
+/** An `inputLog` list's count of every change, adding included, or 0 for a plain array. */
+export function versionOf(input: Input): number {
+  return recordOf(input).version;
 }
 
-/** An `eventLog` list's count of changes other than adding at its end, or 0 for a plain array. */
-export function generationOf(events: Events): number {
-  return recordOf(events).generation;
+/** An `inputLog` list's count of changes other than adding at its end, or 0 for a plain array. */
+export function generationOf(input: Input): number {
+  return recordOf(input).generation;
 }
 
-/** Monotonic insertion serials aligned with `events` when backed by an `eventLog`. */
-export function eventSerialsOf(events: Events): readonly number[] | undefined {
-  return recordOf(events).serials;
+/** Monotonic insertion serials aligned with `input` when backed by an `inputLog`. */
+export function inputSerialsOf(input: Input): readonly number[] | undefined {
+  return recordOf(input).serials;
 }
 
-function upperBoundAt(list: Events, maxAt: number): number {
+function upperBoundAt(list: Input, maxAt: number): number {
   let low = 0;
   let high = list.length;
   while (low < high) {
@@ -61,13 +86,13 @@ function upperBoundAt(list: Events, maxAt: number): number {
 }
 
 function mergeTwoOrderedSlice(
-  a: Events,
+  a: Input,
   aStart: number,
   aLimit: number,
-  b: Events,
+  b: Input,
   bLimit: number,
-): MotionEvent[] {
-  const out: MotionEvent[] = [];
+): InputEntry[] {
+  const out: InputEntry[] = [];
   let ai = aStart;
   let bi = 0;
   while (ai < aLimit && bi < bLimit) {
@@ -93,34 +118,34 @@ function mergeTwoOrderedSlice(
   return out;
 }
 
-function sortEvents(list: MotionEvent[]): MotionEvent[] {
+function sortEntries(list: InputEntry[]): InputEntry[] {
   return list
-    .map((event, index) => ({ event, index }))
-    .sort((a, b) => a.event.at - b.event.at || a.index - b.index)
-    .map((entry) => entry.event);
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => a.entry.at - b.entry.at || a.index - b.index)
+    .map((item) => item.entry);
 }
 
-/** Cached derived view over event lists filtered by elapsed ms while keeping monotonic metadata. */
-export interface DerivedEvents {
-  resolve(cues: Events, page: Events, maxAt: number | undefined): Events;
+/** Cached derived view over input lists filtered by elapsed ms while keeping monotonic metadata. */
+export interface DerivedInput {
+  resolve(cues: Input, page: Input, maxAt: number | undefined): Input;
 }
 
-/** Creates a cached `Events` merger/filter that avoids rebuilding unchanged windows across frames. */
-export function derivedEvents(): DerivedEvents {
+/** Creates a cached `Input` merger/filter that avoids rebuilding unchanged windows across frames. */
+export function derivedInput(): DerivedInput {
   const streamToken = {};
-  let prevCues: Events | undefined;
+  let prevCues: Input | undefined;
   let prevCuesVersion: number | undefined;
   let prevCuesGeneration: number | undefined;
-  let prevPage: Events | undefined;
+  let prevPage: Input | undefined;
   let prevPageVersion: number | undefined;
   let prevPageGeneration: number | undefined;
   let prevMaxAt: number | undefined;
   let nextHiddenAt = Infinity;
   let generation = 0;
   let version = 0;
-  let cached: MotionEvent[] = [];
+  let cached: InputEntry[] = [];
 
-  const nextAfter = (list: Events, limit: number): number => list[limit]?.at ?? Infinity;
+  const nextAfter = (list: Input, limit: number): number => list[limit]?.at ?? Infinity;
 
   return {
     resolve(cues, page, maxAt) {
@@ -167,12 +192,12 @@ export function derivedEvents(): DerivedEvents {
             ? page.slice(0, pageLimit)
             : maxAt === undefined
               ? page.slice()
-              : sortEvents(page.filter((e) => e.at <= maxAt))
+              : sortEntries(page.filter((e) => e.at <= maxAt))
           : pageLimit === 0
             ? cues.slice(0, cuesLimit)
             : pageOrdered
               ? mergeTwoOrderedSlice(cues, 0, cuesLimit, page, pageLimit)
-              : sortEvents([
+              : sortEntries([
                   ...cues.slice(0, cuesLimit),
                   ...(maxAt === undefined ? page : page.filter((e) => e.at <= maxAt)),
                 ]);
@@ -238,18 +263,22 @@ export function derivedEvents(): DerivedEvents {
   };
 }
 
-/** A log of events; when given `windowMs`, older entries drop in batches past twice the window except each name-and-target's latest. */
-export function eventLog(options?: { readonly windowMs?: number }): EventLog {
+/** A log of input entries; when given `windowMs`, older entries drop in batches past twice the window except each name-and-target's latest. */
+export function inputLog(options?: { readonly windowMs?: number }): InputLog {
   const windowMs = options?.windowMs;
   if (windowMs !== undefined && (!Number.isFinite(windowMs) || windowMs < 0)) {
-    throw new RangeError(`eventLog: windowMs must be a finite number 0 or more, not ${windowMs}.`);
+    throw new RangeError(`inputLog: windowMs must be a finite number 0 or more, not ${windowMs}.`);
   }
-  const events: MotionEvent[] = [];
+  const input: InputEntry[] = [];
   const serials: number[] = [];
   const streamToken = {};
   const latestByName = new Map<
     string,
     Map<string | undefined, { readonly at: number; readonly serial: number }>
+  >();
+  const latestValueByName = new Map<
+    string,
+    Map<string | undefined, { readonly at: number; readonly value: number }>
   >();
   let oldestDroppableAt = Infinity;
   let generation = 0;
@@ -257,7 +286,7 @@ export function eventLog(options?: { readonly windowMs?: number }): EventLog {
   let nextSerial = 1;
 
   const syncRecord = (): void => {
-    RECORDS.set(events, {
+    RECORDS.set(input, {
       version,
       generation,
       serials,
@@ -275,69 +304,103 @@ export function eventLog(options?: { readonly windowMs?: number }): EventLog {
     syncRecord();
   };
 
-  return {
-    events,
-    add(event) {
-      const serial = nextSerial++;
-      let index = events.length;
-      if (index === 0 || (events[index - 1]?.at ?? -Infinity) <= event.at) {
-        events.push(event);
-        serials.push(serial);
-      } else {
-        while (index > 0 && (events[index - 1]?.at ?? 0) > event.at) index -= 1;
-        changed();
-        events.splice(index, 0, event);
-        serials.splice(index, 0, serial);
+  const insert = (entry: InputEntry): void => {
+    const serial = nextSerial++;
+    let index = input.length;
+    if (index === 0 || (input[index - 1]?.at ?? -Infinity) <= entry.at) {
+      input.push(entry);
+      serials.push(serial);
+    } else {
+      while (index > 0 && (input[index - 1]?.at ?? 0) > entry.at) index -= 1;
+      changed();
+      input.splice(index, 0, entry);
+      serials.splice(index, 0, serial);
+    }
+    if (entry.kind === "value") {
+      let byTarget = latestValueByName.get(entry.name);
+      if (byTarget === undefined) {
+        byTarget = new Map();
+        latestValueByName.set(entry.name, byTarget);
       }
-      if (windowMs !== undefined) {
-        let byTarget = latestByName.get(event.name);
-        if (byTarget === undefined) {
-          byTarget = new Map();
-          latestByName.set(event.name, byTarget);
-        }
-        const prev = byTarget.get(event.target);
-        if (prev === undefined || event.at >= prev.at) {
-          byTarget.set(event.target, { at: event.at, serial });
-          if (prev !== undefined && prev.at < oldestDroppableAt) oldestDroppableAt = prev.at;
-        } else if (event.at < oldestDroppableAt) {
-          oldestDroppableAt = event.at;
-        }
-        const newestAt = events[events.length - 1]?.at ?? event.at;
-        if (oldestDroppableAt < newestAt - 2 * windowMs) {
-          const cutoff = newestAt - windowMs;
-          let write = 0;
-          let nextOldest = Infinity;
-          let dropped = false;
-          for (let i = 0; i < events.length; i += 1) {
-            const entry = events[i];
-            const entrySerial = serials[i];
-            if (entry === undefined || entrySerial === undefined) continue;
-            const isLatest =
-              latestByName.get(entry.name)?.get(entry.target)?.serial === entrySerial;
-            if (entry.at < cutoff && !isLatest) {
-              dropped = true;
-              continue;
-            }
-            if (!isLatest && entry.at < nextOldest) nextOldest = entry.at;
-            if (write !== i) {
-              events[write] = entry;
-              serials[write] = entrySerial;
-            }
-            write += 1;
+      const prev = byTarget.get(entry.target);
+      if (prev === undefined || entry.at >= prev.at) {
+        byTarget.set(entry.target, { at: entry.at, value: entry.value });
+      }
+    }
+    if (windowMs !== undefined) {
+      let byTarget = latestByName.get(entry.name);
+      if (byTarget === undefined) {
+        byTarget = new Map();
+        latestByName.set(entry.name, byTarget);
+      }
+      const prev = byTarget.get(entry.target);
+      if (prev === undefined || entry.at >= prev.at) {
+        byTarget.set(entry.target, { at: entry.at, serial });
+        if (prev !== undefined && prev.at < oldestDroppableAt) oldestDroppableAt = prev.at;
+      } else if (entry.at < oldestDroppableAt) {
+        oldestDroppableAt = entry.at;
+      }
+      const newestAt = input[input.length - 1]?.at ?? entry.at;
+      if (oldestDroppableAt < newestAt - 2 * windowMs) {
+        const cutoff = newestAt - windowMs;
+        let write = 0;
+        let nextOldest = Infinity;
+        let dropped = false;
+        for (let i = 0; i < input.length; i += 1) {
+          const item = input[i];
+          const itemSerial = serials[i];
+          if (item === undefined || itemSerial === undefined) continue;
+          const isLatest = latestByName.get(item.name)?.get(item.target)?.serial === itemSerial;
+          if (item.at < cutoff && !isLatest) {
+            dropped = true;
+            continue;
           }
-          events.length = write;
-          serials.length = write;
-          oldestDroppableAt = nextOldest;
-          if (dropped) generation += 1;
+          if (!isLatest && item.at < nextOldest) nextOldest = item.at;
+          if (write !== i) {
+            input[write] = item;
+            serials[write] = itemSerial;
+          }
+          write += 1;
         }
+        input.length = write;
+        serials.length = write;
+        oldestDroppableAt = nextOldest;
+        if (dropped) generation += 1;
       }
-      bumped();
+    }
+    bumped();
+  };
+
+  return {
+    input,
+    set(at, _contract, name, value, target) {
+      const prev = latestValueByName.get(name)?.get(target);
+      if (prev !== undefined && (Object.is(prev.value, value) || prev.value === value)) {
+        return;
+      }
+      const entry: InputEntry =
+        target === undefined
+          ? { kind: "value", name, at, value }
+          : { kind: "value", name, at, value, target };
+      insert(entry);
+    },
+    trigger(at, _contract, name, value = 1, target) {
+      const entry: InputEntry =
+        target === undefined
+          ? { kind: "trigger", name, at, value }
+          : { kind: "trigger", name, at, value, target };
+      insert(entry);
+    },
+    /** Records an entry with no contract. */
+    add(entry) {
+      insert(entry);
     },
     clear() {
       changed();
-      events.length = 0;
+      input.length = 0;
       serials.length = 0;
       latestByName.clear();
+      latestValueByName.clear();
       oldestDroppableAt = Infinity;
       bumped();
     },

@@ -3,7 +3,8 @@ import {
   UNTIMED,
   ease,
   easeTo,
-  eventLog,
+  inputLog,
+  inputs,
   liveAt,
   state,
   springTo,
@@ -11,19 +12,26 @@ import {
   watchClock,
   watchedTime,
   type ClockUse,
-  type Events,
-  type MotionEvent,
+  type Input,
+  type InputEntry,
   type Time,
 } from "@gerak/core";
 
-const click = (at: number, target?: string): MotionEvent =>
-  target === undefined ? { name: "click", at } : { name: "click", at, target };
+const testInputs = inputs({
+  values: { set: {}, zone: {} },
+  triggers: { click: {}, open: {}, close: {}, reset: {}, add: {}, other: {}, hover: {} },
+});
 
-const toggle = (current: boolean, event: MotionEvent): boolean =>
+const click = (at: number, target?: string): InputEntry =>
+  target === undefined
+    ? { kind: "trigger", name: "click", at, value: 1 }
+    : { kind: "trigger", name: "click", at, value: 1, target };
+
+const toggle = (current: boolean, event: InputEntry): boolean =>
   event.name === "click" ? !current : current;
 
 describe("state", () => {
-  const clicks: Events = [click(100), click(300), click(500)];
+  const clicks: Input = [click(100), click(300), click(500)];
 
   it("folds the events up to the time with its rule", () => {
     const flag = state(false, toggle);
@@ -57,27 +65,27 @@ describe("state", () => {
       calls += 1;
       return current + 1;
     });
-    const log = eventLog();
-    log.add(click(10));
-    log.add(click(20));
-    counting(liveAt(100), log.events);
-    log.add(click(30));
-    expect(counting(liveAt(100), log.events)).toBe(3);
+    const log = inputLog();
+    log.trigger(10, testInputs, "click");
+    log.trigger(20, testInputs, "click");
+    counting(liveAt(100), log.input);
+    log.trigger(30, testInputs, "click");
+    expect(counting(liveAt(100), log.input)).toBe(3);
     expect(calls).toBe(3);
-    counting(liveAt(100), log.events);
+    counting(liveAt(100), log.input);
     expect(calls).toBe(3);
   });
 
   it("costs about the same per call on a long growing log as on a short one", () => {
     const counting = state(0, (current: number) => current + 1);
-    const log = eventLog();
+    const log = inputLog();
     let at = 0;
     const window = (): number => {
       const started = performance.now();
       for (let index = 0; index < 1000; index += 1) {
         at += 1;
-        log.add(click(at));
-        for (let read = 0; read < 10; read += 1) counting(liveAt(at), log.events);
+        log.trigger(at, testInputs, "click");
+        for (let read = 0; read < 10; read += 1) counting(liveAt(at), log.input);
       }
       return performance.now() - started;
     };
@@ -85,32 +93,31 @@ describe("state", () => {
     const early = Math.min(window(), window(), window());
     for (let index = 0; index < 20; index += 1) window();
     const late = Math.min(window(), window(), window());
-    expect(counting(liveAt(at), log.events)).toBe(at);
+    expect(counting(liveAt(at), log.input)).toBe(at);
     expect(late).toBeLessThan(early * 4);
   });
 
   it("starts again when an event goes into a growing log before the last one folded, or it is emptied", () => {
     const flag = state(false, toggle);
-    const log = eventLog();
-    log.add(click(100));
-    log.add(click(300));
-    expect(flag(liveAt(900), log.events)).toBe(false);
-    log.add(click(200));
-    expect(flag(liveAt(900), log.events)).toBe(true);
-    const twice = click(300);
-    const repeated = eventLog();
-    repeated.add(click(100));
-    repeated.add(twice);
-    repeated.add(twice);
+    const log = inputLog();
+    log.trigger(100, testInputs, "click");
+    log.trigger(300, testInputs, "click");
+    expect(flag(liveAt(900), log.input)).toBe(false);
+    log.trigger(200, testInputs, "click");
+    expect(flag(liveAt(900), log.input)).toBe(true);
+    const repeated = inputLog();
+    repeated.trigger(100, testInputs, "click");
+    repeated.trigger(300, testInputs, "click");
+    repeated.trigger(300, testInputs, "click");
     const count = state(0, (current: number) => current + 1);
-    expect(count(liveAt(900), repeated.events)).toBe(3);
-    repeated.add(click(200));
-    expect(count(liveAt(900), repeated.events)).toBe(4);
-    const sum = state(0, (current: number, event: MotionEvent) => current + event.at);
-    expect(sum(liveAt(900), log.events)).toBe(600);
+    expect(count(liveAt(900), repeated.input)).toBe(3);
+    repeated.trigger(200, testInputs, "click");
+    expect(count(liveAt(900), repeated.input)).toBe(4);
+    const sum = state(0, (current: number, event: InputEntry) => current + event.at);
+    expect(sum(liveAt(900), log.input)).toBe(600);
     log.clear();
-    for (const at of [50, 60, 70, 80]) log.add(click(at));
-    expect(sum(liveAt(900), log.events)).toBe(260);
+    for (const at of [50, 60, 70, 80]) log.trigger(at, testInputs, "click");
+    expect(sum(liveAt(900), log.input)).toBe(260);
   });
 
   it("folds every event on an untimed clock, and none after the time on a timed one", () => {
@@ -125,11 +132,11 @@ describe("state", () => {
     const capped = state(0, (current: number, event) =>
       event.name === "add" ? Math.min(2, current + 1) : current,
     );
-    const events: Events = [
-      { name: "add", at: 100 },
-      { name: "other", at: 150 },
-      { name: "add", at: 200 },
-      { name: "add", at: 300 },
+    const events: Input = [
+      { kind: "trigger", name: "add", at: 100, value: 1 },
+      { kind: "trigger", name: "other", at: 150, value: 1 },
+      { kind: "trigger", name: "add", at: 200, value: 1 },
+      { kind: "trigger", name: "add", at: 300, value: 1 },
     ];
     expect(capped.steps(liveAt(1000), events)).toEqual([
       { at: 100, value: 1 },
@@ -140,17 +147,17 @@ describe("state", () => {
 
   it("lets only the target's events reach the rule", () => {
     const only = state(0, (current: number) => current + 1, { target: "a" });
-    const events: Events = [click(10, "a"), click(20, "b"), click(30, "a"), click(40)];
+    const events: Input = [click(10, "a"), click(20, "b"), click(30, "a"), click(40)];
     expect(only(liveAt(100), events)).toBe(2);
     const either = state(0, (current: number) => current + 1, { target: ["a", "b"] });
     expect(either(liveAt(100), events)).toBe(3);
   });
 });
 
-const level = state(0, (_current: number, event) => event.value ?? 0);
-const jumps: Events = [
-  { name: "set", at: 1000, value: 10 },
-  { name: "set", at: 1100, value: -4 },
+const level = state(0, (_current: number, event) => event.value);
+const jumps: Input = [
+  { kind: "value", name: "set", at: 1000, value: 10 },
+  { kind: "value", name: "set", at: 1100, value: -4 },
 ];
 
 describe("springTo", () => {
@@ -176,8 +183,8 @@ describe("springTo", () => {
 
   it("follows what pick reads, and skips events that leave it the same", () => {
     const sign = springTo(level, (value) => (value > 0 ? 1 : 0));
-    const first: MotionEvent = { name: "set", at: 1000, value: 3 };
-    const events: Events = [first, { name: "set", at: 1100, value: 9 }];
+    const first: InputEntry = { kind: "value", name: "set", at: 1000, value: 3 };
+    const events: Input = [first, { kind: "value", name: "set", at: 1100, value: 9 }];
     expect(sign(liveAt(5000), events)).toBe(1);
     expect(sign(liveAt(1050), events)).toBeCloseTo(sign(liveAt(1050), [first]), 9);
   });
@@ -188,12 +195,12 @@ describe("springTo", () => {
 });
 
 describe("easeTo", () => {
-  const rising = state(0, (_current: number, event) => event.value ?? 0);
+  const rising = state(0, (_current: number, event) => event.value);
   const options = { ms: { up: 200, down: 100 }, delayMs: { up: 50, down: 0 } };
 
   it("holds the start, waits the delay when rising, and runs over its time", () => {
     const signal = easeTo(rising, (value) => value, options);
-    const events: Events = [{ name: "set", at: 1000, value: 1 }];
+    const events: Input = [{ kind: "value", name: "set", at: 1000, value: 1 }];
     expect(signal(liveAt(900), events)).toBe(0);
     expect(signal(liveAt(1050), events)).toBe(0);
     expect(signal(liveAt(1150), events)).toBeCloseTo(0.5, 9);
@@ -203,9 +210,9 @@ describe("easeTo", () => {
 
   it("falls with no delay over its down time", () => {
     const signal = easeTo(rising, (value) => value, options);
-    const events: Events = [
-      { name: "set", at: 0, value: 1 },
-      { name: "set", at: 1000, value: 0 },
+    const events: Input = [
+      { kind: "value", name: "set", at: 0, value: 1 },
+      { kind: "value", name: "set", at: 1000, value: 0 },
     ];
     expect(signal(liveAt(999), events)).toBe(1);
     expect(signal(liveAt(1050), events)).toBeCloseTo(0.5, 9);
@@ -214,9 +221,9 @@ describe("easeTo", () => {
 
   it("starts from where it is when the goal changes mid-motion, with no jump", () => {
     const signal = easeTo(rising, (value) => value, { ms: 400 });
-    const events: Events = [
-      { name: "set", at: 1000, value: 1 },
-      { name: "set", at: 1200, value: 0 },
+    const events: Input = [
+      { kind: "value", name: "set", at: 1000, value: 1 },
+      { kind: "value", name: "set", at: 1200, value: 0 },
     ];
     const at = (ms: number) => signal(liveAt(ms), events);
     expect(at(1200)).toBeCloseTo(0.5, 9);
@@ -226,7 +233,7 @@ describe("easeTo", () => {
 
   it("uses its ease, and answers the latest value untimed", () => {
     const signal = easeTo(rising, (value) => value, { ms: 100, ease: ease.cubicOut });
-    const events: Events = [{ name: "set", at: 0, value: 1 }];
+    const events: Input = [{ kind: "value", name: "set", at: 0, value: 1 }];
     expect(signal(liveAt(50), events)).toBeCloseTo(ease.cubicOut(0.5), 9);
     expect(signal({ progress: 0, clock: UNTIMED }, events)).toBe(1);
   });
@@ -272,7 +279,7 @@ describe("transition", () => {
       ev.name === "open" ? "open" : ev.name === "close" ? "closed" : _cur,
     );
     const sig = transition(phase, { ms: 400, ease: ease.cubicOut });
-    const events: Events = [{ name: "open", at: 1000 }];
+    const events: Input = [{ kind: "trigger", name: "open", at: 1000, value: 1 }];
 
     const before = watchUses(() => sig(watchedTime(liveAt(900)), events));
     expect(before.value).toEqual({
@@ -314,11 +321,11 @@ describe("transition", () => {
       ms: (from, to) =>
         from === "idle" && to === "open" ? 500 : to === "idle" && from === "open" ? 0 : 200,
     });
-    const events: Events = [
-      { name: "open", at: 100 },
-      { name: "close", at: 300 },
-      { name: "open", at: 1000 },
-      { name: "reset", at: 1500 },
+    const events: Input = [
+      { kind: "trigger", name: "open", at: 100, value: 1 },
+      { kind: "trigger", name: "close", at: 300, value: 1 },
+      { kind: "trigger", name: "open", at: 1000, value: 1 },
+      { kind: "trigger", name: "reset", at: 1500, value: 1 },
     ];
 
     expect(sig(liveAt(200), events)).toEqual({
@@ -343,7 +350,7 @@ describe("transition", () => {
       progress: 0.5,
       active: true,
     });
-    // Seeking backward stays pure in (time, events).
+    // Seeking backward stays pure in (time, input).
     expect(sig(liveAt(200), events)).toEqual({
       current: "open",
       previous: "idle",
@@ -371,7 +378,9 @@ describe("transition", () => {
     });
 
     const instant = transition(phase, { ms: () => 0 });
-    const res = watchUses(() => instant(watchedTime(liveAt(100)), [{ name: "open", at: 100 }]));
+    const res = watchUses(() =>
+      instant(watchedTime(liveAt(100)), [{ kind: "trigger", name: "open", at: 100, value: 1 }]),
+    );
     expect(res.value).toEqual({
       current: "open",
       previous: "idle",
@@ -381,20 +390,20 @@ describe("transition", () => {
     expect(res.uses).toEqual([]);
   });
 
-  it("resets cleanly on out-of-order eventLog insertion and refuses missing options after pick", () => {
+  it("resets cleanly on out-of-order inputLog insertion and refuses missing options after pick", () => {
     const phase = state<Phase>("idle", (_cur, ev) => (ev.name === "open" ? "open" : _cur));
     const sig = transition(phase, { ms: 400 });
-    const log = eventLog();
-    log.add({ name: "open", at: 200 });
-    expect(sig(liveAt(400), log.events)).toEqual({
+    const log = inputLog();
+    log.trigger(200, testInputs, "open");
+    expect(sig(liveAt(400), log.input)).toEqual({
       current: "open",
       previous: "idle",
       progress: 0.5,
       active: true,
     });
     // Inserting an earlier event alters the step list identity and recomputes from the new timestamp.
-    log.add({ name: "open", at: 100 });
-    expect(sig(liveAt(400), log.events)).toEqual({
+    log.trigger(100, testInputs, "open");
+    expect(sig(liveAt(400), log.input)).toEqual({
       current: "open",
       previous: "idle",
       progress: 0.75,
@@ -410,9 +419,9 @@ describe("transition", () => {
       return cur;
     });
     const sig = transition(compound, (s) => s.zone, { ms: 200 });
-    const events: Events = [
-      { name: "zone", at: 100, value: 2 },
-      { name: "hover", at: 150 },
+    const events: Input = [
+      { kind: "value", name: "zone", at: 100, value: 2 },
+      { kind: "trigger", name: "hover", at: 150, value: 1 },
     ];
 
     // Hover event changes `compound` at 150, but `pick` stays 2, so transition keeps started-at 100!
@@ -439,6 +448,8 @@ describe("transition", () => {
       expect(() => transition(phase, { ms })).toThrow(RangeError);
     }
     const badCb = transition(phase, { ms: () => -5 });
-    expect(() => badCb(liveAt(20), [{ name: "b", at: 10 }])).toThrow(RangeError);
+    expect(() => badCb(liveAt(20), [{ kind: "trigger", name: "b", at: 10, value: 1 }])).toThrow(
+      RangeError,
+    );
   });
 });

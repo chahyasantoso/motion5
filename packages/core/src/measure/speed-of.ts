@@ -1,4 +1,4 @@
-import type { Events } from "../events/event-list";
+import type { Input } from "../events/event-list";
 import { withProbeStore } from "../state/store";
 import type { Signal } from "../time/shapes";
 import type { Time } from "../time/time";
@@ -9,7 +9,7 @@ function between<K extends string>(
   signal: Signal<{ readonly [F in K]?: number }>,
   fields: readonly K[],
   time: Time,
-  events: Events,
+  events: Input,
   stepMs: number,
   now: number,
   end: number,
@@ -30,7 +30,7 @@ export function speedOf<K extends string>(
   signal: Signal<{ readonly [F in K]?: number }>,
   fields: readonly K[],
   time: Time,
-  events: Events,
+  events: Input,
   stepMs: number,
 ): readonly number[] {
   const clock = time.clock;

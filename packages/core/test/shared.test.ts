@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  NO_EVENTS,
+  NO_INPUT,
   liveAt,
   shared,
   springTo,
@@ -9,7 +9,7 @@ import {
   watchClock,
   watchedTime,
   type ClockUse,
-  type Events,
+  type Input,
   type Signal,
   type Time,
 } from "@gerak/core";
@@ -32,18 +32,18 @@ describe("shared", () => {
   it("runs once for the same time and the same events list", () => {
     const { signal, calls } = counted();
     const read = shared(signal);
-    expect(read(timed(500), NO_EVENTS)).toBe(1);
-    expect(read(timed(500), NO_EVENTS)).toBe(1);
+    expect(read(timed(500), NO_INPUT)).toBe(1);
+    expect(read(timed(500), NO_INPUT)).toBe(1);
     expect(calls()).toBe(1);
   });
 
   it("runs again for a new time or a new events list", () => {
     const { signal, calls } = counted();
     const read = shared(signal);
-    read(timed(500), NO_EVENTS);
-    read(timed(600), NO_EVENTS);
+    read(timed(500), NO_INPUT);
+    read(timed(600), NO_INPUT);
     expect(calls()).toBe(2);
-    const other: Events = [];
+    const other: Input = [];
     read(timed(600), other);
     expect(calls()).toBe(3);
     read({ progress: 0.6, clock: { kind: "live", elapsed: 600 } }, other);
@@ -54,16 +54,16 @@ describe("shared", () => {
     const { signal } = counted();
     const read = shared(signal);
     for (const ms of [0, 250, 250, 900, 100])
-      expect(read(timed(ms), NO_EVENTS)).toBe(signal(timed(ms), NO_EVENTS));
+      expect(read(timed(ms), NO_INPUT)).toBe(signal(timed(ms), NO_INPUT));
   });
 
   it("replays clock-use reports identically across cached readers of transition and springTo", () => {
     const phase = state("idle", (_cur, ev) => (ev.name === "go" ? "open" : _cur));
-    const events: Events = [{ name: "go", at: 0 }];
+    const events: Input = [{ kind: "trigger", name: "go", at: 0, value: 1 }];
 
     let transCalls = 0;
     const rawTrans = transition(phase, { ms: 300 });
-    const sharedTrans = shared((t: Time, ev: Events) => {
+    const sharedTrans = shared((t: Time, ev: Input) => {
       transCalls += 1;
       return rawTrans(t, ev);
     });
@@ -113,7 +113,7 @@ describe("shared", () => {
       const uses: ClockUse[] = [];
       watchClock(
         (use) => uses.push(use),
-        () => read(time, NO_EVENTS),
+        () => read(time, NO_INPUT),
       );
       return uses;
     };

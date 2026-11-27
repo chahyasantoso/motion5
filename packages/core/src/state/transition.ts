@@ -1,5 +1,5 @@
 import { ease, type Ease } from "../ease/ease";
-import type { Events } from "../events/event-list";
+import type { Input } from "../events/event-list";
 import { clamp } from "../utility/clamp";
 import type { Signal } from "../time/shapes";
 import { elapsedOf, type Time } from "../time/time";
@@ -36,7 +36,7 @@ function buildTransition<S, V>(
   if (typeof options.ms === "number") validMs(options.ms);
   const changes = changesOf(source, pick);
 
-  return (watched: Time, events: Events): Transition<V> => {
+  return (watched: Time, events: Input): Transition<V> => {
     const time = rawTime(watched);
     const { start, list } = changes(time, events);
 
