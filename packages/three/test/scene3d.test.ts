@@ -583,4 +583,114 @@ describe("threeBinder", () => {
     expect(unsharedMat.opacity).toBeCloseTo(0.9, 9);
     expect(unsharedMat.transparent).toBe(false);
   });
+
+  it("leaves an app-swapped material untouched and disposes replaced capture clones when swapped before the first opacity change", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 0.8, transparent: false });
+    const origMat = new MeshBasicMaterial({ opacity: 0.5, transparent: false });
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    mesh.name = "box";
+    const plain = new Mesh(new BoxGeometry(1, 1, 1), origMat);
+    plain.name = "plain";
+    const sibling = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    sibling.name = "sibling";
+    const root = new Object3D();
+    root.add(mesh, plain, sibling);
+
+    const compiledStage = compileScene(
+      scene(
+        { length: 1000 },
+        object("box").moves((t) => (t.progress >= 0.5 ? { opacity: 0.25 } : {})),
+        object("plain").moves((t) => (t.progress >= 0.5 ? { opacity: 0.25 } : {})),
+      ),
+    );
+    if (!compiledStage.ok) throw new Error(compiledStage.errors.map(formatStageError).join("\n"));
+
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play(
+      (time, events) => frame(compiledStage.stage, { time, events }).targets,
+      driver,
+    );
+    const stop = threeBinder(root).start(player, compiledStage.stage);
+
+    const captureClone = mesh.material;
+    expect(captureClone).not.toBe(sharedMat);
+    let cloneDisposed = false;
+    captureClone.addEventListener("dispose", () => {
+      cloneDisposed = true;
+    });
+
+    const appMat = new MeshBasicMaterial({ opacity: 0.7, transparent: false });
+    const plainAppMat = new MeshBasicMaterial({ opacity: 0.9, transparent: false });
+    mesh.material = appMat;
+    plain.material = plainAppMat;
+
+    driver.seekMs(500);
+    expect(mesh.material).toBe(appMat);
+    expect(appMat.opacity).toBeCloseTo(0.7, 9);
+    expect(appMat.transparent).toBe(false);
+    expect(plain.material).toBe(plainAppMat);
+    expect(plainAppMat.opacity).toBeCloseTo(0.9, 9);
+
+    stop();
+    expect(mesh.material).toBe(appMat);
+    expect(appMat.opacity).toBeCloseTo(0.7, 9);
+    expect(appMat.transparent).toBe(false);
+    expect(plain.material).toBe(plainAppMat);
+    expect(plainAppMat.opacity).toBeCloseTo(0.9, 9);
+    expect(cloneDisposed).toBe(true);
+  });
+
+  it("leaves an app-swapped material untouched and disposes binder clones when swapped after an opacity change", () => {
+    const origMat = new MeshBasicMaterial({ opacity: 0.8, transparent: false });
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), origMat);
+    mesh.name = "box";
+    const root = new Object3D();
+    root.add(mesh);
+
+    const compiledStage = compileScene(
+      scene(
+        { length: 1000 },
+        object("box").moves((t) => {
+          if (t.progress >= 0.75) return { opacity: 0.25 };
+          if (t.progress >= 0.5) return { opacity: 0.5 };
+          return {};
+        }),
+      ),
+    );
+    if (!compiledStage.ok) throw new Error(compiledStage.errors.map(formatStageError).join("\n"));
+
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play(
+      (time, events) => frame(compiledStage.stage, { time, events }).targets,
+      driver,
+    );
+    const stop = threeBinder(root).start(player, compiledStage.stage);
+
+    driver.seekMs(500);
+    const opacityClone = mesh.material;
+    expect(opacityClone).not.toBe(origMat);
+    expect(opacityClone.opacity).toBeCloseTo(0.4, 9);
+    let cloneDisposed = false;
+    opacityClone.addEventListener("dispose", () => {
+      cloneDisposed = true;
+    });
+
+    const appMat = new MeshBasicMaterial({ opacity: 0.6, transparent: false });
+    mesh.material = appMat;
+
+    driver.seekMs(750);
+    expect(mesh.material).toBe(appMat);
+    expect(appMat.opacity).toBeCloseTo(0.6, 9);
+    expect(appMat.transparent).toBe(false);
+
+    driver.seekMs(0);
+    expect(mesh.material).toBe(appMat);
+    expect(appMat.opacity).toBeCloseTo(0.6, 9);
+
+    stop();
+    expect(mesh.material).toBe(appMat);
+    expect(appMat.opacity).toBeCloseTo(0.6, 9);
+    expect(appMat.transparent).toBe(false);
+    expect(cloneDisposed).toBe(true);
+  });
 });

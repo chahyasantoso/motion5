@@ -10,8 +10,26 @@ interface CapturedSlot {
   readonly original: Material | readonly Material[];
   readonly bases: readonly MaterialBase[];
   readonly isArray: boolean;
+  readonly held: Set<Material>;
   replaced: boolean;
   materials: readonly Material[];
+}
+
+const CAPTURED_REFS = new WeakMap<Material, number>();
+
+function retainSlotMaterial(slot: CapturedSlot, mat: Material): void {
+  if (slot.held.has(mat)) return;
+  slot.held.add(mat);
+  CAPTURED_REFS.set(mat, (CAPTURED_REFS.get(mat) ?? 0) + 1);
+}
+
+function releaseSlotMaterials(slot: CapturedSlot): void {
+  for (const mat of slot.held) {
+    const count = CAPTURED_REFS.get(mat);
+    if (count === undefined || count <= 1) CAPTURED_REFS.delete(mat);
+    else CAPTURED_REFS.set(mat, count - 1);
+  }
+  slot.held.clear();
 }
 
 interface ObjectMaterialState {
@@ -86,7 +104,18 @@ function captureSlot(
   const first = list[0];
   if (first === undefined) return undefined;
   const original: Material | readonly Material[] = isArray ? [...list] : first;
-  return { node, original, bases, isArray, replaced, materials: nextMaterials };
+  const slot: CapturedSlot = {
+    node,
+    original,
+    bases,
+    isArray,
+    held: new Set(),
+    replaced,
+    materials: nextMaterials,
+  };
+  for (const mat of list) retainSlotMaterial(slot, mat);
+  for (const mat of nextMaterials) retainSlotMaterial(slot, mat);
+  return slot;
 }
 
 /** Captures rest materials across `target`'s hierarchy, cloning any material shared with another owner. */
@@ -140,6 +169,7 @@ export function applyObjectOpacity(
     const existing = store.objects.get(target);
     if (existing === undefined || !existing.applied) return;
     for (const slot of existing.slots) {
+      if (!hasCurrentMaterials(slot.node, slot.materials)) continue;
       slot.materials.forEach((mat, index) => {
         const base = slot.bases[index];
         if (base === undefined) return;
@@ -156,6 +186,7 @@ export function applyObjectOpacity(
   const state = captureMaterials(target, undefined, store);
   state.applied = true;
   for (const slot of state.slots) {
+    if (!hasCurrentMaterials(slot.node, slot.materials)) continue;
     if (store.isolate) {
       let changed = false;
       const nextMaterials = slot.materials.map((mat) => {
@@ -165,6 +196,7 @@ export function applyObjectOpacity(
         store.owners.set(copy, target);
         state.cloned.push(copy);
         state.clonedSet.add(copy);
+        retainSlotMaterial(slot, copy);
         changed = true;
         return copy;
       });
@@ -190,9 +222,9 @@ export function applyObjectOpacity(
 export function restoreMaterials(target: Object3D, store: MaterialStore = DEFAULT_STORE): void {
   const state = store.objects.get(target);
   if (state === undefined) return;
-  const takenOff = new Set<Material>();
   for (const slot of state.slots) {
-    if (state.applied || slot.replaced) {
+    const current = hasCurrentMaterials(slot.node, slot.materials);
+    if (current && (state.applied || slot.replaced)) {
       slot.materials.forEach((mat, index) => {
         const base = slot.bases[index];
         if (base === undefined) return;
@@ -203,15 +235,24 @@ export function restoreMaterials(target: Object3D, store: MaterialStore = DEFAUL
         }
       });
     }
-    for (const mat of slot.materials) {
+    for (const mat of slot.held) {
       if (store.owners.get(mat) === target) store.owners.delete(mat);
     }
-    if (slot.replaced && hasCurrentMaterials(slot.node, slot.materials)) {
+    if (slot.replaced && current) {
       Reflect.set(slot.node, "material", slot.original);
-      for (const mat of slot.materials) takenOff.add(mat);
+    }
+    releaseSlotMaterials(slot);
+  }
+  const stillHeldOnNodes = new Set<Material>();
+  for (const slot of state.slots) {
+    const onNode = asMaterialList(Reflect.get(slot.node, "material"));
+    if (onNode !== undefined) {
+      for (const mat of onNode) stillHeldOnNodes.add(mat);
     }
   }
   // A clone another mount has since captured as its original stays alive for that mount to restore.
-  for (const mat of state.cloned) if (takenOff.has(mat)) mat.dispose();
+  for (const mat of state.cloned) {
+    if (!CAPTURED_REFS.has(mat) && !stillHeldOnNodes.has(mat)) mat.dispose();
+  }
   store.objects.delete(target);
 }
