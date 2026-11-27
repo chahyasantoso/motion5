@@ -256,13 +256,13 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
     frames.tick(ms);
     expect(sceneRuns).toBe(2);
     expect(mounted.events().filter((event) => event.name === INPUT_EVENTS.scroll)).toEqual([
-      { name: INPUT_EVENTS.scroll, at: 20, value: 300 },
+      { kind: "value", name: INPUT_EVENTS.scroll, at: 20, value: 300 },
     ]);
     expect(mounted.events().filter((event) => event.name === INPUT_EVENTS.pointerX)).toEqual([
-      { name: INPUT_EVENTS.pointerX, at: 20, value: 0.8 },
+      { kind: "value", name: INPUT_EVENTS.pointerX, at: 20, value: 0.8 },
     ]);
     expect(mounted.events().filter((event) => event.name === INPUT_EVENTS.pointerY)).toEqual([
-      { name: INPUT_EVENTS.pointerY, at: 20, value: 0.15 },
+      { kind: "value", name: INPUT_EVENTS.pointerY, at: 20, value: 0.15 },
     ]);
     expect(tracker.style.transform).toBe("translate3d(80px, 300px, 0px)");
 
@@ -524,7 +524,7 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
 
     const callerStore = createStore();
     const controlStore = createStore();
-    const seed = [{ name: "go", at: 0, value: 50 }];
+    const seed = [{ kind: "trigger", name: "go", at: 0, value: 50 }] as const;
     withStore(callerStore, () => {
       sprung(liveAt(100), seed);
       follower(liveAt(100), seed);

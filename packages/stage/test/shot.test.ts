@@ -1,4 +1,4 @@
-import { eventLog, motion, state, type Pose2d, type Time } from "@gerak/core";
+import { inputLog, inputs, motion, state, type Pose2d, type Time } from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   beat,
@@ -123,7 +123,7 @@ describe("shot", () => {
     );
     const stage = compiled(
       scene(
-        { cues: [{ name: "tap", at: 700 }] },
+        { cues: [{ kind: "trigger", name: "tap", at: 700, value: 1 }] },
         shot(sliding("hook", 600)),
         shot(counting, { length: 400 }),
       ),
@@ -162,11 +162,12 @@ describe("shot", () => {
       ),
     );
     const stage = compiled(scene(shot(sliding("hook", 600)), shot(counting, { length: 400 })));
-    const log = eventLog();
+    const tapInputs = inputs({ triggers: { tap: {} } });
+    const log = inputLog();
     const tally = (ms: number) =>
-      poseOf(frame(stage, { time: at(ms, 1000), events: log.events }).targets["tally"])?.x;
+      poseOf(frame(stage, { time: at(ms, 1000), events: log.input }).targets["tally"])?.x;
     expect(tally(700)).toBe(0);
-    log.add({ name: "tap", at: 750 });
+    log.trigger(750, tapInputs, "tap");
     expect(tally(800)).toBe(1);
   });
 
@@ -210,8 +211,8 @@ describe("shot", () => {
       scene(
         {
           cues: [
-            { name: "beat", at: 500 },
-            { name: "beat", at: 700 },
+            { kind: "trigger", name: "beat", at: 500, value: 1 },
+            { kind: "trigger", name: "beat", at: 700, value: 1 },
           ],
         },
         shot(sliding("hook", 600)),
@@ -247,8 +248,8 @@ describe("shot", () => {
       scene(
         {
           cues: [
-            { name: "beat", at: 440 },
-            { name: "beat", at: 600 },
+            { kind: "trigger", name: "beat", at: 440, value: 1 },
+            { kind: "trigger", name: "beat", at: 600, value: 1 },
           ],
         },
         shot(sliding("hook", 600)),
@@ -281,7 +282,7 @@ describe("shot", () => {
     );
     const stage = compiled(
       scene(
-        { cues: [{ name: "beat", at: 600 }] },
+        { cues: [{ kind: "trigger", name: "beat", at: 600, value: 1 }] },
         shot(sliding("hook", 600)),
         shot(counting, { length: 400 }),
       ),
@@ -317,7 +318,7 @@ describe("shot", () => {
     );
     const stage = compiled(
       scene(
-        { cues: [{ name: "beat", at: 200 }] },
+        { cues: [{ kind: "trigger", name: "beat", at: 200, value: 1 }] },
         shot(lead, { length: 600 }),
         shot(follow, { length: 400 }),
       ),

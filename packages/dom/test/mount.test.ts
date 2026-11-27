@@ -11,7 +11,7 @@ import {
   toCubics,
   transition,
   viewSize3d,
-  type Events,
+  type Input,
   type Lens3d,
   type Pose2d,
   type Pose3d,
@@ -1723,7 +1723,7 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
   });
 });
 
-function handedDriver(initial: Events = []): Driver & {
+function handedDriver(initial: Input = []): Driver & {
   at: number;
   step(ms: number): void;
 } {
@@ -1746,7 +1746,7 @@ function handedDriver(initial: Events = []): Driver & {
   return handed;
 }
 
-function watchedScene(seen: { events: Events }) {
+function watchedScene(seen: { events: Input }) {
   return scene(
     box("card", { watch: true }).moves(
       bind({
@@ -1765,10 +1765,10 @@ describe("mount on a handed driver", () => {
     const root = new FakeRoot([card]);
     const frames = fakeFrames();
     const driver = handedDriver([
-      { name: "tap", at: 100 },
-      { name: "late", at: 900 },
+      { kind: "trigger", name: "tap", at: 100, value: 1 },
+      { kind: "trigger", name: "late", at: 900, value: 1 },
     ]);
-    const seen = { events: [] as Events };
+    const seen = { events: [] as Input };
     const mounted = mount(watchedScene(seen), {
       root,
       frames,
@@ -1790,7 +1790,7 @@ describe("mount on a handed driver", () => {
     const card = new FakeNode("card");
     const root = new FakeRoot([card]);
     const driver = handedDriver();
-    const seen = { events: [] as Events };
+    const seen = { events: [] as Input };
     const mounted = mount(watchedScene(seen), {
       root,
       frames: fakeFrames(),
@@ -1812,7 +1812,7 @@ describe("mount on a handed driver", () => {
     const root = new FakeRoot([card]);
     const frames = fakeFrames();
     const driver = handedDriver();
-    const seen = { events: [] as Events };
+    const seen = { events: [] as Input };
     const mounted = mount(watchedScene(seen), {
       root,
       frames,
@@ -1830,7 +1830,7 @@ describe("mount on a handed driver", () => {
     const root = new FakeRoot([card]);
     const frames = fakeFrames();
     const driver = clockDriver({ duration: 1000, autoplay: false, frames: fakeFrames() });
-    const seen = { events: [] as Events };
+    const seen = { events: [] as Input };
     const mounted = mount(watchedScene(seen), {
       root,
       frames,

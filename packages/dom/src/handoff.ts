@@ -1,4 +1,4 @@
-import { liveAt, unreachable, type Events } from "@gerak/core";
+import { liveAt, unreachable, type Input } from "@gerak/core";
 import type { Rest, RestReader, Stage, TriggerBeat } from "@gerak/stage";
 import {
   sampleNear,
@@ -28,7 +28,7 @@ export interface HandoffState {
   readonly hasTriggers: boolean;
   animations(): Iterable<readonly Animation[]>;
   release(): void;
-  syncTriggers(clockMs: number, events: Events, reader: RestReader, held: boolean): void;
+  syncTriggers(clockMs: number, events: Input, reader: RestReader, held: boolean): void;
   depsUnchanged(
     nextMaxScroll: number,
     lines: Readonly<Record<string, readonly number[]>>,
@@ -54,7 +54,7 @@ export interface HandoffInput {
   readonly readMaxScroll: () => number;
   readonly readScrollY: () => number;
   readonly clockMs: () => number;
-  readonly events: () => Events;
+  readonly events: () => Input;
 }
 
 function nodesOf(target: BoundTarget): readonly PageElement[] {
@@ -91,7 +91,7 @@ export function createHandoff(): HandoffState {
 
   const syncTriggers = (
     clockMs: number,
-    events: Events,
+    events: Input,
     reader: RestReader,
     held: boolean,
   ): void => {

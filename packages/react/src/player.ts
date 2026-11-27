@@ -9,7 +9,7 @@ import {
   type RefCallback,
 } from "react";
 import { applyValue, type EventDriver, type RenderTarget } from "@gerak/dom";
-import { NO_EVENTS, elapsedOf, type Events, type Pose2d, type Signal } from "@gerak/core";
+import { NO_INPUT, elapsedOf, type Input, type Pose2d, type Signal } from "@gerak/core";
 import { play, type Driver, type Player } from "@gerak/player";
 
 /** A driver a component owns, released when the component leaves. */
@@ -140,7 +140,7 @@ interface Shown<T extends object, D extends OwnedDriver> {
   readonly playing: Playing<T, D>;
   readonly scene: Signal<T>;
   readonly createDriver: () => D;
-  readonly cues: Events;
+  readonly cues: Input;
 }
 
 /** Plays `scene` on a driver from `createDriver` with `cues`; define all three outside the component.
@@ -148,7 +148,7 @@ interface Shown<T extends object, D extends OwnedDriver> {
 export function usePlayer<T extends object, D extends OwnedDriver>(
   scene: Signal<T>,
   createDriver: () => D,
-  cues: Events = NO_EVENTS,
+  cues: Input = NO_INPUT,
 ): Playing<T, D> | undefined {
   const host = useContext(HostContext);
   const adopt = host.createDriver;

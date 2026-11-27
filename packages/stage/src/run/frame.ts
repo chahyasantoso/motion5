@@ -1,9 +1,9 @@
 import {
-  NO_EVENTS,
+  NO_INPUT,
   elapsedOf,
   scroll,
   unreachable,
-  type Events,
+  type Input,
   type Pose2d,
   type Pose3d,
   type Time,
@@ -18,7 +18,7 @@ import type { StageError } from "./errors";
 /** One frame's inputs: the time, events, measured rest boxes, and re-measure history. */
 export interface FrameInput {
   readonly time: Time;
-  readonly events?: Events | undefined;
+  readonly events?: Input | undefined;
   readonly rest?: RestReader | undefined;
   /** Each measurement in time order, so `carry` can move a member after a re-measure. */
   readonly measures?: readonly RestAt[] | undefined;
@@ -162,7 +162,7 @@ export function mediaMs(member: Member, ms: number): number {
 
 /** Runs the scene once; single owner of `visible` across clock stretches and scroll windows. */
 export function frame(stage: Stage, input: FrameInput): FrameOutput {
-  const events = input.events ?? NO_EVENTS;
+  const events = input.events ?? NO_INPUT;
   const measures = input.measures ?? [];
   const rest = input.rest ?? measures.at(-1)?.rest ?? NO_REST;
   const time = input.time;

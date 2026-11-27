@@ -1,9 +1,9 @@
 import {
-  NO_EVENTS,
-  mergeEvents,
+  NO_INPUT,
+  mergeInput,
   span,
   type Cubic2d,
-  type Events,
+  type Input,
   type Span,
   type Time,
   unreachable,
@@ -56,7 +56,7 @@ export interface StageInput {
   readonly beats: Readonly<Record<string, readonly [number, number]>>;
   readonly durationMs?: number | undefined;
   readonly members: readonly MemberInput[];
-  readonly cues?: Events | undefined;
+  readonly cues?: Input | undefined;
   readonly limits?: Readonly<Record<string, Limits>> | undefined;
   readonly settleMs?: number | undefined;
   readonly shots?: readonly ShotSummary[] | undefined;
@@ -69,7 +69,7 @@ export interface Stage {
   readonly durationMs: number;
   readonly beats: Readonly<Record<string, Span>>;
   readonly members: readonly Member[];
-  readonly cues: Events;
+  readonly cues: Input;
   readonly limits: Readonly<Record<string, Limits>>;
   /** Minimum settle window in ms after input events on a page mount, when triggered beats need longer. */
   readonly settleMs?: number | undefined;
@@ -384,7 +384,7 @@ export function compileDirectStage(input: StageInput): CompileResult {
     durationMs: beats.durationMs,
     beats: beats.beats,
     members,
-    cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),
+    cues: cues === undefined ? NO_INPUT : mergeInput(cues),
     limits,
     ...(settleMs === undefined ? {} : { settleMs }),
     ...(shots === undefined || shots.length === 0 ? {} : { shots }),

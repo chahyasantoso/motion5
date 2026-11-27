@@ -72,7 +72,7 @@ describe("an element's edges", () => {
       frame(stage, {
         time: at(100, stage.durationMs),
         rest,
-        events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 360 }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 50, value: 360 }],
       }).targets["badge"],
     );
     expect(pose?.x).toBeCloseTo(50, 9);
@@ -167,7 +167,7 @@ describe("single-scene element ownership", () => {
       frame(stage, {
         time: at(100, stage.durationMs),
         rest: stickyRest,
-        events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 1100 }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 50, value: 1100 }],
       }).targets["card"],
     );
     expect(mid?.x).toBeCloseTo(50, 9);

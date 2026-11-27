@@ -1,5 +1,5 @@
 import {
-  NO_EVENTS,
+  NO_INPUT,
   POSE_2D_NUMBERS,
   POSE_3D_NUMBERS,
   VALUE_FIELDS,
@@ -11,7 +11,7 @@ import {
   generationOf,
   lanes,
   loop,
-  mergeEvents,
+  mergeInput,
   mix,
   motion,
   scroll,
@@ -23,7 +23,7 @@ import {
   withProbeStore,
   withProgress,
   type Ease,
-  type Events,
+  type Input,
   type InWindow,
   type LaneOrigin,
   type Lanes,
@@ -99,7 +99,7 @@ export interface SceneOptions {
   readonly kind?: never;
   /** Optional scene label shown in ownership diagnostics. */
   readonly name?: string | undefined;
-  readonly cues?: Events | undefined;
+  readonly cues?: Input | undefined;
   /** The piece's length in ms; defaults to the end of the last beat. */
   readonly length?: number | undefined;
 }
@@ -216,7 +216,7 @@ interface State {
   /** The shot clock of every element a shot owns. */
   readonly shotClocks: ReadonlyMap<string, ShotClock>;
   readonly shots: readonly ShotSummary[];
-  readonly shotCues: Events;
+  readonly shotCues: Input;
   /** Where the next shot starts, in ms. */
   readonly cursor: number;
   /** The shot or named scene that binds each owned element, innermost first. */
@@ -251,11 +251,11 @@ const SCENE_TIMES = new WeakMap<Time, Time>();
 interface MovedEvents {
   readonly version: number;
   readonly generation: number;
-  readonly events: Events;
+  readonly events: Input;
 }
-/** Each event list moved to a shot's clock, by shot start, and the list each moved one came from. */
-const SHOT_EVENTS = new WeakMap<Events, Map<number, MovedEvents>>();
-const SCENE_EVENTS = new WeakMap<Events, Events>();
+/** Each input list moved to a shot's clock, by shot start, and the list each moved one came from. */
+const SHOT_EVENTS = new WeakMap<Input, Map<number, MovedEvents>>();
+const SCENE_EVENTS = new WeakMap<Input, Input>();
 
 interface MotionBody<P = Pose2d> {
   readonly fn: (time: Time, context?: MotionContext) => P;
@@ -1149,9 +1149,9 @@ function shotted(state: State, taken: Shot): State {
           : shown,
     });
   }
-  const shiftedCues: Events =
+  const shiftedCues: Input =
     other.options.cues === undefined
-      ? NO_EVENTS
+      ? NO_INPUT
       : other.options.cues.map((cue) => ({ ...cue, at: cue.at + from }));
   const moved: State = {
     ...other,
@@ -1363,8 +1363,8 @@ function membersOf(state: State): readonly MemberInput[] {
   return members;
 }
 
-type CompiledStack2d = (time: Time, events: Events) => Pose2d;
-type CompiledStack3d = (time: Time, events: Events) => Pose3d;
+type CompiledStack2d = (time: Time, events: Input) => Pose2d;
+type CompiledStack3d = (time: Time, events: Input) => Pose3d;
 
 interface Plan {
   readonly name: string;
@@ -1387,8 +1387,8 @@ interface Env {
   readonly counts: Readonly<Record<string, number>> | undefined;
   readonly lines: Readonly<Record<string, readonly number[]>> | undefined;
   /** Poses `read` already computed this frame, by element, part and time. */
-  readonly read2d: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
-  readonly read3d: Map<string, { readonly events: Events; readonly pose: Pose3d }>;
+  readonly read2d: Map<string, { readonly events: Input; readonly pose: Pose2d }>;
+  readonly read3d: Map<string, { readonly events: Input; readonly pose: Pose3d }>;
   readonly reading: string[];
   /** Filled as elements run: which can change with the clock alone. */
   readonly moves: Map<string, Moves> | undefined;
@@ -1634,7 +1634,7 @@ function evaluate2d(
   index: number | undefined,
   count: number | undefined,
   time: Time,
-  events: Events,
+  events: Input,
 ): Pose2d {
   enterRead(env, plan, index);
   const prevEnv = activeEnv;
@@ -1657,7 +1657,7 @@ function evaluate3d(
   index: number | undefined,
   count: number | undefined,
   time: Time,
-  events: Events,
+  events: Input,
 ): Pose3d {
   enterRead(env, plan, index);
   const prevEnv = activeEnv;
@@ -1735,7 +1735,7 @@ function shotTime(time: Time, clock: ShotClock | undefined, total: number | unde
 }
 
 /** `events` from the shot's start on, each `at` moved back by the start, made once per list and shot start. */
-function shotEvents(events: Events, clock: ShotClock | undefined): Events {
+function shotEvents(events: Input, clock: ShotClock | undefined): Input {
   if (clock === undefined || clock.from === 0) return events;
   const version = versionOf(events);
   const generation = generationOf(events);
@@ -1757,7 +1757,7 @@ function readerOf(
   env: Env,
   plan: Plan,
   local: Time,
-  localEvents: Events,
+  localEvents: Input,
   stepClock?: ShotClock,
 ): MotionContext["read"] {
   const activeClock = stepClock ?? plan.clock;
@@ -2338,7 +2338,7 @@ function stageInputOf(state: State): StageInput {
   const cues =
     state.options.cues === undefined && state.shotCues.length === 0
       ? undefined
-      : mergeEvents(state.options.cues ?? NO_EVENTS, state.shotCues);
+      : mergeInput(state.options.cues ?? NO_INPUT, state.shotCues);
   return {
     beats: Object.fromEntries(
       [...state.beats]
@@ -2697,7 +2697,7 @@ function startState(options: SceneOptions): State {
     current: undefined,
     shotClocks: new Map(),
     shots: [],
-    shotCues: NO_EVENTS,
+    shotCues: NO_INPUT,
     cursor: 0,
     sceneOf: new Map(),
     shotOf: new Map(),

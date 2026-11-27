@@ -3,15 +3,16 @@ import { provenanceOf } from "../src/provenance/index";
 import {
   INPUT_EVENTS,
   createStore,
-  eventLog,
+  inputLog,
   liveAt,
   motion,
+  pageInputs,
   pointer,
   scroll,
   span,
   state,
   withStore,
-  type MotionEvent,
+  type InputEntry,
   type Pose2d,
 } from "@gerak/core";
 import {
@@ -53,7 +54,7 @@ describe("Slice 2 foundation stage contracts", () => {
     const hero = box("hero");
     const a = compile(
       scene(
-        { name: "sceneA", cues: [{ name: "cue", at: 100 }] },
+        { name: "sceneA", cues: [{ kind: "trigger", name: "cue", at: 100, value: 1 }] },
         hero.moves(motion((t): Pose2d => ({ x: t.progress * 100 })).in(beat("enter", 500))),
       ),
     );
@@ -74,18 +75,18 @@ describe("Slice 2 foundation stage contracts", () => {
     expect(outB.targets["hero"]).toEqual({ y: 200 });
 
     const s1 = scene(
-      { length: 400, cues: [{ name: "ping", at: 50 }] },
+      { length: 400, cues: [{ kind: "trigger", name: "ping", at: 50, value: 1 }] },
       hero.moves(motion((t): Pose2d => ({ x: 100 * t.progress })).in(beat("in", 400))),
     );
     const s2 = scene(
-      { length: 600, cues: [{ name: "pong", at: 100 }] },
+      { length: 600, cues: [{ kind: "trigger", name: "pong", at: 100, value: 1 }] },
       hero.moves(motion((t): Pose2d => ({ y: 50 * t.progress })).in(beat("move", 600))),
     );
     const reel = compile(scene(shot(s1, { name: "one" }), shot(s2, { name: "two" })));
     expect(reel.durationMs).toBe(1000);
     expect(reel.cues).toEqual([
-      { name: "ping", at: 50 },
-      { name: "pong", at: 500 },
+      { kind: "trigger", name: "ping", at: 50, value: 1 },
+      { kind: "trigger", name: "pong", at: 500, value: 1 },
     ]);
     expect(frame(reel, { time: liveAt(200) }).targets["hero"]).toEqual({ x: 50 });
     expect(frame(reel, { time: liveAt(700) }).targets["hero"]).toEqual({ x: 100, y: 25 });
@@ -105,19 +106,19 @@ describe("Slice 2 foundation stage contracts", () => {
     const trig = beat("reveal", 300, { when: scrollPoint(100).reached, back: "stay" });
     const storeA = createStore();
     const storeB = createStore();
-    const logA = eventLog();
-    const logB = eventLog();
+    const logA = inputLog();
+    const logB = inputLog();
 
-    logA.add({ name: INPUT_EVENTS.scroll, at: 100, value: 200 });
-    logB.add({ name: INPUT_EVENTS.scroll, at: 100, value: 20 });
+    logA.set(100, pageInputs, "scroll", 200);
+    logB.set(100, pageInputs, "scroll", 20);
 
-    const activeA1 = withStore(storeA, () => trig.active(liveAt(200), { events: logA.events }));
-    const activeB1 = withStore(storeB, () => trig.active(liveAt(200), { events: logB.events }));
+    const activeA1 = withStore(storeA, () => trig.active(liveAt(200), { events: logA.input }));
+    const activeB1 = withStore(storeB, () => trig.active(liveAt(200), { events: logB.input }));
     expect(activeA1).toBe(true);
     expect(activeB1).toBe(false);
 
-    logA.add({ name: INPUT_EVENTS.scroll, at: 2500, value: 0 });
-    const activeA2 = withStore(storeA, () => trig.active(liveAt(2600), { events: logA.events }));
+    logA.set(2500, pageInputs, "scroll", 0);
+    const activeA2 = withStore(storeA, () => trig.active(liveAt(2600), { events: logA.input }));
     expect(activeA2).toBe(true);
   });
 
@@ -126,12 +127,12 @@ describe("Slice 2 foundation stage contracts", () => {
       scroll: [scrollPoint(0), scrollPoint(500)],
       smooth: { stiffness: 120, damping: 10 },
     });
-    const log = eventLog();
-    log.add({ name: INPUT_EVENTS.scroll, at: 0, value: 0 });
-    log.add({ name: INPUT_EVENTS.scroll, at: 10, value: 400 });
+    const log = inputLog();
+    log.set(0, pageInputs, "scroll", 0);
+    log.set(10, pageInputs, "scroll", 400);
     // Even if spring temporarily settles or moves near target, moving reflects watchClock("time").
-    expect(sb.moving(liveAt(50), { events: log.events })).toBe(true);
-    expect(sb.moving(liveAt(5000), { events: log.events })).toBe(false);
+    expect(sb.moving(liveAt(50), { events: log.input })).toBe(true);
+    expect(sb.moving(liveAt(5000), { events: log.input })).toBe(false);
   });
 
   it("isolates stayWith probes so finished beats settle cleanly with no idle moves", () => {
@@ -197,9 +198,9 @@ describe("Slice 2 foundation stage contracts", () => {
     );
     const s2 = scene({ length: 500 }, badge.moves(bind({ x: (t, ev) => clicks(t, ev) * 10 })));
     const stg = compile(scene(shot(s1, { name: "one" }), shot(s2, { name: "two" })));
-    let events: MotionEvent[] = [{ name: "click", at: 600 }];
+    let events: InputEntry[] = [{ kind: "trigger", name: "click", at: 600, value: 1 }];
     expect(frame(stg, { time: liveAt(700), events }).targets["badge"]).toEqual({ x: 10 });
-    events = [...events, { name: "click", at: 650 }];
+    events = [...events, { kind: "trigger", name: "click", at: 650, value: 1 }];
     expect(frame(stg, { time: liveAt(700), events }).targets["badge"]).toEqual({ x: 20 });
   });
 
@@ -314,12 +315,12 @@ describe("Slice 2 foundation stage contracts", () => {
     const moves = new Map<string, Moves>();
     const drives = new Map<string, Drive>();
     const inputs = new Map<string, InputNeed>();
-    const log = eventLog();
-    log.add({ name: INPUT_EVENTS.scroll, at: 100, value: 80 });
+    const log = inputLog();
+    log.set(100, pageInputs, "scroll", 80);
 
     const out = frame(stg, {
       time: { progress: 1, clock: { kind: "timed", elapsed: 1000, length: 1000 } },
-      events: log.events,
+      events: log.input,
       moves,
       drives,
       inputs,

@@ -1,4 +1,4 @@
-import { atProgress, type Events, type Time, unreachable } from "@gerak/core";
+import { atProgress, type Input, type Time, unreachable } from "@gerak/core";
 import { createLoopCycle, type LoopCycle } from "./loop-cycle";
 import type { Driver } from "@gerak/player";
 import { eventRecorder, type EventSource } from "./events";
@@ -54,7 +54,7 @@ export interface ClockDriver extends Driver {
   /** Logs a sample of a live number at the clock's ms, and keeps the clock running past its end until
    * `SAMPLE_SETTLE_MS` after the latest; a seek keeps the log, `replay` forgets it. */
   send(name: string, value: number, target?: string): void;
-  events(): Events;
+  events(): Input;
   /** Calls `listener` each time the clock forgets its log: a loop that wraps, or `replay`. */
   forgets(listener: () => void): () => void;
 }

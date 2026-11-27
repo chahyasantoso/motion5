@@ -2,7 +2,7 @@ import {
   unreachable,
   type Cubic2d,
   type Ease,
-  type Events,
+  type Input,
   type InWindow,
   type Lens3d,
   type Motion,
@@ -307,7 +307,7 @@ export function object<N extends string = string>(
 export interface MotionContext {
   /** The scene's time, before the motion's `in` and `loop` remap it. */
   readonly time: Time;
-  readonly events: Events;
+  readonly events: Input;
   /** Which part of a list element this call poses, and how many parts there are. */
   readonly index?: number;
   readonly count?: number;

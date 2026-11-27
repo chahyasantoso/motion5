@@ -4,7 +4,7 @@ import {
   mix,
   unreachable,
   type Ease,
-  type Events,
+  type Input,
   type Pose2d,
   type Time,
 } from "@gerak/core";
@@ -77,7 +77,7 @@ function restAt(fallback: RestReader, measures: readonly RestAt[], ms: number): 
   return hit >= 0 ? (measures[hit]?.rest ?? fallback) : (measures[0]?.rest ?? fallback);
 }
 
-function eventsUpTo(events: Events, ms: number): Events {
+function eventsUpTo(events: Input, ms: number): Input {
   if (events.length === 0 || (events[events.length - 1]?.at ?? 0) <= ms) return events;
   let low = 0;
   let high = events.length;
@@ -138,7 +138,7 @@ function carried(
 export function carryFor(
   rest: RestReader,
   measures: readonly RestAt[],
-  events: Events,
+  events: Input,
   time: Time,
 ): Carry {
   const now = elapsedOf(time.clock);

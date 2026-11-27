@@ -59,9 +59,9 @@ describe("eventDriver", () => {
     card.fire("pointerleave");
     card.fire("click");
     expect(driver.events?.()).toEqual([
-      { name: "enter", at: 200, target: "card" },
-      { name: "leave", at: 300, target: "card" },
-      { name: "click", at: 300, target: "card" },
+      { kind: "trigger", name: "enter", at: 200, value: 1, target: "card" },
+      { kind: "trigger", name: "leave", at: 300, value: 1, target: "card" },
+      { kind: "trigger", name: "click", at: 300, value: 1, target: "card" },
     ]);
   });
 
@@ -93,13 +93,5 @@ describe("eventDriver", () => {
     driver.dispose();
     expect(card.listening).toBe(0);
     expect(source.waiting).toBe(0);
-  });
-
-  it("logs where on the watched element a pointer event happened", () => {
-    const driver = eventDriver({ frames: frames(), clock: () => 0 });
-    const stage = element({ left: 100, top: 40 });
-    driver.watch("stage", stage);
-    stage.fire("click", { clientX: 740, clientY: 400 });
-    expect(driver.events?.()).toEqual([{ name: "click", at: 0, target: "stage", x: 640, y: 360 }]);
   });
 });

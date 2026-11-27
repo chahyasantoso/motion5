@@ -2,7 +2,7 @@ import { createElement, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { clockDriver, type RenderTarget } from "@gerak/dom";
-import { eventLog, state, type Time } from "@gerak/core";
+import { inputLog, inputs, state, type Time } from "@gerak/core";
 import { drop } from "@gerak/moves";
 import { manualDriver, type ManualDriver } from "@gerak/player";
 import {
@@ -100,8 +100,9 @@ describe("player hooks", () => {
 
 describe("useSignal", () => {
   it("renders a signal's value at once and again only when an event changes it", async () => {
-    const log = eventLog();
-    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    const tapInputs = inputs({ triggers: { tap: {} } });
+    const log = inputLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.input };
     const createDriver = () => driver;
     const taps = state(0, (count, event) => (event.name === "tap" ? count + 1 : count));
     const seen: (number | undefined)[] = [];
@@ -117,7 +118,7 @@ describe("useSignal", () => {
     const settled = seen.length;
     await act(() => driver.seekMs(200));
     expect(seen.length).toBe(settled);
-    log.add({ name: "tap", at: 300 });
+    log.trigger(300, tapInputs, "tap");
     await act(() => driver.seekMs(400));
     expect(seen.at(-1)).toBe(1);
     await act(() => driver.seekMs(100));
@@ -144,7 +145,9 @@ describe("useWatch", () => {
       renderer = create(createElement(Card), { createNodeMock: () => node });
     });
     listeners.get("pointerenter")?.();
-    expect(driver.events?.()).toEqual([{ name: "enter", at: 0, target: "card" }]);
+    expect(driver.events?.()).toEqual([
+      { kind: "trigger", name: "enter", at: 0, value: 1, target: "card" },
+    ]);
     await act(() => renderer?.unmount());
     expect(listeners.size).toBe(0);
   });
@@ -160,7 +163,7 @@ describe("a page host", () => {
     return {
       scene,
       clock: () => manualDriver({ durationMs }),
-      cues: [{ name: "hit", at: cue }],
+      cues: [{ kind: "trigger" as const, name: "hit", at: cue, value: 1 }],
     };
   }
 

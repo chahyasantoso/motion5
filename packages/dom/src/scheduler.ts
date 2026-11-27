@@ -1,11 +1,11 @@
 import {
   INPUT_EVENTS,
-  NO_EVENTS,
+  NO_INPUT,
   clamp,
-  derivedEvents,
+  derivedInput,
   elapsedOf,
   liveAt,
-  type Events,
+  type Input,
   type Signal,
   type Time,
 } from "@gerak/core";
@@ -97,7 +97,7 @@ export interface MountRuntime {
   remeasure(forceHandOff?: boolean): void;
   replace(nextStage: Stage, rebind: () => void): void;
   send(name: string, value: number, target?: string): void;
-  events(): Events;
+  events(): Input;
   dispose(allNodes: readonly PageElement[]): void;
 }
 
@@ -310,9 +310,9 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     return names;
   };
 
-  const mergedEvents = derivedEvents();
-  const sceneEvents = (): Events => {
-    const handed = given?.events?.() ?? NO_EVENTS;
+  const mergedEvents = derivedInput();
+  const sceneEvents = (): Input => {
+    const handed = given?.events?.() ?? NO_INPUT;
     return handed.length === 0
       ? recorder.log
       : mergedEvents.resolve(recorder.log, handed, undefined);
@@ -539,7 +539,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     (given === undefined
       ? {
           now: (): Time => liveAt(elapsed()),
-          events: (): Events => recorder.log,
+          events: (): Input => recorder.log,
           options,
           subscribe(listener) {
             listeners.add(listener);

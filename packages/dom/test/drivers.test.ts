@@ -315,7 +315,9 @@ describe("clockDriver watch", () => {
     driver.watch("card", card);
     driver.seek(0.5);
     card.fire("pointerenter");
-    expect(driver.events()).toEqual([{ name: "enter", at: 1000, target: "card" }]);
+    expect(driver.events()).toEqual([
+      { kind: "trigger", name: "enter", at: 1000, value: 1, target: "card" },
+    ]);
     driver.seek(0.75);
     expect(seen(driver)).toEqual(["enter"]);
     driver.seek(0.25);
@@ -343,7 +345,9 @@ describe("clockDriver watch", () => {
     const time = driver.now();
     expect(time.progress).toBe(1);
     expect(time.clock).toEqual({ kind: "timed", elapsed: 1800, length: 1000 });
-    expect(driver.events()).toEqual([{ name: "enter", at: 1500, target: "card" }]);
+    expect(driver.events()).toEqual([
+      { kind: "trigger", name: "enter", at: 1500, value: 1, target: "card" },
+    ]);
     expect(driver.playing()).toBe(true);
     driver.seek(0.5);
     expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 500, length: 1000 });
@@ -383,7 +387,7 @@ describe("clockDriver watch", () => {
     source.run(1200);
     expect(driver.playing()).toBe(false);
     driver.send("mouthOpen", 0.6);
-    expect(driver.events()).toEqual([{ name: "mouthOpen", at: 1000, value: 0.6 }]);
+    expect(driver.events()).toEqual([{ kind: "value", name: "mouthOpen", at: 1000, value: 0.6 }]);
     expect(driver.playing()).toBe(true);
     source.run(2000);
     source.run(2500);

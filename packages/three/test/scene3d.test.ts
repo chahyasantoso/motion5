@@ -191,7 +191,10 @@ describe("threeBinder", () => {
     const listeners = new Set<() => void>();
     const driver = {
       now: (): Time => ({ progress: 0, clock: { kind: "live", elapsed: 0 } }),
-      events: () => (scrollY === 0 ? [] : [{ name: INPUT_EVENTS.scroll, at: 0, value: scrollY }]),
+      events: () =>
+        scrollY === 0
+          ? []
+          : [{ kind: "value" as const, name: INPUT_EVENTS.scroll, at: 0, value: scrollY }],
       subscribe: (listener: () => void) => {
         listeners.add(listener);
         return () => listeners.delete(listener);
@@ -254,7 +257,10 @@ describe("threeBinder", () => {
     const listeners = new Set<() => void>();
     const driver = {
       now: (): Time => ({ progress: 0.5, clock: { kind: "live", elapsed: 0 } }),
-      events: () => (scrollY === 0 ? [] : [{ name: INPUT_EVENTS.scroll, at: 0, value: scrollY }]),
+      events: () =>
+        scrollY === 0
+          ? []
+          : [{ kind: "value" as const, name: INPUT_EVENTS.scroll, at: 0, value: scrollY }],
       subscribe: (listener: () => void) => {
         listeners.add(listener);
         return () => listeners.delete(listener);

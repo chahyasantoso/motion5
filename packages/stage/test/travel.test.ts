@@ -285,7 +285,7 @@ describe("travel", () => {
       frame(stage, {
         time: at(100, stage.durationMs),
         rest: desktopRest,
-        events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 720 }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 50, value: 720 }],
       }).targets["drink"],
     );
     expect(desktopFeatures?.x).toBeCloseTo(300 - 640, 9);
@@ -299,7 +299,7 @@ describe("travel", () => {
         frame(stage, {
           time: at(200, stage.durationMs),
           rest: desktopRest,
-          events: [{ name: INPUT_EVENTS.scroll, at: 50, value: scrollY }],
+          events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 50, value: scrollY }],
         }).targets["drink"],
       );
       expect(pinned?.x).toBeCloseTo(900 - 640, 9);
@@ -312,7 +312,7 @@ describe("travel", () => {
       frame(stage, {
         time: at(200, stage.durationMs),
         rest: desktopRest,
-        events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 2200 }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 50, value: 2200 }],
       }).targets["drink"],
     );
     expect(unpinned?.y).toBeCloseTo(160 - 360, 9);
@@ -333,7 +333,7 @@ describe("travel", () => {
       frame(stage, {
         time: at(100, stage.durationMs),
         rest: mobileRest,
-        events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 844 }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 50, value: 844 }],
       }).targets["drink"],
     );
     const expectedFeatures = boxInViewport(mobileRest.get("slotFeatures"), 844);
@@ -344,7 +344,7 @@ describe("travel", () => {
       frame(stage, {
         time: at(200, stage.durationMs),
         rest: mobileRest,
-        events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 1900 }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 50, value: 1900 }],
       }).targets["drink"],
     );
     expect(mobileStory?.x).toBeCloseTo(0, 9);
@@ -507,7 +507,7 @@ describe("travel", () => {
       frame(stage, {
         time: at(100, 1000),
         rest,
-        events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 200 }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 50, value: 200 }],
       }).targets["flowMover"],
     );
     expect(flowEnd?.x).toBeCloseTo(200, 9);

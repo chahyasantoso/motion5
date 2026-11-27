@@ -1,4 +1,4 @@
-import type { Ease, Events, Pose2d } from "@gerak/core";
+import type { Ease, Input, Pose2d } from "@gerak/core";
 
 /** How a measured box moves with page scroll: normal flow, viewport-fixed, or sticky inside a pin range. */
 export type BoxPlacement =
@@ -56,7 +56,7 @@ export interface CarryOptions {
   readonly ms: number;
   readonly ease?: Ease | undefined;
   readonly mode?: CarryMode | undefined;
-  readonly target?: ((events: Events, rest: RestReader) => Box) | undefined;
+  readonly target?: ((events: Input, rest: RestReader) => Box) | undefined;
 }
 
 /** Moves `member` from its old rest box to its new one after a re-measure, over `options.ms`. */

@@ -1,5 +1,5 @@
 import {
-  NO_EVENTS,
+  NO_INPUT,
   UNTIMED,
   clamp,
   elapsedOf,
@@ -11,7 +11,7 @@ import {
   unreachable,
   watchClock,
   type Ease,
-  type Events,
+  type Input,
   type MotionWindow,
   type Signal,
   type Span,
@@ -30,7 +30,7 @@ export type BeatPlace = { readonly at?: number } | { readonly after: Beat; reado
 
 /** Context a scroll or trigger beat reads when mapping time: events so far and measured rests. */
 export interface BeatContext {
-  readonly events?: Events | undefined;
+  readonly events?: Input | undefined;
   readonly rest?: RestReader | undefined;
 }
 
@@ -172,19 +172,19 @@ function isRestReader(value: unknown): value is RestReader {
   );
 }
 
-function isEvents(value: unknown): value is Events {
+function isEvents(value: unknown): value is Input {
   return Array.isArray(value);
 }
 
 /** Where a motion's context keeps its events for its window to read, so that read is not counted as the motion's. */
 export const WINDOW_EVENTS = Symbol.for("@gerak/stage/window-events");
 
-function readContext(context: unknown): { readonly events: Events; readonly rest: RestReader } {
-  if (typeof context !== "object" || context === null) return { events: NO_EVENTS, rest: NO_REST };
+function readContext(context: unknown): { readonly events: Input; readonly rest: RestReader } {
+  if (typeof context !== "object" || context === null) return { events: NO_INPUT, rest: NO_REST };
   const rawEvents: unknown = Reflect.get(context, WINDOW_EVENTS) ?? Reflect.get(context, "events");
   const rawRest: unknown = Reflect.get(context, "rest");
   return {
-    events: isEvents(rawEvents) ? rawEvents : NO_EVENTS,
+    events: isEvents(rawEvents) ? rawEvents : NO_INPUT,
     rest: isRestReader(rawRest) ? rawRest : NO_REST,
   };
 }
@@ -273,7 +273,7 @@ function makeScrollBeat(
 
 type TriggerFold = (
   time: Time,
-  events: Events,
+  events: Input,
   threshold: number,
 ) => {
   readonly raw: number;

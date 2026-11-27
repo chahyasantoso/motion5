@@ -1,4 +1,4 @@
-import type { Events, Pose2d, Pose3d, Span, Time } from "@gerak/core";
+import type { Input, Pose2d, Pose3d, Span, Time } from "@gerak/core";
 import type { ScrollBeat, TriggerBeat } from "./beat";
 import type { Carry, RestReader } from "./layout";
 
@@ -22,7 +22,7 @@ export interface InputNeed {
 export interface SceneContext<B extends string = string> {
   readonly time: Time;
   readonly beats: Beats<B>;
-  readonly events: Events;
+  readonly events: Input;
   /** Measured rest boxes. */
   readonly rest: RestReader;
   readonly carry: Carry;

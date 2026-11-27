@@ -1,11 +1,11 @@
 import {
   INPUT_EVENTS,
-  NO_EVENTS,
+  NO_INPUT,
   liveAt,
   unreachable,
   withProbeStore,
   type Anchor,
-  type Events,
+  type Input,
 } from "@gerak/core";
 import {
   frame,
@@ -350,7 +350,7 @@ function runFrame(
   stage: Stage,
   input: TrackInput,
   ms: number,
-  events: Events,
+  events: Input,
   only: ReadonlySet<string>,
 ): Sampled {
   const moves = new Map<string, Moves>();
@@ -413,7 +413,7 @@ export function scrollTracks(
     if (input.names.size === 0 || maxScroll <= 0 || maxScroll / GRID_PX > MAX_SAMPLES / 2) {
       return { tracks: new Map(), deps: new Set() };
     }
-    const found = runFrame(stage, input, 0, NO_EVENTS, input.names);
+    const found = runFrame(stage, input, 0, NO_INPUT, input.names);
     const elementBeatDeps = new Map<string, Set<string>>();
     const groups = new Map<
       string,
@@ -467,7 +467,13 @@ export function scrollTracks(
         GRID_PX,
         [...group.edges],
         (y, only) =>
-          runFrame(stage, groupInput, 0, [{ name: INPUT_EVENTS.scroll, at: 0, value: y }], only),
+          runFrame(
+            stage,
+            groupInput,
+            0,
+            [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: y }],
+            only,
+          ),
         (name, _, sampled) =>
           scrollDrive(sampled.drives.get(name)) !== undefined && !sampled.moves.has(name),
         group.intervals,
@@ -502,7 +508,7 @@ function restsAtStart(member: Member, track: Track, before: Sampled): boolean {
 export function triggerTracks(stage: Stage, input: TrackInput): SampledTracks<TriggerTrack> {
   return withProbeStore(() => {
     if (input.names.size === 0) return { tracks: new Map(), deps: new Set() };
-    const found = runFrame(stage, input, 0, NO_EVENTS, input.names);
+    const found = runFrame(stage, input, 0, NO_INPUT, input.names);
     const byBeat = new Map<TriggerBeat, Set<string>>();
     for (const name of input.names) {
       const drive = triggerDrive(found.drives.get(name));
@@ -518,7 +524,9 @@ export function triggerTracks(stage: Stage, input: TrackInput): SampledTracks<Tr
       const beatDeps = new Set<string>();
       const trackedInput: TrackInput = { ...input, rest: trackRest(input.rest, beatDeps) };
       const threshold = beat.when.point.at(trackedInput.rest);
-      const crossed: Events = [{ name: INPUT_EVENTS.scroll, at: 0, value: threshold }];
+      const crossed: Input = [
+        { kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: threshold },
+      ];
       const tracks = sampleTracks(
         stage,
         names,
@@ -533,7 +541,7 @@ export function triggerTracks(stage: Stage, input: TrackInput): SampledTracks<Tr
           return ms < beat.ms || !sampled.moves.has(name);
         },
       );
-      const before = threshold > 0 ? runFrame(stage, trackedInput, 0, NO_EVENTS, names) : undefined;
+      const before = threshold > 0 ? runFrame(stage, trackedInput, 0, NO_INPUT, names) : undefined;
       let keptAny = false;
       for (const [name, track] of tracks) {
         const member = members.get(name);

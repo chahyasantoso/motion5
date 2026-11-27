@@ -711,7 +711,7 @@ describe("slot3d", () => {
       const out = frame(stage, {
         time: liveAt(500),
         rest,
-        events: [{ name: INPUT_EVENTS.scroll, at: 0, value: scrollY }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: scrollY }],
       });
       const travelPose = pose3dOf(out.targets["travelled"]);
       expect(results.sticky).toBeDefined();
@@ -734,7 +734,7 @@ describe("slot3d", () => {
     frame(stage, {
       time: liveAt(500),
       rest,
-      events: [{ name: INPUT_EVENTS.scroll, at: 0, value: 0 }],
+      events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: 0 }],
     });
     expect(results.sticky?.center.y).not.toBeCloseTo(results.stickyPinned?.center.y ?? 0, 2);
   });

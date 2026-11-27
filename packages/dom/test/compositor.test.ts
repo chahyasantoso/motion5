@@ -74,7 +74,7 @@ function between(samples: readonly TrackSample[], y: number): TrackSample["field
 function engineAt(y: number, name: string, index?: number, count?: number): Pose2d {
   const { targets } = frame(stage, {
     time: liveAt(0),
-    events: [{ name: INPUT_EVENTS.scroll, at: 0, value: y }],
+    events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: y }],
   });
   const pose =
     index === undefined || count === undefined
@@ -176,7 +176,7 @@ describe("what the browser plays from a trigger beat", () => {
       const ms = (600 * k) / 120;
       const { targets } = frame(triggered, {
         time: liveAt(ms),
-        events: [{ name: INPUT_EVENTS.scroll, at: 0, value: 500 }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: 500 }],
       });
       const pose = listPose(targets["cards"], 1, 3);
       const line = between(samples, ms);
@@ -296,7 +296,7 @@ describe("beat-scoped sampling and rest dependencies", () => {
       const { targets } = frame(piece, {
         time: liveAt(0),
         rest: zeroRest,
-        events: [{ name: INPUT_EVENTS.scroll, at: 0, value: y }],
+        events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: y }],
       });
       for (const name of ["mover", "jumper", "snap"] as const) {
         const samples = scoped.tracks.get(name)?.parts[0] ?? [];

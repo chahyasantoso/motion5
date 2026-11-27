@@ -64,7 +64,7 @@ describe("page scene compilation", () => {
     expect(stage.durationMs).toBeGreaterThan(0);
     const out = frame(stage, {
       time: at(100, stage.durationMs),
-      events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 200 }],
+      events: [{ kind: "value", name: INPUT_EVENTS.scroll, at: 50, value: 200 }],
     }).targets["hero"];
     expect(out).toEqual({ x: 25 });
   });

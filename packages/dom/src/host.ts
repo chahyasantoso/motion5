@@ -1,4 +1,4 @@
-import { unreachable, type MotionEvent, type Pose2d } from "@gerak/core";
+import { unreachable, type InputEntry, type Pose2d } from "@gerak/core";
 import type { Driver, Player } from "@gerak/player";
 import {
   compileScene,
@@ -207,8 +207,8 @@ export interface Mounted {
   replace(next: StageInput): void;
   /** Logs a named numeric sample at the clock's ms and wakes the settle window. */
   send(name: string, value: number, target?: string): void;
-  /** Events recorded on this mount, oldest first. */
-  events(): readonly MotionEvent[];
+  /** Entries recorded on this mount, oldest first. */
+  events(): readonly InputEntry[];
   /** Resolves once every bound media node has `seeking === false` and `readyState >= 2`. */
   settled(): Promise<void>;
   /** Bound media elements with clip duration in ms and show window bounds in ms. */

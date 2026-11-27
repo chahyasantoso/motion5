@@ -1,7 +1,7 @@
 import { createElement, type FC, type RefObject } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import { eventLog, motion, state, type Pose2d, type Time } from "@gerak/core";
+import { inputLog, inputs, motion, state, type Pose2d, type Time } from "@gerak/core";
 import { type FrameSource, type PageElement, type PageRoot, type PageStyle } from "@gerak/dom";
 import { manualDriver } from "@gerak/player";
 import { box, scene } from "@gerak/stage";
@@ -51,8 +51,9 @@ const NO_FRAMES: FrameSource = { requestFrame: () => 1, cancelFrame: () => undef
 
 describe("Slice 3 foundation react contracts", () => {
   it("useSignal reads initial value synchronously on first render via useSyncExternalStore", async () => {
-    const log = eventLog();
-    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    const tapInputs = inputs({ triggers: { tap: {} } });
+    const log = inputLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.input };
     const createDriver = () => driver;
     const taps = state(10, (count, event) => (event.name === "tap" ? count + 1 : count));
     const basicScene = (time: Time) => ({ box: { x: time.progress * 10 } });
@@ -70,7 +71,7 @@ describe("Slice 3 foundation react contracts", () => {
     // First render has no player yet (undefined), second render (once player exists) gets 10 synchronously.
     expect(seen).toEqual([undefined, 10]);
 
-    log.add({ name: "tap", at: 100 });
+    log.trigger(100, tapInputs, "tap");
     await act(() => driver.seekMs(200));
     expect(seen.at(-1)).toBe(11);
   });
@@ -162,8 +163,9 @@ describe("Slice 3 foundation react contracts", () => {
   });
 
   it("clears useSignal cache when player toggles to undefined and back without flashing stale values", async () => {
-    const log = eventLog();
-    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    const tapInputs = inputs({ triggers: { tap: {} } });
+    const log = inputLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.input };
     const taps = state(0, (count, event) => (event.name === "tap" ? count + 1 : count));
     const seen: (number | undefined)[] = [];
     const basicScene = (time: Time) => ({ x: time.progress * 10 });
@@ -187,7 +189,7 @@ describe("Slice 3 foundation react contracts", () => {
     expect(seen.at(-1)).toBeUndefined();
 
     // Advance event log while detached, then re-attach same player.
-    log.add({ name: "tap", at: 100 });
+    log.trigger(100, tapInputs, "tap");
     driver.seekMs(200);
     await act(() => {
       renderer?.update(createElement(Probe, { active: true }));

@@ -1,8 +1,9 @@
 import {
-  eventLog,
+  inputLog,
+  inputs,
   liveAt,
-  type Events,
-  type MotionEvent,
+  pageInputs,
+  type Input,
   type Point2d,
   type Time,
 } from "@gerak/core";
@@ -22,66 +23,97 @@ export interface EventSource {
   getBoundingClientRect?(): { readonly left: number; readonly top: number };
 }
 
-/** The page events a watched element turns into motion events, and the name each gets. */
-export const WATCHED: Readonly<Record<string, string>> = Object.freeze({
-  pointerenter: "enter",
-  pointerleave: "leave",
-  pointerdown: "down",
-  pointerup: "up",
-  click: "click",
-  focusin: "focus",
-  focusout: "blur",
+const WATCHED_TRIGGERS = [
+  ["pointerenter", "enter"],
+  ["pointerleave", "leave"],
+  ["pointerdown", "down"],
+  ["pointerup", "up"],
+  ["click", "click"],
+  ["focusin", "focus"],
+  ["focusout", "blur"],
+] as const;
+
+const pointerTriggers = inputs({
+  triggers: {
+    enter: {},
+    leave: {},
+    down: {},
+    up: {},
+    click: {},
+    focus: {},
+    blur: {},
+  },
 });
 
-/** A log of pointer events, in order of `at`, and the watching that fills it. */
+/** The page events a watched element turns into triggers, and the name each gets. */
+export const WATCHED: Readonly<Record<string, string>> = Object.freeze(
+  Object.fromEntries(WATCHED_TRIGGERS),
+);
+
+/** A log of input entries, in order of `at`, and the watching that fills it. */
 export interface EventRecorder {
-  readonly log: Events;
+  readonly log: Input;
   /** Logs an event by hand at `at` or the ms `now` gives, and tells `onRecord` that ms. */
   record(name: string, target?: string, point?: Point2d, at?: number): void;
   /** Logs a sample of a live number at `at` or the ms `now` gives, and tells `onRecord` that ms. */
   sample(name: string, value: number, target?: string, at?: number): void;
   /** Logs `WATCHED` events on `element` for `target`; the returned function stops it. */
   watch(target: string, element: EventSource): () => void;
-  /** Forgets every event logged. */
+  /** Forgets every entry logged. */
   clear(): void;
   /** Stops every watch. */
   dispose(): void;
 }
 
-/** A log of events stamped with `now()`, filled by hand or by watching elements. */
+/** A log of input entries stamped with `now()`, filled by hand or by watching elements. */
 export function eventRecorder(
   now: () => number,
   onRecord: (at: number) => void = () => undefined,
   options?: { readonly windowMs?: number },
 ): EventRecorder {
-  const log = eventLog(
+  const log = inputLog(
     options?.windowMs === undefined ? undefined : { windowMs: options.windowMs },
   );
   const unwatch = new Set<() => void>();
-  const add = (event: Omit<MotionEvent, "at">, explicitAt?: number): void => {
+  const record = (name: string, target?: string, point?: Point2d, explicitAt?: number): void => {
     const at = explicitAt ?? now();
-    log.add({ ...event, at });
+    log.add({
+      kind: "trigger",
+      name,
+      at,
+      value: 1,
+      ...(target === undefined ? {} : { target }),
+      ...(point === undefined ? {} : { point }),
+    });
     onRecord(at);
   };
-  const record = (name: string, target?: string, point?: Point2d, at?: number): void =>
-    add({ name, ...(target === undefined ? {} : { target }), ...(point ?? {}) }, at);
   return {
-    log: log.events,
+    log: log.input,
     record,
-    sample(name, value, target, at) {
+    sample(name, value, target, explicitAt) {
       if (!Number.isFinite(value))
         throw new RangeError(`sample "${name}": the value must be a finite number, not ${value}.`);
-      add({ name, ...(target === undefined ? {} : { target }), value }, at);
+      const at = explicitAt ?? now();
+      if (name === "scroll" || name === "pointer-x" || name === "pointer-y") {
+        log.set(at, pageInputs, name, value, target);
+        onRecord(at);
+        return;
+      }
+      log.add({
+        kind: "value",
+        name,
+        at,
+        value,
+        ...(target === undefined ? {} : { target }),
+      });
+      onRecord(at);
     },
     watch(target, element) {
-      const removers = Object.entries(WATCHED).map(([type, name]) => {
-        const listener = (event: PointerLike) => {
-          const box = element.getBoundingClientRect?.();
-          const point =
-            box === undefined || event.clientX === undefined || event.clientY === undefined
-              ? undefined
-              : { x: event.clientX - box.left, y: event.clientY - box.top };
-          record(name, target, point);
+      const removers = WATCHED_TRIGGERS.map(([type, triggerName]) => {
+        const listener = () => {
+          const at = now();
+          log.trigger(at, pointerTriggers, triggerName, 1, target);
+          onRecord(at);
         };
         element.addEventListener(type, listener);
         return () => element.removeEventListener(type, listener);
@@ -161,7 +193,7 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
     recorder.record(name, target, point);
   const driver: EventDriver = {
     now: (): Time => liveAt(elapsed()),
-    events: (): Events => recorder.log,
+    events: (): Input => recorder.log,
     options,
     subscribe(listener) {
       listeners.add(listener);
