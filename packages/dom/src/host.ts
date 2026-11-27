@@ -1,4 +1,4 @@
-import { unreachable, type MotionEvent, type Pose2d, type RetentionPolicy } from "@gerak/core";
+import { unreachable, type MotionEvent, type Pose2d } from "@gerak/core";
 import type { Driver, Player } from "@gerak/player";
 import {
   compileScene,
@@ -118,7 +118,7 @@ export type MountClock = "live" | "timed" | { readonly kind: "driver"; readonly 
 /** Where a mount draws: `"page"` in place, or `"fit"` scaling `root` to its parent or viewport. */
 export type MountFrame = "page" | "fit";
 
-/** Settings of `mount`: clock, frame, root, scroll/frame/time hooks, binders, retention, and onEvent. */
+/** Settings of `mount`: clock, frame, root, scroll/frame/time hooks, binders, and settleMs. */
 export interface MountOptions {
   readonly clock: MountClock;
   /** Defaults to `"page"`. */
@@ -139,10 +139,6 @@ export interface MountOptions {
   readonly nodes?: Readonly<Record<string, PageElement | readonly PageElement[]>>;
   /** What draws the scene's object elements, such as `threeBinder`; each object needs exactly one. */
   readonly binders?: readonly Binder[];
-  /** Retention policy for event and measure history; live defaults to a rolling window. */
-  readonly retention?: RetentionPolicy;
-  /** Receives every recorded event synchronously as it is logged. */
-  readonly onEvent?: (event: MotionEvent) => void;
 }
 
 /** Whether a bound cast target is a single element/object or a multi-part list. */
@@ -211,7 +207,7 @@ export interface Mounted {
   replace(next: StageInput): void;
   /** Logs a named numeric sample at the clock's ms and wakes the settle window. */
   send(name: string, value: number, target?: string): void;
-  /** Events within the retention policy, oldest first, with baselines for compacted channels. */
+  /** Events recorded on this mount, oldest first. */
   events(): readonly MotionEvent[];
   /** Resolves once every bound media node has `seeking === false` and `readyState >= 2`. */
   settled(): Promise<void>;
@@ -545,4 +541,4 @@ export function scaleFittedRoot(
 
 /** Exhaustive guard re-exported for sibling DOM modules. */
 export { unreachable };
-export type { BoxPlacement, Pose2d, RestReader, RetentionPolicy };
+export type { BoxPlacement, Pose2d, RestReader };

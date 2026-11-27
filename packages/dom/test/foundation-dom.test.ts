@@ -1,24 +1,19 @@
 import {
   INPUT_EVENTS,
-  baselineOf,
   createStore,
   liveAt,
   motion,
   pointer,
   scroll,
-  snapshot,
   springTo,
   state,
   toCubics,
   withStore,
-  type MotionEvent,
   type Pose2d,
-  type Time,
 } from "@gerak/core";
 import {
   beat,
   box,
-  carry,
   compileScene,
   formatStageError,
   restReader,
@@ -31,7 +26,6 @@ import {
 import { placementOf } from "@gerak/stage/render";
 import {
   BINDER_CASTS,
-  eventDriver,
   mount,
   type Binder,
   type FrameSource,
@@ -217,172 +211,9 @@ function fakeFrames(): FrameSource & { tick(time: number): void; readonly pendin
   };
 }
 
-describe("Slice 4 foundation: @gerak/dom retention, coalescing, routing, SVG placement, binder casts, probe isolation", () => {
+describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, binder casts, probe isolation", () => {
   afterEach(() => {
     Reflect.deleteProperty(globalThis, BINDER_CASTS);
-  });
-
-  it("uses bounded live retention by default on live mounts while streaming all events and preserving baselines", () => {
-    const card = new FakeNode("card");
-    const root = new FakeRoot([card]);
-    const scrollTarget = new FakeScrollTarget();
-    const frames = fakeFrames();
-    let ms = 0;
-    const streamed: MotionEvent[] = [];
-
-    const piece = scene(
-      { length: 1000 },
-      box("card").moves(motion((t, ctx): Pose2d => ({ x: scroll.y(t, ctx?.events ?? []) }))),
-    );
-    const mounted = mount(piece, {
-      root,
-      scrollTarget,
-      frames,
-      clock: "live",
-      settleMs: 500,
-      now: () => ms,
-      onEvent: (event) => streamed.push(event),
-    });
-
-    scrollTarget.scrollY = 240;
-    ms = 50;
-    scrollTarget.fireScroll();
-    frames.tick(50);
-
-    for (let i = 1; i <= 10_500; i += 1) {
-      ms = 100 + i;
-      mounted.send("tick-ping", i, "card");
-    }
-    frames.tick(ms);
-
-    expect(streamed.length).toBeGreaterThanOrEqual(10_501);
-    expect(mounted.events().length).toBeLessThanOrEqual(4100);
-    expect(baselineOf(mounted.events())?.get(INPUT_EVENTS.scroll)).toBe(240);
-    expect(card.style.transform).toBe("translate3d(240px, 0px, 0px)");
-
-    mounted.dispose();
-  });
-
-  it("retains full history on timed mounts and when retention is all", () => {
-    const a = new FakeNode("card");
-    const rootA = new FakeRoot([a]);
-    const framesA = fakeFrames();
-    let msA = 0;
-    const piece = scene({ length: 1000 }, box("card"));
-
-    const timedMount = mount(piece, {
-      root: rootA,
-      frames: framesA,
-      clock: "timed",
-      now: () => msA,
-    });
-    for (let i = 0; i < 5000; i += 1) {
-      msA += 1;
-      timedMount.send("step", i, "card");
-    }
-    expect(timedMount.events().length).toBe(5000);
-    timedMount.dispose();
-
-    const b = new FakeNode("card");
-    const rootB = new FakeRoot([b]);
-    let msB = 0;
-    const allMount = mount(piece, {
-      root: rootB,
-      frames: fakeFrames(),
-      clock: "live",
-      retention: { kind: "all" },
-      now: () => msB,
-    });
-    for (let i = 0; i < 5000; i += 1) {
-      msB += 10;
-      allMount.send("step", i, "card");
-    }
-    expect(allMount.events().length).toBe(5000);
-    allMount.dispose();
-  });
-
-  it("bounds layout remeasure history across remeasure() on live mounts while retaining recent carry and all under retention all", () => {
-    const liveCard = new FakeNode("card");
-    const liveRoot = new FakeRoot([liveCard]);
-    const liveFrames = fakeFrames();
-    let ms = 0;
-    const piece = scene({ length: 1000 }, box("card").moves(carry({ ms: 25_000, mode: "keep" })));
-
-    const liveMounted = mount(piece, {
-      root: liveRoot,
-      frames: liveFrames,
-      clock: "live",
-      settleMs: 500,
-      now: () => ms,
-    });
-
-    for (let i = 1; i <= 500; i += 1) {
-      ms = i * 40;
-      liveCard.offsetLeft = i === 500 ? 500 : i;
-      liveMounted.remeasure();
-    }
-    // Wait out intermediate jumps before window (0..16000); at t = 20000 with last change at 20000,
-    // carry looks from 19960..20000; a fresh jump from compacted baseline settles cleanly.
-    liveFrames.tick(ms);
-    expect(liveCard.style.transform).not.toBe("");
-
-    // Advance past windowMs (4000ms) with a single jump at t = 0 retained only in "all" mode:
-    const box1 = new FakeNode("card");
-    const root1 = new FakeRoot([box1]);
-    const frames1 = fakeFrames();
-    let t1 = 0;
-    const bounded = mount(piece, {
-      root: root1,
-      frames: frames1,
-      clock: "live",
-      settleMs: 500,
-      now: () => t1,
-    });
-    t1 = 100;
-    box1.offsetLeft = 200;
-    bounded.remeasure();
-    t1 = 10_000;
-    box1.offsetLeft = 200;
-    bounded.remeasure();
-    // Advance ms with another change, forcing compaction before t = 6000
-    t1 = 10_100;
-    box1.offsetLeft = 300;
-    bounded.remeasure();
-    // At t = 15_000, all measurements before 11_000 (the 0 -> 200 -> 300 jumps) compacted down to baseline 300.
-    t1 = 15_000;
-    box1.offsetLeft = 300;
-    bounded.remeasure();
-    frames1.tick(15_000);
-
-    const box2 = new FakeNode("card");
-    const root2 = new FakeRoot([box2]);
-    const frames2 = fakeFrames();
-    let t2 = 0;
-    const retainedAll = mount(piece, {
-      root: root2,
-      frames: frames2,
-      clock: "live",
-      settleMs: 500,
-      retention: { kind: "all" },
-      now: () => t2,
-    });
-    t2 = 100;
-    box2.offsetLeft = 200;
-    retainedAll.remeasure();
-    t2 = 10_100;
-    box2.offsetLeft = 300;
-    retainedAll.remeasure();
-    t2 = 15_000;
-    frames2.tick(15_000);
-
-    // Bounded live forgot the intermediate jump at t = 100/10100 outside its 4000ms live window -> settled (0px);
-    // retention: "all" with ms = 25000 still interpolates from the historical jump -> negative x offset toward earlier rest.
-    expect(box1.style.transform).toBe("");
-    expect(box2.style.transform).not.toBe("");
-
-    liveMounted.dispose();
-    bounded.dispose();
-    retainedAll.dispose();
   });
 
   it("coalesces burst scroll and pointermove events to at most one sample per rAF tick", () => {
@@ -392,7 +223,6 @@ describe("Slice 4 foundation: @gerak/dom retention, coalescing, routing, SVG pla
     const frames = fakeFrames();
     let ms = 0;
     let sceneRuns = 0;
-    const streamed: MotionEvent[] = [];
 
     const piece = scene(
       { length: 1000 },
@@ -410,11 +240,9 @@ describe("Slice 4 foundation: @gerak/dom retention, coalescing, routing, SVG pla
       frames,
       clock: "live",
       now: () => ms,
-      onEvent: (event) => streamed.push(event),
     });
 
     expect(sceneRuns).toBe(1);
-    streamed.length = 0;
 
     for (let i = 1; i <= 20; i += 1) {
       ms = i;
@@ -424,17 +252,16 @@ describe("Slice 4 foundation: @gerak/dom retention, coalescing, routing, SVG pla
     }
 
     expect(sceneRuns).toBe(1);
-    expect(streamed.length).toBe(0);
 
     frames.tick(ms);
     expect(sceneRuns).toBe(2);
-    expect(streamed.filter((event) => event.name === INPUT_EVENTS.scroll)).toEqual([
+    expect(mounted.events().filter((event) => event.name === INPUT_EVENTS.scroll)).toEqual([
       { name: INPUT_EVENTS.scroll, at: 20, value: 300 },
     ]);
-    expect(streamed.filter((event) => event.name === INPUT_EVENTS.pointerX)).toEqual([
+    expect(mounted.events().filter((event) => event.name === INPUT_EVENTS.pointerX)).toEqual([
       { name: INPUT_EVENTS.pointerX, at: 20, value: 0.8 },
     ]);
-    expect(streamed.filter((event) => event.name === INPUT_EVENTS.pointerY)).toEqual([
+    expect(mounted.events().filter((event) => event.name === INPUT_EVENTS.pointerY)).toEqual([
       { name: INPUT_EVENTS.pointerY, at: 20, value: 0.15 },
     ]);
     expect(tracker.style.transform).toBe("translate3d(80px, 300px, 0px)");
@@ -696,12 +523,16 @@ describe("Slice 4 foundation: @gerak/dom retention, coalescing, routing, SVG pla
     );
 
     const callerStore = createStore();
+    const controlStore = createStore();
+    const seed = [{ name: "go", at: 0, value: 50 }];
     withStore(callerStore, () => {
-      const seed = [{ name: "go", at: 0, value: 10 }];
-      sprung(liveAt(0), seed);
-      follower(liveAt(0), seed);
+      sprung(liveAt(100), seed);
+      follower(liveAt(100), seed);
     });
-    const before = snapshot(callerStore);
+    withStore(controlStore, () => {
+      sprung(liveAt(100), seed);
+      follower(liveAt(100), seed);
+    });
 
     const input = {
       counts: {},
@@ -714,29 +545,15 @@ describe("Slice 4 foundation: @gerak/dom retention, coalescing, routing, SVG pla
       triggerTracks(piece, input);
     });
 
-    expect(snapshot(callerStore)).toEqual(before);
-  });
-
-  it("supports retention compaction and onEvent streaming in eventDriver", () => {
-    let ms = 0;
-    const frames = fakeFrames();
-    const streamed: MotionEvent[] = [];
-    const driver = eventDriver({
-      frames,
-      clock: () => ms,
-      settleMs: 200,
-      retention: { kind: "live", windowMs: 1000 },
-      onEvent: (event) => streamed.push(event),
-    });
-
-    for (let i = 1; i <= 3000; i += 1) {
-      ms = i;
-      driver.emit("tap", "card");
-    }
-
-    expect(streamed).toHaveLength(3000);
-    expect((driver.events?.() ?? []).length).toBeLessThanOrEqual(1050);
-    driver.dispose();
+    const afterCaller = withStore(callerStore, () => ({
+      sprung: sprung(liveAt(200), seed),
+      follower: follower(liveAt(200), seed),
+    }));
+    const afterControl = withStore(controlStore, () => ({
+      sprung: sprung(liveAt(200), seed),
+      follower: follower(liveAt(200), seed),
+    }));
+    expect(afterCaller).toEqual(afterControl);
   });
 
   it("tracks lazy 2D list part inputs for pointermove attachment and per-channel routing", () => {
@@ -774,7 +591,7 @@ describe("Slice 4 foundation: @gerak/dom retention, coalescing, routing, SVG pla
     mounted.dispose();
   });
 
-  it("wires window retention into Player and skips redundant rAF scheduling after tick flush", () => {
+  it("skips redundant rAF scheduling after tick flush", () => {
     const card = new FakeNode("card");
     const scrollTarget = new FakeScrollTarget();
     const root = new FakeRoot([card], scrollTarget);
@@ -791,7 +608,6 @@ describe("Slice 4 foundation: @gerak/dom retention, coalescing, routing, SVG pla
       frames,
       clock: "live",
       settleMs: 100,
-      retention: { kind: "window", windowMs: 600, maxCheckpoints: 3 },
       now: () => ms,
     });
 
@@ -799,17 +615,6 @@ describe("Slice 4 foundation: @gerak/dom retention, coalescing, routing, SVG pla
     ms = 1200;
     frames.tick(ms);
     expect(frames.pending).toBe(0);
-
-    // Send event between cp@0 and later cp@1000 / cp@1700, ensuring Player owns window compaction.
-    ms = 1000;
-    mounted.send("mark", 1, "card");
-    frames.tick(1000);
-    ms = 1050;
-    mounted.send("between", 2, "card");
-    ms = 1700;
-    frames.tick(1700);
-    // Player checkpoint anchor at 1700 with floor=1100 is cp@1000, so event@1050 must still be retained.
-    expect(mounted.events().some((ev) => ev.name === "between" && ev.at === 1050)).toBe(true);
 
     // Flushing a scroll sample in tick() when already settled should not schedule an extra empty rAF.
     ms = 3000;

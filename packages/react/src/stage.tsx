@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { unreachable, type MotionEvent, type RetentionPolicy } from "@gerak/core";
 import {
   mount,
   type MountClock,
@@ -71,23 +70,6 @@ function sameNodeEntry(
   return false;
 }
 
-function sameRetention(a: RetentionPolicy | undefined, b: RetentionPolicy | undefined): boolean {
-  if (a === b) return true;
-  if (a === undefined || b === undefined || a.kind !== b.kind) return false;
-  switch (a.kind) {
-    case "all":
-      return true;
-    case "live":
-      return b.kind === "live" && a.windowMs === b.windowMs;
-    case "window":
-      return (
-        b.kind === "window" && a.windowMs === b.windowMs && a.maxCheckpoints === b.maxCheckpoints
-      );
-    default:
-      return unreachable(a);
-  }
-}
-
 function sameMountOptions(a: StageMountOptions, b: StageMountOptions): boolean {
   return (
     sameClock(a.clock, b.clock) &&
@@ -96,8 +78,6 @@ function sameMountOptions(a: StageMountOptions, b: StageMountOptions): boolean {
     a.frames === b.frames &&
     a.settleMs === b.settleMs &&
     a.checks === b.checks &&
-    sameRetention(a.retention, b.retention) &&
-    Boolean(a.onEvent) === Boolean(b.onEvent) &&
     sameArray(a.binders, b.binders) &&
     sameRecord(a.nodes, b.nodes, sameNodeEntry)
   );
@@ -109,8 +89,6 @@ export function useMount(
   scene: StageInput,
   options: StageMountOptions,
 ): Mounted | undefined {
-  const onEventRef = useRef<((event: MotionEvent) => void) | undefined>(options.onEvent);
-  onEventRef.current = options.onEvent;
   const latest = useRef(options);
   latest.current = options;
   const activeOptions = useRef(options);
@@ -171,9 +149,6 @@ export function useMount(
     const resolvedOptions: MountOptions = {
       ...currentOptions,
       root: element,
-      ...(currentOptions.onEvent === undefined
-        ? {}
-        : { onEvent: (event: MotionEvent) => onEventRef.current?.(event) }),
     };
     const created = mount(next, resolvedOptions);
     active.current = {

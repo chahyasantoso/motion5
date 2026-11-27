@@ -5,7 +5,6 @@ import {
   liveAt,
   mergeEvents,
   type Events,
-  type MotionEvent,
   type Signal,
   type Time,
 } from "@gerak/core";
@@ -45,48 +44,10 @@ import {
   type PageElement,
   type PageRoot,
   type PageScrollTarget,
-  type RetentionPolicy,
   type StageEvent,
   type StageValues,
 } from "./host";
-import { pruneMeasures, sameRest } from "./measure-dom";
-
-function retentionWindowMs(policy: RetentionPolicy): number | undefined {
-  switch (policy.kind) {
-    case "all":
-      return undefined;
-    case "live":
-      return policy.windowMs ?? 4000;
-    case "window":
-      return policy.windowMs;
-    default:
-      return unreachable(policy);
-  }
-}
-
-function defaultRetention(
-  clock: MountClock,
-  settleMs: number,
-  explicit: RetentionPolicy | undefined,
-): RetentionPolicy {
-  if (explicit !== undefined) return explicit;
-  if (typeof clock === "string") {
-    switch (clock) {
-      case "live":
-        return { kind: "live", windowMs: Math.max(settleMs, 4000) };
-      case "timed":
-        return { kind: "all" };
-      default:
-        return unreachable(clock);
-    }
-  }
-  switch (clock.kind) {
-    case "driver":
-      return { kind: "all" };
-    default:
-      return unreachable(clock.kind);
-  }
-}
+import { sameRest } from "./measure-dom";
 
 function mergeMemberInput(map: Map<string, InputNeed>, name: string, added: InputNeed): boolean {
   const prev = map.get(name);
@@ -139,7 +100,7 @@ export interface MountRuntime {
   dispose(allNodes: readonly PageElement[]): void;
 }
 
-/** Coordinates clocks, coalesced inputs, lazy pointer listening, per-channel routing, and retention. */
+/** Coordinates clocks, coalesced inputs, lazy pointer listening, and per-channel routing. */
 export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   let stage = config.initialStage;
   const {
@@ -184,7 +145,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       timed = clockDriver({
         duration: stage.durationMs,
         frames,
-        ...(options.onEvent === undefined ? {} : { onEvent: options.onEvent }),
       });
       durationMs = stage.durationMs;
       break;
@@ -200,8 +160,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   }
 
   const settleMs = options.settleMs ?? stage.settleMs ?? 2000;
-  const policy = defaultRetention(clock, settleMs, options.retention);
-  const windowMs = retentionWindowMs(policy);
   const driverMs = (source: Driver): number => elapsedOf(source.now().clock) ?? 0;
   const clockMs = (): number =>
     timed !== undefined ? driverMs(timed) : given !== undefined ? driverMs(given) : elapsed();
@@ -307,10 +265,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
         notify();
       }
     },
-    {
-      retention: policy,
-      ...(options.onEvent === undefined ? {} : { onEvent: options.onEvent }),
-    },
   );
 
   const flushPendingInputs = (): void => {
@@ -352,24 +306,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     return names;
   };
 
-  const compactHistoryAt = (at: number): void => {
-    if (windowMs === undefined) return;
-    const cutoff = at - windowMs;
-    switch (policy.kind) {
-      case "all":
-        return;
-      case "live":
-        recorder.compact(cutoff);
-        pruneMeasures(measures, cutoff);
-        return;
-      case "window":
-        pruneMeasures(measures, cutoff);
-        return;
-      default:
-        return unreachable(policy);
-    }
-  };
-
   const sceneEvents = (): Events => {
     const handed = given?.events?.() ?? [];
     return handed.length === 0 ? recorder.log : mergeEvents(recorder.log, handed);
@@ -387,7 +323,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     const nowMs = elapsed();
     inTick = true;
     try {
-      compactHistoryAt(nowMs);
       syncScrollPoll(nowMs);
       flushPendingInputs();
     } finally {
@@ -565,7 +500,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       given.subscribe(() => {
         if (!live) return;
         const at = clockMs();
-        compactHistoryAt(at);
         syncScrollPoll(at);
         flushPendingInputs();
         handoff.syncTriggers(at, sceneEvents(), currentReader, hostedLive);
@@ -657,11 +591,11 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     return out.targets;
   };
 
-  const player = play<StageValues>(sceneSignal, driver, {
-    ...(stage.cues.length === 0 ? {} : { cues: stage.cues }),
-    retention: policy,
-    settleMs,
-  });
+  const player = play<StageValues>(
+    sceneSignal,
+    driver,
+    stage.cues.length === 0 ? {} : { cues: stage.cues },
+  );
   drainFrameInputs();
   syncPointerListener();
   options.onDriver?.(driver);
@@ -736,7 +670,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       activeUntil = Math.max(activeUntil, at + settleMs);
       fresh = true;
     }
-    compactHistoryAt(at);
     const depsOk =
       !forceHandOff && handoff.depsUnchanged(readMaxScrollOf(doc), currentLines, currentRest);
     syncScrollPoll(at);

@@ -247,18 +247,6 @@ export function sameRest(a: Rest, b: Rest): boolean {
   return keys.every((key) => sameBox(a[key], b[key]));
 }
 
-/** Keeps the single latest baseline at or before `cutoff` and drops older layout snapshots. */
-export function pruneMeasures(measures: RestAt[], cutoff: number): void {
-  if (measures.length <= 1 || !Number.isFinite(cutoff)) return;
-  let latestBaseline = -1;
-  for (let i = 0; i < measures.length; i += 1) {
-    const entry = measures[i];
-    if (entry !== undefined && entry.at <= cutoff) latestBaseline = i;
-    else break;
-  }
-  if (latestBaseline > 0) measures.splice(0, latestBaseline);
-}
-
 /** Draws shape paths, writes their SVG `d`, and resolves viewport-aware placed rest boxes. */
 function drawPaths(
   stage: Stage,

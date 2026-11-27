@@ -1,6 +1,6 @@
 # Mounting a page
 
-`mount(scene, { clock, frame?, root?, binders?, nodes?, retention?, onEvent?, settleMs? })` animates a page's HTML and CSS nodes without creating a shadow root. Site HTML and CSS own the look, layout, hierarchy and `transform-origin`; motion writes transforms, opacity and custom properties through [the DOM renderer](./drawing.md).
+`mount(scene, { clock, frame?, root?, binders?, nodes?, settleMs? })` animates a page's HTML and CSS nodes without creating a shadow root. Site HTML and CSS own the look, layout, hierarchy and `transform-origin`; motion writes transforms, opacity and custom properties through [the DOM renderer](./drawing.md).
 
 ## Binding nodes
 
@@ -38,7 +38,7 @@ A live mount runs one clock (`liveAt`) feeding scroll, pointer and watched eleme
 - Window or `scrollTarget` scrolling samples `INPUT_EVENTS.scroll` in px (`scroll.y`), coalesced to at most one sample per animation frame.
 - Pointer movement over the page samples normalized viewport coordinates `INPUT_EVENTS.pointerX` and `INPUT_EVENTS.pointerY` from 0 to 1 (`pointer.x`, `pointer.y`), attached lazily only when the active scene reads pointer coordinates and coalesced to one sample per animation frame.
 - Elements with `watch: true` log `enter`, `leave`, `down`, `up`, `click`, `focus` and `blur`.
-- `mounted.send(name, value, target?)` logs a sample at the current clock time, `onEvent` streams every recorded event synchronously, `retention` defaults on `"live"` mounts to `{ kind: "live", windowMs: Math.max(settleMs, 4000) }` (keeping bounded memory via monotonic compaction while retaining full history on `"timed"` or explicit `{ kind: "all" }`), and `mounted.events()` returns the retained log.
+- `mounted.send(name, value, target?)` logs a sample at the current clock time, and `mounted.events()` returns the recorded log.
 - `mounted.player.observe(signal, listener)` calls `listener` with a `state(...)` or other signal now and after each step that changes it, before the page draws that step. Page UI outside the cast reads the scene's own state this way instead of keeping a copy; a seek back undoes later events.
 - The mount owns the inline `transform`, `opacity`, `z-index`, `transform-origin`, `transform-box`, `filter` and `clip-path` of every node it animates, setting each only when its text changes; it leaves `transform-origin` and `transform-box` untouched unless a pose specifies an `anchor`.
 - An input only logs its sample and asks for a frame; the scene runs and writes once per animation frame, however many inputs arrived in it.
