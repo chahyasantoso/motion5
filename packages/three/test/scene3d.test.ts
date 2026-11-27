@@ -433,4 +433,70 @@ describe("threeBinder", () => {
     expect(sharedMat.opacity).toBeCloseTo(0.8, 9);
     expect(sharedMat.transparent).toBe(false);
   });
+
+  it("calls a parts list writer once per member per written frame after writing transforms, skipping other lists", () => {
+    const a0 = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
+    const a1 = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
+    const b0 = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
+
+    const listStage = compileScene(
+      scene(
+        { length: 1000 },
+        object("primary", { parts: true }).moves((t, ctx) => {
+          const index = ctx.index ?? 0;
+          const step = t.progress >= 0.5 ? 1 : 0;
+          return index === 0 ? { x: step + 1, custom: { flavor: step } } : { x: 2 };
+        }),
+        object("secondary", { parts: true }).moves((t, ctx) => ({
+          y: (ctx.index ?? 0) + t.progress,
+        })),
+      ),
+    );
+    if (!listStage.ok) throw new Error(listStage.errors.map(formatStageError).join("\n"));
+
+    const calls: {
+      readonly object: Object3D;
+      readonly posX: number;
+      readonly pose: Pose3d;
+      readonly index: number;
+    }[] = [];
+    let draws = 0;
+
+    const binder = threeBinder(new Object3D(), {
+      objects: { primary: [a0, a1], secondary: [b0] },
+      writers: {
+        primary: (obj, pose, index) => {
+          calls.push({ object: obj, posX: obj.position.x, pose, index });
+        },
+      },
+      draw: () => {
+        draws += 1;
+      },
+    });
+    const counts = binder.counts?.(["primary", "secondary"]);
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play(
+      (time, events) => frame(listStage.stage, { time, events, counts }).targets,
+      driver,
+    );
+    binder.start(player, listStage.stage);
+
+    expect(draws).toBe(1);
+    expect(calls).toEqual([
+      { object: a0, posX: 1, pose: { x: 1, custom: { flavor: 0 } }, index: 0 },
+      { object: a1, posX: 2, pose: { x: 2 }, index: 1 },
+    ]);
+
+    calls.length = 0;
+    driver.seekMs(500);
+    expect(draws).toBe(2);
+    expect(calls).toEqual([
+      { object: a0, posX: 2, pose: { x: 2, custom: { flavor: 1 } }, index: 0 },
+    ]);
+
+    // Seeking to another time with identical poses skips both transform write and writer.
+    calls.length = 0;
+    driver.seekMs(600);
+    expect(calls).toEqual([]);
+  });
 });

@@ -1,6 +1,6 @@
 import { clamp, ease, unreachable } from "@gerak/core";
 import { listen, mount, ready } from "@gerak/dom";
-import { listPose3d, restReader } from "@gerak/stage";
+import { restReader } from "@gerak/stage";
 import {
   BUILDER_CAPACITY,
   BUILDER_EXIT_POOL,
@@ -41,7 +41,16 @@ async function bootstrap(): Promise<void> {
   }
 
   const models = await loadCookieWorld();
-  const studio = createCookieStudio(node, models.objects);
+  const lastExitFlavors: (number | undefined)[] = new Array(BUILDER_EXIT_POOL).fill(undefined);
+  const studio = createCookieStudio(node, models.objects, {
+    builderExitCookies: (_object, pose, index) => {
+      const flavor = pose.custom?.flavor;
+      if (flavor !== undefined && isSpotlightZone(flavor) && flavor !== lastExitFlavors[index]) {
+        lastExitFlavors[index] = flavor;
+        models.setBuilderExitCookieFlavor(index, flavor);
+      }
+    },
+  });
   studio.world.add(...models.roots);
   studio.renderer.compile(studio.world, studio.camera);
   studio.draw();
@@ -251,20 +260,6 @@ async function bootstrap(): Promise<void> {
   const syncJarModels = (next: JarState): void => {
     next.slots.forEach((flavor, index) => models.setBuilderCookieFlavor(index, flavor));
   };
-
-  const lastExitFlavors: (number | undefined)[] = new Array(BUILDER_EXIT_POOL).fill(undefined);
-  const stopExitFlavor = mounted.player.subscribe("builderExitCookies", (raw) => {
-    let changed = false;
-    for (let i = 0; i < BUILDER_EXIT_POOL; i += 1) {
-      const flavor = listPose3d(raw, i, BUILDER_EXIT_POOL)?.custom?.flavor;
-      if (flavor !== undefined && isSpotlightZone(flavor) && flavor !== lastExitFlavors[i]) {
-        lastExitFlavors[i] = flavor;
-        models.setBuilderExitCookieFlavor(i, flavor);
-        changed = true;
-      }
-    }
-    if (changed) studio.draw();
-  });
 
   const applyJarUpdate = (update: JarUpdate): void => {
     if (update.sends.length === 0) return;
@@ -480,7 +475,6 @@ async function bootstrap(): Promise<void> {
     window.removeEventListener("scroll", onScroll);
     document.removeEventListener("scroll", onScroll);
     unsubscribePlayer();
-    stopExitFlavor();
     for (const off of cleanupListeners) off();
     mounted.dispose();
     studio.dispose();

@@ -1,16 +1,23 @@
 import * as THREE from "three";
-import { createStage3d, type ObjectTarget3d, type Stage3d } from "@gerak/three";
+import {
+  createStage3d,
+  type ObjectListWriter3d,
+  type ObjectTarget3d,
+  type Stage3d,
+} from "@gerak/three";
 import { LENS, STAGE_SIZE } from "./contract.ts";
 
 export function createCookieStudio(
   canvas: HTMLCanvasElement,
   objects?: Readonly<Record<string, ObjectTarget3d>>,
+  writers?: Readonly<Record<string, ObjectListWriter3d>>,
 ): Stage3d {
   const stage = createStage3d(canvas, LENS, {
     near: 0.1,
     far: 40,
     fallbackSize: STAGE_SIZE,
     ...(objects === undefined ? {} : { objects }),
+    ...(writers === undefined ? {} : { writers }),
   });
   stage.renderer.toneMapping = THREE.ACESFilmicToneMapping;
   stage.renderer.toneMappingExposure = 1.05;

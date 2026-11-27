@@ -1,14 +1,20 @@
 import type { Lens3d } from "@gerak/core";
 import { PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import { applyPose3d } from "./pose3d";
-import { threeBinder, type ObjectTarget3d, type ThreeBinder } from "./scene3d";
+import {
+  threeBinder,
+  type ObjectListWriter3d,
+  type ObjectTarget3d,
+  type ThreeBinder,
+} from "./scene3d";
 
-/** Options of `createStage3d`: clipping planes, pixel-ratio cap, object overrides, and fallback size. */
+/** Options of `createStage3d`: clipping planes, pixel-ratio cap, object overrides, list writers, and fallback size. */
 export interface Stage3dOptions {
   readonly near?: number | undefined;
   readonly far?: number | undefined;
   readonly maxPixelRatio?: number | undefined;
   readonly objects?: Readonly<Record<string, ObjectTarget3d>> | undefined;
+  readonly writers?: Readonly<Record<string, ObjectListWriter3d>> | undefined;
   readonly fallbackSize?: { readonly width: number; readonly height: number } | undefined;
 }
 
@@ -90,6 +96,7 @@ export function createStage3d(
 
   const binder = threeBinder(world, {
     ...(options.objects === undefined ? {} : { objects: options.objects }),
+    ...(options.writers === undefined ? {} : { writers: options.writers }),
     resize,
     draw,
   });

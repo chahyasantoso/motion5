@@ -10,6 +10,9 @@ import {
   type Rest3d,
 } from "./pose3d";
 
+/** Writer invoked for each member of a `parts: true` object list after its transform write. */
+export type ObjectListWriter3d = (object: Object3D, pose: Pose3d, index: number) => void;
+
 /** Where a scene's object goes: an `Object3D`, an array of `Object3D`s for a `parts: true` list, or
  * a writer `(pose, visible) => void` such as one handing bone poses to `applyBones`. */
 export type ObjectTarget3d =
@@ -17,9 +20,10 @@ export type ObjectTarget3d =
   | readonly Object3D[]
   | ((pose: Pose3d, visible: boolean) => void);
 
-/** Settings of `threeBinder`: target overrides, optional viewport resize callback, and draw callback. */
+/** Settings of `threeBinder`: target overrides, list member writers, optional viewport resize, and draw callback. */
 export interface ThreeBinderOptions {
   readonly objects?: Readonly<Record<string, ObjectTarget3d>>;
+  readonly writers?: Readonly<Record<string, ObjectListWriter3d>>;
   readonly resize?: () => void;
   readonly draw?: () => void;
 }
@@ -119,7 +123,7 @@ function samePose3d(a: Pose3d | undefined, b: Pose3d | undefined): boolean {
 
 /** Binds a scene's object elements to the `Object3D` of the same name under `root`, or to `objects[name]`. */
 export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): ThreeBinder {
-  const { objects = {}, resize, draw = () => undefined } = options;
+  const { objects = {}, writers = {}, resize, draw = () => undefined } = options;
   const targetOf = (name: string): ObjectTarget3d | undefined =>
     (Object.hasOwn(objects, name) ? objects[name] : undefined) ?? root.getObjectByName(name);
   const discoveredNames = (): readonly string[] => {
@@ -273,6 +277,9 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
                 default:
                   return unreachable(classified);
               }
+              const listWriter = Object.hasOwn(writers, member.name)
+                ? writers[member.name]
+                : undefined;
               const rests: Rest3d[] = items.map((item) => {
                 const rest = captureRest3dWithStore(item, sharedMaterials, materialStore);
                 restores.push(() => restoreRest3dWithStore(item, rest, materialStore));
@@ -301,6 +308,7 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
                       ...(pose.custom === undefined ? {} : { custom: { ...pose.custom } }),
                     };
                     applyPose3dWithStore(item, pose, rest, undefined, materialStore);
+                    listWriter?.(item, pose, index);
                     dirty = true;
                   });
                   return dirty;

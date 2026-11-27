@@ -11,6 +11,7 @@ export {
 } from "./pose3d";
 export {
   threeBinder,
+  type ObjectListWriter3d,
   type ObjectTarget3d,
   type ThreeBinder,
   type ThreeBinderOptions,
