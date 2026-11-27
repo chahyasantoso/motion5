@@ -291,8 +291,14 @@ export function manualDriver(options: { readonly durationMs?: number } = {}): Ma
           },
         };
   const elapsedMs = (): number => elapsedOf(now().clock) ?? 0;
+  let notifying = false;
   const tell = (): void => {
-    for (const listener of [...listeners]) listener();
+    notifying = true;
+    try {
+      for (const listener of [...listeners]) listener();
+    } finally {
+      notifying = false;
+    }
   };
   return {
     now,
@@ -301,11 +307,11 @@ export function manualDriver(options: { readonly durationMs?: number } = {}): Ma
     set(contract, name, value, target) {
       const before = versionOf(log.input);
       log.set(elapsedMs(), contract, name, value, target);
-      if (versionOf(log.input) !== before) tell();
+      if (!notifying && versionOf(log.input) !== before) tell();
     },
     trigger(contract, name, value, target) {
       log.trigger(elapsedMs(), contract, name, value, target);
-      tell();
+      if (!notifying) tell();
     },
     subscribe(listener) {
       listeners.add(listener);

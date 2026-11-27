@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { inputs } from "@gerak/core";
-import { liveClock, type FrameSource } from "@gerak/dom";
+import { inputs, motion, scroll, state, type Pose2d } from "@gerak/core";
+import { clockDriver, liveClock, mount, type FrameSource } from "@gerak/dom";
+import { bind, box, scene } from "@gerak/stage";
+import { FakeNode, FakeRoot, FakeScrollTarget, fakeFrames } from "./fake-page";
 
 function frames(): FrameSource & { run(): void; readonly waiting: number } {
   let queued = new Map<number, (time: number) => void>();
@@ -108,5 +110,148 @@ describe("liveClock", () => {
     expect(kept[0]).toBeGreaterThanOrEqual(20_000 - 12_000);
     expect(kept.includes(14_000)).toBe(true);
     clock.dispose();
+  });
+
+  it("reads window scroll only while a mount on the clock reads scroll, and tags own scrollTarget with root", () => {
+    let ms = 0;
+    const f = fakeFrames();
+    const view = new FakeScrollTarget();
+    const ownTarget = new FakeScrollTarget();
+    const clock = liveClock({ now: () => ms, frames: f });
+    const ping = inputs({ values: { level: {} } });
+
+    const noScrollPiece = scene(box("card").moves(bind({ x: (t, e) => (e.length > 0 ? 1 : 0) })));
+    const scrollPiece = scene(box("scroller").moves(bind({ y: scroll.y })));
+
+    const mountedA = mount(noScrollPiece, {
+      root: new FakeRoot([new FakeNode("card")], view),
+      clock: { kind: "driver", driver: clock },
+    });
+
+    ms = 50;
+    view.scrollY = 80;
+    clock.set(ping, "level", 1);
+    view.scrollYReads = 0;
+    f.tick(ms);
+    expect(view.scrollYReads).toBe(0);
+
+    const mountedB = mount(scrollPiece, {
+      root: new FakeRoot([new FakeNode("scroller")], view),
+      clock: { kind: "driver", driver: clock },
+    });
+
+    ms = 100;
+    view.scrollY = 120;
+    view.scrollYReads = 0;
+    f.tick(ms);
+    expect(view.scrollYReads).toBe(1);
+
+    mountedB.dispose();
+    ms = 150;
+    view.scrollY = 160;
+    view.scrollYReads = 0;
+    f.tick(ms);
+    expect(view.scrollYReads).toBe(0);
+    mountedA.dispose();
+
+    const ownRoot = Object.assign(new FakeRoot([new FakeNode("scroller")], view), {
+      id: "panel-b",
+    });
+    const mountedOwn = mount(scrollPiece, {
+      root: ownRoot,
+      scrollTarget: ownTarget,
+      clock: { kind: "driver", driver: clock },
+    });
+    ms = 200;
+    ownTarget.scrollY = 45;
+    ownTarget.fireScroll();
+    f.tick(ms);
+    expect(
+      clock
+        .input()
+        .some(
+          (entry) => entry.name === "scroll" && entry.target === "panel-b" && entry.value === 45,
+        ),
+    ).toBe(true);
+    expect(
+      clock
+        .input()
+        .some(
+          (entry) => entry.name === "scroll" && entry.target === undefined && entry.value === 45,
+        ),
+    ).toBe(false);
+    mountedOwn.dispose();
+    clock.dispose();
+  });
+
+  it("keeps cursors isolated across mounts and steps once per frame on shared clockDriver", () => {
+    let ms = 0;
+    const f = fakeFrames();
+    const view = new FakeScrollTarget();
+    const clock = liveClock({ now: () => ms, frames: f });
+    const counter = inputs({ triggers: { inc: {} } });
+    const countState = state(0, (cur, entry) => (entry.name === "inc" ? cur + 1 : cur));
+
+    const mountedA = mount(scene(box("a").moves(bind({ x: countState }))), {
+      root: new FakeRoot([new FakeNode("a")], view),
+      clock: { kind: "driver", driver: clock },
+    });
+    ms = 100;
+    clock.trigger(counter, "inc");
+    f.tick(ms);
+
+    const mountedB = mount(scene(box("b").moves(bind({ x: countState }))), {
+      root: new FakeRoot([new FakeNode("b")], view),
+      clock: { kind: "driver", driver: clock },
+    });
+    expect(mountedA.player.values["a"]).toEqual({ x: 1 });
+    expect(mountedB.player.values["b"]).toEqual({ x: 1 });
+
+    ms = 200;
+    clock.trigger(counter, "inc");
+    f.tick(ms);
+    expect(mountedA.player.values["a"]).toEqual({ x: 2 });
+    expect(mountedB.player.values["b"]).toEqual({ x: 2 });
+    mountedA.dispose();
+    mountedB.dispose();
+    clock.dispose();
+
+    const timedFrames = fakeFrames();
+    const timed = clockDriver({ duration: 1000, frames: timedFrames, reducedMotion: "play" });
+    let stepsA = 0;
+    let stepsB = 0;
+    const timedA = mount(
+      scene(
+        { length: 1000 },
+        box("a").moves(
+          motion((t, ctx): Pose2d => {
+            stepsA += 1;
+            return { y: scroll.y(t, ctx?.events ?? []) };
+          }),
+        ),
+      ),
+      { root: new FakeRoot([new FakeNode("a")], view), clock: { kind: "driver", driver: timed } },
+    );
+    const timedB = mount(
+      scene(
+        { length: 1000 },
+        box("b").moves(
+          motion((t, ctx): Pose2d => {
+            stepsB += 1;
+            return { y: scroll.y(t, ctx?.events ?? []) };
+          }),
+        ),
+      ),
+      { root: new FakeRoot([new FakeNode("b")], view), clock: { kind: "driver", driver: timed } },
+    );
+    stepsA = 0;
+    stepsB = 0;
+    view.scrollY = 300;
+    timedFrames.tick(100);
+    expect(stepsA).toBe(1);
+    expect(stepsB).toBe(1);
+    timedA.dispose();
+    timedB.dispose();
+    timed.dispose();
   });
 });
