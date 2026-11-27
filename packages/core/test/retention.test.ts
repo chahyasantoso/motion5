@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { inputLog, inputs, liveAt, pageInputs, triggers, value } from "@gerak/core";
 

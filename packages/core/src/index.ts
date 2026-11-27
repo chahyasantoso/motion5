@@ -151,6 +151,7 @@ export {
   type InputLog,
 } from "./events/event-log";
 export { INPUT_EVENTS, pointer, scroll, type PointerState, type ScrollState } from "./state/inputs";
+export { triggers, value, valueAt, type Trigger } from "./state/readers";
 export { springTo, type SpringToOptions } from "./state/spring-to";
 export { easeTo, type EaseToOptions, type UpDown } from "./state/ease-to";
 export { transition, type Transition, type TransitionOptions } from "./state/transition";

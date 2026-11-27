@@ -1,15 +1,5 @@
 [
   {
-    "path": "packages/core/test/retention.test.ts",
-    "phase": 4,
-    "reason": "inputLog and its live window do not exist yet."
-  },
-  {
-    "path": "packages/core/test/value-at.test.ts",
-    "phase": 4,
-    "reason": "inputLog, triggers and valueAt do not exist yet."
-  },
-  {
     "path": "packages/dom/test/live-equivalence.test.ts",
     "phase": 4,
     "reason": "The typed port on Mounted and the value and trigger readers do not exist yet."
