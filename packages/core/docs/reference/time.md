@@ -9,7 +9,7 @@ Time is a number over a span; this group reads it, shapes it (loop, chain, rever
 - **`Clock`** `type Clock = { readonly kind: "timed"; readonly elapsed: number; readonly length: number; } | { readonly kind: "live"; readonly elapsed: number; } | { readonly kind: "untimed"; }`: A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control.
 - **`Time`** `type Time = { progress: number; clock: Clock }`: Where a move is: `progress` from 0 to 1, and the clock behind it.
 - **`Curve`** `type Curve<T> = (progress: number) => T`: A value from progress 0 to 1, built once from its settings.
-- **`Signal`** `type Signal<T> = (time: Time, events: Events) => T`: A value at the scene's `time` and the `events` so far; a signal of `time` alone may ignore `events`.
+- **`Signal`** `type Signal<T> = (time: Time, input: Input) => T`: A value at the scene's `time` and the `input` so far; a signal of `time` alone may ignore `input`.
 - **`span`** `(fromMs: number, toMs: number): Span`: A stretch in ms: `.of(time, ease?)` is a move's time inside it, counting from `fromMs`; `.at(share)` the ms a share falls on. Throws `RangeError` on an untimed time.
 - **`Span`** `type Span = { from: number; to: number; of: (time: Time, ease?: Ease) => Time; at: (share: number) => number }`: A stretch of the scene in ms: `of` gives a move's time inside it, `at` the ms a share of it falls on.
 - **`motion`** `<T, C = unknown>(fn: (time: Time, context?: C) => T): Motion<T, C>`: Gives `fn` the timing methods; called with no span or period it answers as `fn` does.

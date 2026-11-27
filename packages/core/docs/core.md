@@ -12,7 +12,7 @@ Time -> timing (span, lanes, loop) -> 0..1 progress -> curve (ease, envelope, pa
 
 - `Time` is `{ progress, clock }`. `progress` runs 0 to 1. The clock is `timed` (`{ elapsed, length }` ms), `live` (`elapsed` only) or `untimed` (`progress` only).
 - **Milliseconds:** `elapsedOf(time.clock)`; `undefined` on an untimed clock. Never `progress * length` by hand.
-- `Signal<T>` is `(time, events) => T`. Moves, principles and state all make signals.
+- `Signal<T>` is `(time, input) => T`. Moves, principles and state all make signals.
 - `Curve<T>` is `(progress) => T`. A curve with settings is built from them first: `wave({ count })(p)`.
 - `Timing` maps one `Time` to another. Build one, then call `.of(time)`.
 
@@ -63,16 +63,16 @@ Each has a `3d` twin where the pose type needs one. `smear`, `trail` and `trailT
 
 ## State from events
 
-Events are `{ name, at, target, value? }`, oldest first. A scene never stores what happened; it folds the log.
+Inputs are `InputEntry` records (`{ kind: "value" | "trigger", name, at, value, target?, other?, point? }`), oldest first. A scene never stores what happened; it folds the log.
 
-- `state(start, rule, { target? })` folds events up to a time; `.steps` lists when it changed.
-- `scroll.y` folds `"scroll"` sample events in px (from 0); `pointer.x` and `pointer.y` fold `"pointer-x"` and `"pointer-y"` samples from 0 to 1 across the viewport (from 0.5). `INPUT_EVENTS` names the three sample events; `springTo(scroll.y, (y) => y)` gives a scroll position that trails the page (a scroll beat's `smooth` uses it), and a [page mount](../../dom/docs/page.md) streams both from the live page.
-- `eventLog()` keeps a log of events in order.
+- `state(start, rule, { target? })` folds input entries up to a time; `.steps` lists when it changed.
+- `scroll.y` folds `"scroll"` value entries in px (from 0); `pointer.x` and `pointer.y` fold `"pointer-x"` and `"pointer-y"` value entries from 0 to 1 across the viewport (from 0.5). `pageInputs` and `INPUT_EVENTS` name those page inputs; `springTo(scroll.y, (y) => y)` gives a scroll position that trails the page (a scroll beat's `smooth` uses it), and a [page mount](../../dom/docs/page.md) streams both from the live page.
+- `inputs({ values?, triggers? })` declares a typed `Contract`, and `inputLog()` keeps a typed log of entries in order.
 - `createStore`, `withStore`, and `withProbeStore` isolate stateful cursors per `Player` (`RuntimeStore`) and keep backward probes from mutating forward state.
 - `transition(state, options)` and `transition(state, pick, options)` return a `Signal<Transition<S>>` (`{ current, previous, progress, active }`) with `ms: number | ((from, to) => number)` and optional `ease`, restarting from mid-change and settling on untimed clocks.
 - `springTo(state, pick)` springs and `easeTo(state, pick, { ms })` eases to what `pick` reads, from wherever the value is when the state changes.
 - `watchClock(onUse, run)` and `watchInputs(onInput, run)` tell a scheduler what a step depends on: `stillMoving()` says `time` (including unsettled springs, eases, transitions, `trail`, `trailTurn`, and `react`), `watchedTime` says `maybe` on clock/progress reads, and `scroll`/`pointer`/`events` record input channels. States, `transition`, `springTo` and `easeTo` read the clock through `rawTime` and report only while on their way.
-- `tally` integrates held values over time. `velocity(signal, time, events)` reads speed; pass the scene's time, not an eased one.
+- `tally` integrates held values over time. `velocity(signal, time, input)` reads speed; pass the scene's time, not an eased one.
 - Random is `seeded(seed)`, never `Math.random()`.
 
 ## Reference

@@ -21,7 +21,7 @@ export default scene({ length: 900 }, card.moves(bind({ y: lift })));
 
 With `@gerak/moves`, `follow({ start: 0, on: { enter: -14, leave: 0 }, target: "card" })` is the same spring from an event table.
 
-- `events` holds every event up to the current time, oldest first: `{ name, at, target }` in ms, plus pointer `(x, y)` relative to the watched element's top-left corner.
+- `input` holds every `InputEntry` up to the current time, oldest first: `{ kind, name, at, value, target?, other?, point? }` in ms.
 - Watch a still wrapper element if the moving child leaves under the cursor.
 - Derive answers strictly from `(time, events)` rather than mutable component variables so replays, scrubbing, and `gerak review --action hover:.card-hit@1000` match identically.
 
@@ -37,7 +37,7 @@ const fall = beat("fall", 800);
 const HIT_MS = fall.from + DROP_LANDING * (fall.to - fall.from);
 
 export default scene(
-  { length: 1400, cues: [{ name: "hit", at: HIT_MS, target: "box" }] },
+  { length: 1400, cues: [{ kind: "trigger", name: "hit", at: HIT_MS, value: 1, target: "box" }] },
   box("box").moves(drop({ distance: 120, squash: 0.15 }).in(fall)),
 );
 ```
