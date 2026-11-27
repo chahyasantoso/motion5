@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { inputLog, inputs, liveAt, triggers, watchClock, watchedTime } from "@gerak/core";
+import {
+  derivedInput,
+  inputLog,
+  inputs,
+  liveAt,
+  triggers,
+  watchClock,
+  watchedTime,
+  type Input,
+} from "@gerak/core";
 import { noise1d, react } from "../src/index";
 
 const hits = inputs({
@@ -94,5 +103,31 @@ describe("react stillMoving and stateless noise1d", () => {
       }
     }
     expect(dropping.input.length).toBeLessThan(full.input.length);
+  });
+
+  it("keeps shake values identical across a live drop when merged with a cue", () => {
+    const log = inputLog({ windowMs: 4000 });
+    const cues: Input = [{ kind: "trigger", name: "cue", at: 100, value: 1 }];
+    const derived = derivedInput();
+    const shake = react(triggers(hits, "hit"), {
+      kind: "shake",
+      amplitude: 10,
+      decay: 6,
+      frequency: 4,
+    });
+
+    for (let at = 0; at <= 4500; at += 100) {
+      log.set(at, hits, "noise", at);
+    }
+    log.trigger(5500, hits, "hit");
+    const beforeDrop = shake(liveAt(5700), derived.resolve(cues, log.input, 5700));
+    expect(beforeDrop).not.toBe(0);
+
+    for (let at = 5800; at <= 9200; at += 100) {
+      log.set(at, hits, "noise", at);
+    }
+    log.trigger(9100, hits, "hit");
+    const afterDrop = shake(liveAt(5700), derived.resolve(cues, log.input, 5700));
+    expect(afterDrop).toBe(beforeDrop);
   });
 });

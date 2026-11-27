@@ -3,10 +3,12 @@ import {
   derivedInput,
   generationOf,
   inputLog,
+  inputSerialsOf,
   inputs,
   liveAt,
   sourceStreamOf,
   state,
+  triggers,
   versionOf,
   type Input,
 } from "@gerak/core";
@@ -150,5 +152,51 @@ describe("derivedInput records and caching", () => {
     expect(generationOf(plainFirst)).toBeTypeOf("number");
     expect(sourceStreamOf(plainFirst)).toBeDefined();
     expect(plainDerived.resolve(cues, plainPage, undefined)).toBe(plainFirst);
+  });
+
+  it("preserves page serials and negative cue serials while resuming across appends", () => {
+    const cues: Input = [
+      { kind: "trigger", name: "cue", at: 100, value: 1 },
+      { kind: "trigger", name: "cue", at: 300, value: 1 },
+    ];
+    const log = inputLog({ windowMs: 4000 });
+    const derived = derivedInput();
+    let folds = 0;
+    const count = state(0, (n) => {
+      folds += 1;
+      return n + 1;
+    });
+
+    for (let at = 0; at <= 4500; at += 500) {
+      log.set(at, testInputs, "sample", at);
+    }
+    log.trigger(5500, testInputs, "tap");
+
+    const m1 = derived.resolve(cues, log.input, 5600);
+    const serials1 = inputSerialsOf(m1);
+    expect(serials1).toBeDefined();
+    const t1 = triggers(testInputs, "tap")(liveAt(5600), m1);
+    const tapSerial1 = t1[0]?.serial;
+    expect(tapSerial1).toBe(11);
+    expect(serials1?.[1]).toBeLessThan(0);
+    expect(serials1?.[2]).toBeLessThan(0);
+    expect((serials1?.[1] ?? 0) < (serials1?.[2] ?? 0)).toBe(true);
+
+    expect(count(liveAt(5600), m1)).toBe(13);
+    const folds1 = folds;
+
+    log.set(5700, testInputs, "sample", 5700);
+    const m2 = derived.resolve(cues, log.input, 5700);
+    expect(sourceStreamOf(m2)).toBe(sourceStreamOf(m1));
+    expect(generationOf(m2)).toBe(generationOf(m1));
+    expect(count(liveAt(5700), m2)).toBe(14);
+    expect(folds).toBe(folds1 + 1);
+
+    for (let at = 6000; at <= 9500; at += 500) {
+      log.set(at, testInputs, "sample", at);
+    }
+    const m3 = derived.resolve(cues, log.input, 5700);
+    const t3 = triggers(testInputs, "tap")(liveAt(5700), m3);
+    expect(t3[0]?.serial).toBe(tapSerial1);
   });
 });

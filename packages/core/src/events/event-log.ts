@@ -85,44 +85,69 @@ function upperBoundAt(list: Input, maxAt: number): number {
   return low;
 }
 
+function cueSerial(index: number): number {
+  return -(1 / (index + 1));
+}
+
+interface OrderedSlice {
+  readonly entries: InputEntry[];
+  readonly serials: number[];
+}
+
 function mergeTwoOrderedSlice(
-  a: Input,
-  aStart: number,
-  aLimit: number,
-  b: Input,
-  bLimit: number,
-): InputEntry[] {
-  const out: InputEntry[] = [];
-  let ai = aStart;
+  cues: Input,
+  cuesLimit: number,
+  page: Input,
+  pageLimit: number,
+  pageSerials: readonly number[] | undefined,
+): OrderedSlice {
+  const entries: InputEntry[] = [];
+  const serials: number[] = [];
+  let ai = 0;
   let bi = 0;
-  while (ai < aLimit && bi < bLimit) {
-    const ea = a[ai];
-    const eb = b[bi];
+  while (ai < cuesLimit && bi < pageLimit) {
+    const ea = cues[ai];
+    const eb = page[bi];
     if (ea === undefined || eb === undefined) break;
     if (ea.at <= eb.at) {
-      out.push(ea);
+      entries.push(ea);
+      serials.push(cueSerial(ai));
       ai += 1;
     } else {
-      out.push(eb);
+      entries.push(eb);
+      serials.push(pageSerials?.[bi] ?? bi + 1);
       bi += 1;
     }
   }
-  while (ai < aLimit) {
-    const ea = a[ai++];
-    if (ea !== undefined) out.push(ea);
+  while (ai < cuesLimit) {
+    const ea = cues[ai];
+    if (ea !== undefined) {
+      entries.push(ea);
+      serials.push(cueSerial(ai));
+    }
+    ai += 1;
   }
-  while (bi < bLimit) {
-    const eb = b[bi++];
-    if (eb !== undefined) out.push(eb);
+  while (bi < pageLimit) {
+    const eb = page[bi];
+    if (eb !== undefined) {
+      entries.push(eb);
+      serials.push(pageSerials?.[bi] ?? bi + 1);
+    }
+    bi += 1;
   }
-  return out;
+  return { entries, serials };
 }
 
-function sortEntries(list: InputEntry[]): InputEntry[] {
-  return list
-    .map((entry, index) => ({ entry, index }))
-    .sort((a, b) => a.entry.at - b.entry.at || a.index - b.index)
-    .map((item) => item.entry);
+function sortWithSerials(
+  items: { readonly entry: InputEntry; readonly serial: number }[],
+): OrderedSlice {
+  const sorted = items
+    .map((item, index) => ({ ...item, index }))
+    .sort((a, b) => a.entry.at - b.entry.at || a.index - b.index);
+  return {
+    entries: sorted.map((item) => item.entry),
+    serials: sorted.map((item) => item.serial),
+  };
 }
 
 /** Cached derived view over input lists filtered by elapsed ms while keeping monotonic metadata. */
@@ -186,21 +211,51 @@ export function derivedInput(): DerivedInput {
       const pageLimit =
         maxAt === undefined ? page.length : pageOrdered ? upperBoundAt(page, maxAt) : page.length;
 
-      const merged =
+      const slicePageWithSerials = (): OrderedSlice => {
+        if (pageOrdered) {
+          return {
+            entries: page.slice(0, pageLimit),
+            serials:
+              pageRecord.serials?.slice(0, pageLimit) ??
+              Array.from({ length: pageLimit }, (_, i) => i + 1),
+          };
+        }
+        if (maxAt === undefined) {
+          return {
+            entries: page.slice(),
+            serials:
+              pageRecord.serials?.slice() ?? Array.from({ length: page.length }, (_, i) => i + 1),
+          };
+        }
+        const kept: { readonly entry: InputEntry; readonly serial: number }[] = [];
+        for (let i = 0; i < page.length; i += 1) {
+          const entry = page[i];
+          if (entry !== undefined && entry.at <= maxAt) {
+            kept.push({ entry, serial: pageRecord.serials?.[i] ?? i + 1 });
+          }
+        }
+        return sortWithSerials(kept);
+      };
+
+      const resolved: OrderedSlice =
         cuesLimit === 0
-          ? pageOrdered
-            ? page.slice(0, pageLimit)
-            : maxAt === undefined
-              ? page.slice()
-              : sortEntries(page.filter((e) => e.at <= maxAt))
+          ? slicePageWithSerials()
           : pageLimit === 0
-            ? cues.slice(0, cuesLimit)
+            ? {
+                entries: cues.slice(0, cuesLimit),
+                serials: Array.from({ length: cuesLimit }, (_, i) => cueSerial(i)),
+              }
             : pageOrdered
-              ? mergeTwoOrderedSlice(cues, 0, cuesLimit, page, pageLimit)
-              : sortEntries([
-                  ...cues.slice(0, cuesLimit),
-                  ...(maxAt === undefined ? page : page.filter((e) => e.at <= maxAt)),
+              ? mergeTwoOrderedSlice(cues, cuesLimit, page, pageLimit, pageRecord.serials)
+              : sortWithSerials([
+                  ...cues.slice(0, cuesLimit).map((entry, i) => ({ entry, serial: cueSerial(i) })),
+                  ...page.flatMap((entry, i) =>
+                    maxAt === undefined || entry.at <= maxAt
+                      ? [{ entry, serial: pageRecord.serials?.[i] ?? i + 1 }]
+                      : [],
+                  ),
                 ]);
+      const merged = resolved.entries;
 
       const cuesReset = cues !== prevCues || cuesRecord.generation !== prevCuesGeneration;
       const pageSwappedOrReordered =
@@ -247,14 +302,14 @@ export function derivedInput(): DerivedInput {
         RECORDS.set(cached, {
           version,
           generation: pageRecord.generation,
-          serials: pageRecord.serials?.slice(0, pageLimit),
+          serials: resolved.serials,
           sourceStream: pageRecord.sourceStream,
         });
       } else {
         RECORDS.set(cached, {
           version,
           generation,
-          serials: undefined,
+          serials: resolved.serials,
           sourceStream: streamToken,
         });
       }
