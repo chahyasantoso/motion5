@@ -1,7 +1,7 @@
 import { compactedBeforeOf } from "../events/event-log";
 import type { Events, MotionEvent } from "../events/event-list";
 import { buildState, stepMetaOf, type Step } from "../state/state";
-import { epochOf, storeCell } from "../state/store";
+import { ownCell, storeCell } from "../state/store";
 import { atProgress, elapsedOf, type Time } from "../time/time";
 
 /** Settings of a `tally`: `start`, `on` (a held value by event name, or `"value"` for the event's own)
@@ -30,7 +30,6 @@ interface Held {
 
 /** Counted events of one list: retained times, held values, and cumulative area before each. */
 interface Table {
-  ownerEpoch: number;
   readonly sourceResetId: number | undefined;
   readonly fallbackSource: readonly Step<Held>[];
   logicalCount: number;
@@ -64,19 +63,14 @@ export function tally(options: TallyOptions): Tally {
     const steps = held.steps(atProgress(0), events);
     const meta = stepMetaOf(steps);
     const stepBase = meta?.base ?? 0;
-    const epoch = epochOf();
-    const existing = tableSlot.get();
 
-    const resets =
-      existing === undefined ||
-      (meta !== undefined
-        ? meta.resetId !== existing.sourceResetId
-        : existing.fallbackSource !== steps);
-
-    let kept: Table;
-    if (resets || existing === undefined) {
-      kept = {
-        ownerEpoch: epoch,
+    const kept = ownCell(
+      tableSlot,
+      (existing) =>
+        meta !== undefined
+          ? meta.resetId !== existing.sourceResetId
+          : existing.fallbackSource !== steps,
+      () => ({
         sourceResetId: meta?.resetId,
         fallbackSource: steps,
         logicalCount: 0,
@@ -86,25 +80,15 @@ export function tally(options: TallyOptions): Tally {
         times: [],
         values: [],
         areas: [],
-      };
-      tableSlot.set(kept);
-    } else if (existing.ownerEpoch !== epoch) {
-      kept = {
-        ownerEpoch: epoch,
-        sourceResetId: existing.sourceResetId,
+      }),
+      (existing) => ({
+        ...existing,
         fallbackSource: steps,
-        logicalCount: existing.logicalCount,
-        anchorTime: existing.anchorTime,
-        anchorValue: existing.anchorValue,
-        anchorArea: existing.anchorArea,
         times: existing.times.slice(),
         values: existing.values.slice(),
         areas: existing.areas.slice(),
-      };
-      tableSlot.set(kept);
-    } else {
-      kept = existing;
-    }
+      }),
+    );
 
     const totalSteps = stepBase + steps.length;
     if (kept.logicalCount < stepBase) kept.logicalCount = stepBase;
