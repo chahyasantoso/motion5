@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { elapsedOf, inputs, triggers, value, type Signal } from "@gerak/core";
 import { mount } from "@gerak/dom";
 import { bind, box, scene } from "@gerak/stage";
