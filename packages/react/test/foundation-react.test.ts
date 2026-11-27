@@ -53,7 +53,7 @@ describe("Slice 3 foundation react contracts", () => {
   it("useSignal reads initial value synchronously on first render via useSyncExternalStore", async () => {
     const tapInputs = inputs({ triggers: { tap: {} } });
     const log = inputLog();
-    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.input };
+    const driver = { ...manualDriver({ durationMs: 1000 }), input: () => log.input };
     const createDriver = () => driver;
     const taps = state(10, (count, event) => (event.name === "tap" ? count + 1 : count));
     const basicScene = (time: Time) => ({ box: { x: time.progress * 10 } });
@@ -165,7 +165,7 @@ describe("Slice 3 foundation react contracts", () => {
   it("clears useSignal cache when player toggles to undefined and back without flashing stale values", async () => {
     const tapInputs = inputs({ triggers: { tap: {} } });
     const log = inputLog();
-    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.input };
+    const driver = { ...manualDriver({ durationMs: 1000 }), input: () => log.input };
     const taps = state(0, (count, event) => (event.name === "tap" ? count + 1 : count));
     const seen: (number | undefined)[] = [];
     const basicScene = (time: Time) => ({ x: time.progress * 10 });

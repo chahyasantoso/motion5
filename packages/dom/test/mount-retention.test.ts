@@ -1,8 +1,10 @@
-import { motion, state, type Pose2d } from "@gerak/core";
+import { inputs, motion, state, type Pose2d } from "@gerak/core";
 import { mount } from "@gerak/dom";
 import { box, scene } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import { FakeNode, FakeRoot, fakeFrames } from "./fake-page";
+
+const sampleInputs = inputs({ values: { sample: {} } });
 
 function runStream(settleMs: number | undefined, expectedWindowMs: number): void {
   const root = new FakeRoot([new FakeNode("card")]);
@@ -24,11 +26,11 @@ function runStream(settleMs: number | undefined, expectedWindowMs: number): void
 
   for (let t = 100; t <= 30_000; t += 100) {
     ms = t;
-    mounted.send("sample", t);
+    mounted.set(sampleInputs, "sample", t);
     frames.tick(ms);
   }
 
-  const retained = mounted.events();
+  const retained = mounted.driver.input();
   const expectedRecentAts: number[] = [];
   for (let t = ms - expectedWindowMs; t <= ms; t += 100) {
     expectedRecentAts.push(t);
@@ -72,10 +74,10 @@ describe("mount live log window retention", () => {
 
     for (let t = 100; t <= 20_000; t += 100) {
       frames.tick(t);
-      mounted.send("sample", t);
+      mounted.set(sampleInputs, "sample", t);
     }
 
-    expect(mounted.events().filter((entry) => entry.name === "sample")).toHaveLength(200);
+    expect(mounted.driver.input().filter((entry) => entry.name === "sample")).toHaveLength(200);
     mounted.dispose();
   });
 });

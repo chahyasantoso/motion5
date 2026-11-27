@@ -1,4 +1,4 @@
-import { clamp, ease } from "@gerak/core";
+import { clamp, ease, unreachable } from "@gerak/core";
 import { mount, ready } from "@gerak/dom";
 import { listPose3d, restReader } from "@gerak/stage";
 import {
@@ -9,6 +9,7 @@ import {
   FLAVORS,
   FLAVOR_SELECT_EVENT,
   SPOTLIGHT_ZONES,
+  cookieInputs,
   isSpotlightZone,
   spotlightTargetForZone,
   spotlightZoneForProgress,
@@ -271,7 +272,16 @@ async function bootstrap(): Promise<void> {
     syncJarModels(jar);
     syncJarUi(jar);
     for (const entry of update.sends) {
-      mounted.send(entry.name, entry.value);
+      switch (entry.kind) {
+        case "value":
+          mounted.set(cookieInputs, entry.name, entry.value);
+          break;
+        case "trigger":
+          mounted.trigger(cookieInputs, entry.name, entry.value);
+          break;
+        default:
+          unreachable(entry);
+      }
     }
   };
 
@@ -390,7 +400,7 @@ async function bootstrap(): Promise<void> {
       const { stageTop, pinSpan } = spotlightRange();
       const targetScrollY = Math.max(0, stageTop + pinSpan * spotlightTargetForZone(zone));
       window.scrollTo({ top: targetScrollY, behavior: "instant" });
-      mounted.send(FLAVOR_SELECT_EVENT, zone);
+      mounted.set(cookieInputs, FLAVOR_SELECT_EVENT, zone);
       applyActiveFlavor(zone);
     };
     dotEl.addEventListener("click", onClick);

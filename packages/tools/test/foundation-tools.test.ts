@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   createStore,
   elapsedOf,
+  inputs,
   liveAt,
   motion,
   springTo,
@@ -231,16 +232,17 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
       const nowTime = typeof nowFn === "function" ? Reflect.apply(nowFn, driverObj, []) : undefined;
       expect(durationMs).toBeUndefined();
       expect(Reflect.get(Object(Reflect.get(Object(nowTime), "clock")), "kind")).toBe("live");
-      const sendFn: unknown = Reflect.get(Object(rawMount), "send");
-      if (typeof sendFn === "function") {
+      const setFn: unknown = Reflect.get(Object(rawMount), "set");
+      const mouthContract = inputs({ values: { mouthOpen: {} } });
+      if (typeof setFn === "function") {
         for (let i = 0; i < 6; i += 1) {
           perfMs = i * 2000;
-          Reflect.apply(sendFn, rawMount, ["mouthOpen", i * 0.1]);
+          Reflect.apply(setFn, rawMount, [mouthContract, "mouthOpen", i * 0.1]);
         }
       }
-      const eventsFn: unknown = Reflect.get(Object(rawMount), "events");
+      const inputFn: unknown = Reflect.get(Object(driverObj), "input");
       const evs =
-        typeof eventsFn === "function" ? Reflect.apply(eventsFn, rawMount, []) : undefined;
+        typeof inputFn === "function" ? Reflect.apply(inputFn, driverObj, []) : undefined;
       expect(Array.isArray(evs) ? evs.map((e) => Reflect.get(Object(e), "at")) : []).toEqual([
         6000, 8000, 10000,
       ]);

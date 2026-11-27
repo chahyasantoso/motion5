@@ -1,8 +1,11 @@
 import {
   INPUT_EVENTS,
   aim,
+  inputLog,
+  inputs,
   liveAt,
   motion,
+  pageInputs,
   pointer,
   scroll,
   shared,
@@ -10,6 +13,7 @@ import {
   state,
   toCubics,
   transition,
+  versionOf,
   viewSize3d,
   type Input,
   type Lens3d,
@@ -262,7 +266,7 @@ describe("mount", () => {
     ms = 200;
     card.fire("pointerenter", { clientX: 40, clientY: 60 });
 
-    const eventNames = mounted.events().map((event) => event.name);
+    const eventNames = mounted.driver.input().map((event) => event.name);
     expect(eventNames).toContain(INPUT_EVENTS.scroll);
     expect(eventNames).toContain(INPUT_EVENTS.pointerX);
     expect(eventNames).toContain(INPUT_EVENTS.pointerY);
@@ -478,7 +482,7 @@ describe("mount", () => {
       { root, frames, clock: "live", now: () => ms },
     );
     ms = 250;
-    mounted.send(INPUT_EVENTS.scroll, 75);
+    mounted.set(pageInputs, INPUT_EVENTS.scroll, 75);
     frames.tick(250);
     expect(meter.style.transform).toBe("translate3d(75px, 0px, 0px)");
     expect(clockOut.textContent).toBe("250ms");
@@ -506,8 +510,8 @@ describe("mount", () => {
     );
     const before = runs;
     ms = 16;
-    mounted.send(INPUT_EVENTS.scroll, 10);
-    mounted.send(INPUT_EVENTS.scroll, 20);
+    mounted.set(pageInputs, INPUT_EVENTS.scroll, 10);
+    mounted.set(pageInputs, INPUT_EVENTS.scroll, 20);
     root.fire("pointermove", { clientX: 50, clientY: 50 });
     expect(runs).toBe(before);
     frames.tick(16);
@@ -676,7 +680,7 @@ describe("mount", () => {
     mounted.remeasure();
     expect(sceneCalls).toBe(callsBefore + 1);
     expect(cardNode.style.transform).toBe("translate3d(50px, 0px, 0px)");
-    expect(mounted.events().some((e) => e.name === "scroll" && e.value === 100)).toBe(true);
+    expect(mounted.driver.input().some((e) => e.name === "scroll" && e.value === 100)).toBe(true);
     mounted.dispose();
   });
 
@@ -1489,7 +1493,8 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
 
     frames.tick(0);
     ms = 10;
-    mounted.send("go", 1);
+    const goInputs = inputs({ triggers: { go: {} } });
+    mounted.trigger(goInputs, "go", 1);
     frames.tick(10);
     expect(Number(first.style.opacity)).toBeCloseTo(0, 6);
     expect(Number(second.style.opacity)).toBeCloseTo(0, 6);
@@ -1728,10 +1733,34 @@ function handedDriver(initial: Input = []): Driver & {
   step(ms: number): void;
 } {
   const listeners = new Set<() => void>();
+  const log = inputLog();
+  for (const entry of initial) log.add(entry);
+  const tell = (): void => {
+    for (const listener of [...listeners]) listener();
+  };
   const handed = {
     at: 0,
     now: () => liveAt(handed.at),
-    events: () => initial,
+    input: () => log.input,
+    set: (
+      contract: Parameters<Driver["set"]>[0],
+      name: Parameters<Driver["set"]>[1],
+      value: number,
+      target?: string,
+    ) => {
+      const before = versionOf(log.input);
+      log.set(handed.at, contract, name, value, target);
+      if (versionOf(log.input) !== before) tell();
+    },
+    trigger: (
+      contract: Parameters<Driver["trigger"]>[0],
+      name: Parameters<Driver["trigger"]>[1],
+      value?: number,
+      target?: string,
+    ) => {
+      log.trigger(handed.at, contract, name, value, target);
+      tell();
+    },
     subscribe(listener: () => void) {
       listeners.add(listener);
       return () => {
@@ -1740,7 +1769,7 @@ function handedDriver(initial: Input = []): Driver & {
     },
     step(ms: number) {
       handed.at = ms;
-      for (const listener of [...listeners]) listener();
+      tell();
     },
   };
   return handed;
@@ -1760,6 +1789,8 @@ function watchedScene(seen: { events: Input }) {
 }
 
 describe("mount on a handed driver", () => {
+  const noteInputs = inputs({ values: { note: {} } });
+
   it("shows the scene the recorded log and the driver's events up to the time, merged", () => {
     const card = new FakeNode("card");
     const root = new FakeRoot([card]);
@@ -1775,7 +1806,7 @@ describe("mount on a handed driver", () => {
       clock: { kind: "driver", driver },
     });
     driver.step(300);
-    mounted.send("note", 1);
+    mounted.set(noteInputs, "note", 1);
     expect(seen.events.map((e) => [e.name, e.at])).toEqual([
       ["tap", 100],
       ["note", 300],
@@ -1803,7 +1834,7 @@ describe("mount on a handed driver", () => {
     expect(seen.events).toEqual([]);
     driver.step(500);
     expect(seen.events.map((e) => [e.name, e.at])).toEqual([["click", 400]]);
-    expect(mounted.events().map((e) => e.at)).toEqual([400]);
+    expect(mounted.driver.input().map((e) => e.at)).toEqual([400]);
     mounted.dispose();
   });
 
@@ -1820,7 +1851,7 @@ describe("mount on a handed driver", () => {
     });
     driver.step(100);
     card.fire("click");
-    mounted.send("note", 2);
+    mounted.set(noteInputs, "note", 2);
     expect(frames.queued).toBe(0);
     mounted.dispose();
   });
@@ -1838,11 +1869,11 @@ describe("mount on a handed driver", () => {
     });
     driver.seek(0.4);
     card.fire("click");
-    expect(mounted.events().map((e) => e.at)).toEqual([400]);
+    expect(mounted.driver.input().map((e) => e.at)).toEqual([400]);
     driver.seek(0.1);
-    expect(mounted.events().map((e) => e.at)).toEqual([400]);
+    expect(mounted.driver.input().map((e) => e.at)).toEqual([400]);
     driver.replay();
-    expect(mounted.events()).toEqual([]);
+    expect(mounted.driver.input()).toEqual([]);
     mounted.dispose();
     driver.dispose();
   });

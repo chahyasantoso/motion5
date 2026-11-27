@@ -1,6 +1,7 @@
 import {
   INPUT_EVENTS,
   createStore,
+  inputs,
   liveAt,
   motion,
   pointer,
@@ -255,13 +256,13 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
 
     frames.tick(ms);
     expect(sceneRuns).toBe(2);
-    expect(mounted.events().filter((event) => event.name === INPUT_EVENTS.scroll)).toEqual([
+    expect(mounted.driver.input().filter((event) => event.name === INPUT_EVENTS.scroll)).toEqual([
       { kind: "value", name: INPUT_EVENTS.scroll, at: 20, value: 300 },
     ]);
-    expect(mounted.events().filter((event) => event.name === INPUT_EVENTS.pointerX)).toEqual([
+    expect(mounted.driver.input().filter((event) => event.name === INPUT_EVENTS.pointerX)).toEqual([
       { kind: "value", name: INPUT_EVENTS.pointerX, at: 20, value: 0.8 },
     ]);
-    expect(mounted.events().filter((event) => event.name === INPUT_EVENTS.pointerY)).toEqual([
+    expect(mounted.driver.input().filter((event) => event.name === INPUT_EVENTS.pointerY)).toEqual([
       { kind: "value", name: INPUT_EVENTS.pointerY, at: 20, value: 0.15 },
     ]);
     expect(tracker.style.transform).toBe("translate3d(80px, 300px, 0px)");
@@ -367,7 +368,8 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
     expect([sRuns, pRuns, eRuns]).toEqual([2, 2, 1]);
 
     ms = 48;
-    mounted.send("ping", 1, "reactor");
+    const pingInputs = inputs({ triggers: { ping: { targets: ["reactor"] } } });
+    mounted.trigger(pingInputs, "ping", 1, "reactor");
     frames.tick(48);
     expect([sRuns, pRuns, eRuns]).toEqual([2, 2, 2]);
 

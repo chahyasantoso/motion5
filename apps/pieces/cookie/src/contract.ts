@@ -1,5 +1,6 @@
 import {
   clamp,
+  inputs,
   project3d,
   unproject3d,
   unreachable,
@@ -30,12 +31,42 @@ export const JAR_REMOVE_EVENT = "jar-remove";
 export const JAR_MIX_EVENT = "jar-mix";
 export const JAR_RESET_EVENT = "jar-reset";
 
-export function jarSlotName(slotIndex: number): string {
-  return `${JAR_SLOT_PREFIX}${slotIndex}`;
+export const JAR_SLOT_NAMES = [
+  "jar-slot-0",
+  "jar-slot-1",
+  "jar-slot-2",
+  "jar-slot-3",
+  "jar-slot-4",
+  "jar-slot-5",
+] as const;
+
+export type JarSlotName = (typeof JAR_SLOT_NAMES)[number];
+
+export function jarSlotName(slotIndex: number): JarSlotName {
+  return JAR_SLOT_NAMES[slotIndex] ?? "jar-slot-0";
 }
 
 export const SPOTLIGHT_ROLL_MS = 720;
 export const FLAVOR_SELECT_EVENT = "flavor-select";
+
+export const cookieInputs = inputs({
+  values: {
+    "jar-slot-0": {},
+    "jar-slot-1": {},
+    "jar-slot-2": {},
+    "jar-slot-3": {},
+    "jar-slot-4": {},
+    "jar-slot-5": {},
+    "jar-sealed": {},
+    "flavor-select": {},
+  },
+  triggers: {
+    "jar-add": {},
+    "jar-remove": {},
+    "jar-mix": {},
+    "jar-reset": {},
+  },
+});
 export const SPOTLIGHT_ZONE_THRESHOLDS = [0.22, 0.48, 0.74] as const;
 export const SPOTLIGHT_ZONE_TARGETS = [0.08, 0.35, 0.61, 0.88] as const;
 
