@@ -24,12 +24,12 @@ Run from your project's folder. A page is a path inside the site with no leading
   every field of every target each 16 ms in 3 consolidated passes and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
-  `--events` injects synthetic `name=value@ms` or `name:target@ms` events alongside `cues`; `--events @<name>` reads the recorded preset `<pieces>/.gerak/presets/<piece>/<name>.json`, where the piece is the scene file's name without `.ts` and `-scene`.
+  `--events name=value@ms,name@ms` (or `name:target@ms`) injects a specific input sequence alongside `cues`; `--events @<name>` reads the recorded preset `<pieces>/.gerak/presets/<piece>/<name>.json`, where the piece is the scene file's name without `.ts` and `-scene`.
   For a `scene` piece a finding that names a time also names the beat there, and it
   adds: an element whose value changes outside its `.shows` windows (before the first, in a gap, or after the last),
   frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout
   function that throws. Unmoved `"settle"` members driven by scroll, sticky ranges, trigger, pointer, or `pageInputs` interaction values (`hovered`, `pressed`, `focused`) are probed across their
-  reported drivers before being flagged as never moved. A step while an element, its parent or its parts are hidden by `.shows` is not a jump. An
+  reported drivers, and any app values or triggers a member reads are probed before calling it never moved. A step while an element, its parent or its parts are hidden by `.shows` is not a jump. An
   element's `.limits({ jump?, turn?, ratio?, steps? })` judges it by its own limits instead of the flags; a `custom` value is
   judged as a ratio, except a field named in `steps`, such as a flavour index, which changes in whole steps unjudged.
 - **`gerak check <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--safe-zone tiktok|reels|shorts|youtube] [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
