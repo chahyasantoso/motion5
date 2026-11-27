@@ -42,4 +42,5 @@ export {
   type PageScrollTarget,
   type PageStyle,
 } from "./mount";
+export { listen, type ListenOptions } from "./adapter";
 export { ready } from "./ready";

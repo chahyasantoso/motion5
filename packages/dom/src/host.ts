@@ -481,7 +481,7 @@ export function readScrollXOf(scrollTarget: PageScrollTarget | undefined, root: 
 }
 
 export function readViewportOf(
-  options: MountOptions,
+  options: Pick<MountOptions, "viewport">,
   view: PageScrollTarget | undefined,
   scrollTarget: PageScrollTarget | undefined,
   root: PageRoot,
