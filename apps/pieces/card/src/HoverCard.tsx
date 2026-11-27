@@ -19,6 +19,7 @@ export const HoverCard: React.FC = () => {
         }}
         onPointerDown={() => playing?.driver.set(pageInputs, "pressed", 1, "card")}
         onPointerUp={() => playing?.driver.set(pageInputs, "pressed", 0, "card")}
+        onPointerCancel={() => playing?.driver.set(pageInputs, "pressed", 0, "card")}
       >
         <div ref={shadow} className="card-shadow" />
         <div ref={card} className="card">
