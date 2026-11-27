@@ -267,8 +267,8 @@ that turns a pending test green removes its entry and lowers `PENDING_CEILING` b
 | --- | --- | --- |
 | 1 | The cookie builder proof | Same poses at every sample; jar rules in the app; no motion bookkeeping in the app |
 | 2 | Tests first: I1–I10 and the soak test, written against Decision 11 | I1 passes on `main`; the others fail on the branch for the reasons above, and only for those, and sit in `test/pending.json` under the slice that turns them green, which removes them |
-| 3 | Decisions 6–7 (input-list record, store helper) | I1 green; existing tests green |
-| 4 | Decisions 1, 2 and 5 (the port and contract, readers, retention); every driver gains `input()` and owns its log, and one handed driver can serve two mounts | I2, I4–I6, I10 and the soak test green |
+| 3 | Decision 7 without the snapshot deletion: the store helper, the six copies on it, `epochOf` unexported, `changesOf` lists that never change | I1 green; existing tests green |
+| 4 | Decisions 1, 2, 5 and 6 (the port and contract, readers, retention, the input-list record) and Decision 7's snapshot deletion; every driver gains `input()` and owns its log, and one handed driver can serve two mounts | I2, I4–I6, I10 and the soak test green |
 | 5 | Decisions 3–4 and 5b (stop listening, `liveClock`, the adapter, the shared clock, pieces moved) | I3, I7, I8 and I9 green; every piece and browser test green |
 | 6 | Decision 8 | Each fix has a test that failed before it |
 | 7 | Decision 9 reviews, Decision 10 records, the token measure | Cold reviews done; tokens recorded; `check`, `test:browser` and `pack:check` green; `test/pending.json` empty and `PENDING_CEILING` 0 |
