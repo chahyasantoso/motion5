@@ -1,6 +1,6 @@
 import { spring } from "../ease/spring";
 import { rawTime, stillMoving } from "./clock-watch";
-import { ownCell, storeCell } from "./store";
+import { storeCell } from "./store";
 import { elapsedOf } from "../time/time";
 import type { Signal } from "../time/shapes";
 import { changeMetaOf, changesOf } from "./changes";
@@ -53,8 +53,7 @@ export function springTo<S>(
     const meta = changeMetaOf(list);
     const listBase = meta?.base ?? 0;
 
-    const kept = ownCell(
-      runSlot,
+    const kept = runSlot.own(
       (existing) =>
         meta !== undefined
           ? meta.resetId !== existing.changesResetId

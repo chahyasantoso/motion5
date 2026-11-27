@@ -3,7 +3,7 @@ import { timeAt } from "../time/time-at";
 import type { Time } from "../time/time";
 import type { Events } from "../events/event-list";
 import { compactedBeforeOf } from "../events/event-log";
-import { ownCell, storeCell, withProbeStore } from "./store";
+import { storeCell, withProbeStore } from "./store";
 import { stepMetaOf, type State } from "./state";
 
 /** A moment a picked value changed, and the value it changed to. */
@@ -54,8 +54,7 @@ export function changesOf<S, V = number>(
     const meta = stepMetaOf(now);
     const stepBase = meta?.base ?? 0;
 
-    const cell = ownCell(
-      cellSlot,
+    const cell = cellSlot.own(
       (existing) =>
         meta !== undefined
           ? meta.resetId !== existing.seenStepResetId

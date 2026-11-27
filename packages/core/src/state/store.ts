@@ -30,6 +30,13 @@ export interface RuntimeSnapshot {
 export interface StoreCell<T> {
   get(store?: RuntimeStore): T | undefined;
   set(value: T, store?: RuntimeStore): void;
+  /** The value owned by `store`'s epoch: fresh when absent or `reset` says so, copied when another epoch wrote it. */
+  own(
+    reset: (current: T) => boolean,
+    create: (previous: T | undefined) => T,
+    copy: (current: T) => T,
+    store?: RuntimeStore,
+  ): T;
 }
 
 interface CellEntry<T> {
@@ -39,8 +46,6 @@ interface CellEntry<T> {
 
 const STORES = new WeakMap<RuntimeStore, StoreImpl>();
 const SNAPSHOTS = new WeakMap<RuntimeSnapshot, SnapshotData>();
-const CELL_EPOCHS = new WeakMap<object, (impl: StoreImpl) => number | undefined>();
-
 let nextEpoch = 1;
 
 function makeStore(
@@ -146,37 +151,25 @@ export function storeCell<T>(): StoreCell<T> {
       target.touched.add(capture);
     };
   };
-  const cell: StoreCell<T> = {
+  const write = (impl: StoreImpl, value: T): void => {
+    backing.set(impl.token, { epoch: impl.epoch, value });
+    if (impl.recordTouched) impl.touched.add(capture);
+  };
+  return {
     get: (store = activeStore) => readFromChain(backing, implOf(store))?.value,
-    set: (value, store = activeStore) => {
+    set: (value, store = activeStore) => write(implOf(store), value),
+    own(reset, create, copy, store = activeStore) {
       const impl = implOf(store);
-      backing.set(impl.token, { epoch: impl.epoch, value });
-      if (impl.recordTouched) impl.touched.add(capture);
+      const entry = readFromChain(backing, impl);
+      if (entry === undefined || reset(entry.value)) {
+        const fresh = create(entry?.value);
+        write(impl, fresh);
+        return fresh;
+      }
+      if (entry.epoch === impl.epoch) return entry.value;
+      const copied = copy(entry.value);
+      write(impl, copied);
+      return copied;
     },
   };
-  CELL_EPOCHS.set(cell, (impl) => readFromChain(backing, impl)?.epoch);
-  return cell;
-}
-
-/** Returns `cell`'s value owned by the active store epoch, resetting or copying on write as needed. */
-export function ownCell<T>(
-  cell: StoreCell<T>,
-  reset: (current: T) => boolean,
-  create: (previous: T | undefined) => T,
-  copy: (current: T) => T,
-  store: RuntimeStore = activeStore,
-): T {
-  const impl = implOf(store);
-  const current = cell.get(store);
-  if (current === undefined || reset(current)) {
-    const fresh = create(current);
-    cell.set(fresh, store);
-    return fresh;
-  }
-  const readEpoch = CELL_EPOCHS.get(cell);
-  if (readEpoch === undefined) throw new TypeError("Invalid StoreCell.");
-  if (readEpoch(impl) === impl.epoch) return current;
-  const copied = copy(current);
-  cell.set(copied, store);
-  return copied;
 }

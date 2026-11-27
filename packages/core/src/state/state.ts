@@ -1,5 +1,5 @@
 import { notifyInputUse, rawTime, type InputChannel } from "./clock-watch";
-import { ownCell, storeCell } from "./store";
+import { storeCell } from "./store";
 import { elapsedOf, type Time } from "../time/time";
 import type { Signal } from "../time/shapes";
 import type { Events, MotionEvent } from "../events/event-list";
@@ -148,8 +148,7 @@ export function buildState<S>(
       return true;
     };
 
-    const work = ownCell(
-      cellSlot,
+    const work = cellSlot.own(
       (existing) => !canResume(existing),
       (existing) => {
         // Fast path for backward probes (or seeks inside retained window) when event stream did not reorder.

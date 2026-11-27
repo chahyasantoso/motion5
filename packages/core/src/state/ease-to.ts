@@ -3,7 +3,7 @@ import { mix } from "../blend/mix";
 import { span, type Span } from "../time/span";
 import { timeAt } from "../time/time-at";
 import { rawTime, stillMoving } from "./clock-watch";
-import { ownCell, storeCell } from "./store";
+import { storeCell } from "./store";
 import { elapsedOf } from "../time/time";
 import type { Signal } from "../time/shapes";
 import { changeMetaOf, changesOf } from "./changes";
@@ -60,8 +60,7 @@ export function easeTo<S>(
     const meta = changeMetaOf(list);
     const listBase = meta?.base ?? 0;
 
-    const kept = ownCell(
-      runSlot,
+    const kept = runSlot.own(
       (existing) =>
         meta !== undefined
           ? meta.resetId !== existing.changesResetId

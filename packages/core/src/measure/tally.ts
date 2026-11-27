@@ -1,7 +1,7 @@
 import { compactedBeforeOf } from "../events/event-log";
 import type { Events, MotionEvent } from "../events/event-list";
 import { buildState, stepMetaOf, type Step } from "../state/state";
-import { ownCell, storeCell } from "../state/store";
+import { storeCell } from "../state/store";
 import { atProgress, elapsedOf, type Time } from "../time/time";
 
 /** Settings of a `tally`: `start`, `on` (a held value by event name, or `"value"` for the event's own)
@@ -64,8 +64,7 @@ export function tally(options: TallyOptions): Tally {
     const meta = stepMetaOf(steps);
     const stepBase = meta?.base ?? 0;
 
-    const kept = ownCell(
-      tableSlot,
+    const kept = tableSlot.own(
       (existing) =>
         meta !== undefined
           ? meta.resetId !== existing.sourceResetId

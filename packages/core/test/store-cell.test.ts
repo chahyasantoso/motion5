@@ -1,28 +1,19 @@
 import { describe, expect, it } from "vitest";
-import {
-  createStore,
-  ownCell,
-  restore,
-  snapshot,
-  storeCell,
-  withProbeStore,
-  withStore,
-} from "../src/index";
+import { createStore, restore, snapshot, storeCell, withProbeStore, withStore } from "../src/index";
 
 interface BoxCell {
   version: number;
   items: number[];
 }
 
-describe("ownCell", () => {
+describe("storeCell own", () => {
   it("reuses in the same epoch, copies on write in a probe store, and gives a fresh cell on reset", () => {
     const slot = storeCell<BoxCell>();
     const parent = createStore();
     let shouldReset = false;
 
     const read = (): BoxCell =>
-      ownCell(
-        slot,
+      slot.own(
         () => shouldReset,
         (prev) => ({ version: (prev?.version ?? 0) + 1, items: [] }),
         (cur) => ({ version: cur.version, items: cur.items.slice() }),
@@ -58,8 +49,7 @@ describe("ownCell", () => {
     const store = createStore();
 
     const read = (): BoxCell =>
-      ownCell(
-        slot,
+      slot.own(
         () => false,
         () => ({ version: 1, items: [] }),
         (cur) => ({ version: cur.version, items: cur.items.slice() }),

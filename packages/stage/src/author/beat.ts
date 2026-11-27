@@ -3,7 +3,6 @@ import {
   UNTIMED,
   clamp,
   elapsedOf,
-  ownCell,
   scroll,
   span,
   springTo,
@@ -304,8 +303,7 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
     const meta = stepMetaOf(steps);
     const stepBase = meta?.base ?? 0;
 
-    const cell = ownCell(
-      cellSlot,
+    const cell = cellSlot.own(
       (existing) =>
         threshold !== existing.limit ||
         (meta !== undefined
