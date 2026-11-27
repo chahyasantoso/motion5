@@ -1,11 +1,4 @@
-import {
-  atProgress,
-  elapsedOf,
-  inputLog,
-  unreachable,
-  versionOf,
-  type Time,
-} from "@gerak/core";
+import { atProgress, elapsedOf, inputLog, unreachable, versionOf, type Time } from "@gerak/core";
 import type { Driver } from "@gerak/player";
 import { createLoopCycle, type LoopCycle } from "./loop-cycle";
 import { pageFrames, type FrameSource } from "./frames";

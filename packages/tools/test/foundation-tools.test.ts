@@ -241,8 +241,7 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
         }
       }
       const inputFn: unknown = Reflect.get(Object(driverObj), "input");
-      const evs =
-        typeof inputFn === "function" ? Reflect.apply(inputFn, driverObj, []) : undefined;
+      const evs = typeof inputFn === "function" ? Reflect.apply(inputFn, driverObj, []) : undefined;
       expect(Array.isArray(evs) ? evs.map((e) => Reflect.get(Object(e), "at")) : []).toEqual([
         6000, 8000, 10000,
       ]);

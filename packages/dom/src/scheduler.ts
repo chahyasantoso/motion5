@@ -316,7 +316,8 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     };
   };
 
-  const driver: Driver = timed !== undefined ? timed : given !== undefined ? given : makeLiveDriver();
+  const driver: Driver =
+    timed !== undefined ? timed : given !== undefined ? given : makeLiveDriver();
 
   const flushPendingInputs = (): void => {
     const scrollSample = pendingScroll;

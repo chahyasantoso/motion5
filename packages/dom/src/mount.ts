@@ -205,7 +205,8 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       });
     },
     set: (contract, name, value, target) => runtime.driver.set(contract, name, value, target),
-    trigger: (contract, name, value, target) => runtime.driver.trigger(contract, name, value, target),
+    trigger: (contract, name, value, target) =>
+      runtime.driver.trigger(contract, name, value, target),
     settled() {
       if (mediaStates.size === 0) return Promise.resolve();
       const registerDispose = (listener: () => void): (() => void) => {
