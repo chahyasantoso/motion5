@@ -33,14 +33,14 @@ export default scene(
 
 ## Elements
 
-Each is a value with a unique name, made once. Multi-file pieces can import `{ cast }` directly from `<name>.cast.ts` (overriding only options like `{ split }` or `{ watch: true }` via `text(cast.x.name, ...)`, `box(cast.x.name, ...)`, `shape(cast.x.name, ...)`), or pass `<DomCast>` / `<ObjectCast>` to `box`, `text`, `shape`, and `object`.
+Each is a value with a unique name, made once. Multi-file pieces can import `{ cast }` directly from `<name>.cast.ts` (overriding options like `{ split }` via `text(cast.x.name, ...)`, `box(cast.x.name, ...)`, `shape(cast.x.name, ...)`), or pass `<DomCast>` / `<ObjectCast>` to `box`, `text`, `shape`, and `object`.
 
-- `box(name, { parts?, watch?, media? })`: a page element. With `parts: true`, it binds all matched `[data-cast="<name>"]` nodes (`1..N`) directly as numbered parts `<name>.<index>`. With `media: true` (not combined with `parts: true`), it binds a `<video>` or `<audio>` whose playhead the scene owns at `max(0, ms − from)` since its first `.shows` window opened (0 with no window), which `@gerak/dom` plays on a running clock and seeks on a held one.
-- `text(name, { split?, watch? })`: text whose string lives in the markup; `split: "letters" | "words"` gives one part per letter or word. `text(name, (time) => string, { watch? })` writes a readout string each frame.
-- `shape(name, path, { watch? })`: an SVG `<path>` whose `d` attribute is drawn from `path` in frame px (`path` may also be a function of measured `rest` boxes). `shape(name, { base, targets })` is a morph: pose `shape` 0 is the base, 1 the first target, 1.5 halfway to the second, and so on.
+- `box(name, { parts?, media? })`: a page element. With `parts: true`, it binds all matched `[data-cast="<name>"]` nodes (`1..N`) directly as numbered parts `<name>.<index>`. With `media: true` (not combined with `parts: true`), it binds a `<video>` or `<audio>` whose playhead the scene owns at `max(0, ms − from)` since its first `.shows` window opened (0 with no window), which `@gerak/dom` plays on a running clock and seeks on a held one.
+- `text(name, { split? })`: text whose string lives in the markup; `split: "letters" | "words"` gives one part per letter or word. `text(name, (time) => string)` writes a readout string each frame.
+- `shape(name, path)`: an SVG `<path>` whose `d` attribute is drawn from `path` in frame px (`path` may also be a function of measured `rest` boxes). `shape(name, { base, targets })` is a morph: pose `shape` 0 is the base, 1 the first target, 1.5 halfway to the second, and so on.
 - `object(name, { parts?, view? })`: a Three.js object (`Object3D` or writer) posed in `Pose3d` world units — or with `{ parts: true }`, an `Object3D[]` or `Group.children` list posed by `(index, count) => Pose3d` — drawn by `threeBinder` in `mount`'s `binders`, never by a DOM renderer. [3D scenes](../../three/docs/agent-3d.md) say how it is written, bound, reviewed and sent onto a page slot.
 
-A part is `<name>.<index>`. Setting `watch: true` streams pointer events to the scene. On a [page mount](../../dom/docs/page.md), an element binds `[data-cast="<name>"]` inside `root` (or the overrides in `options.nodes`).
+A part is `<name>.<index>`. On a [page mount](../../dom/docs/page.md), an element binds `[data-cast="<name>"]` inside `root` (or the overrides in `options.nodes`).
 
 An element is bound once per compiled scene: `scene` refuses an element bound twice within the same scene or across its merged sub-scenes, while sequential `shot(...)` sub-scenes and independent scenes can reuse element definitions and read-only geometry references (`view.canvas`, `travel.to`, edge points, `stayWith`) can be shared across sub-scenes. `RestReader.object(name)` reads measured `ObjectBounds3d` (`{ width, height, depth }`) alongside 2D rest boxes (`rest.get(name)`).
 
@@ -113,7 +113,7 @@ Two elements that react to one thing share one signal; wrap it in `shared` when 
 
 ## Events and re-measure
 
-- An element with `watch: true` streams pointer events (`enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`). Fold them with core's `state`; `cues` in `scene`'s options script them.
+- Read app values and opt-in `listen` values (`hovered`, `pressed`, `focused`, `pointer-x`, `pointer-y` on `pageInputs`) with `value(contract, name, target?)` and `triggers(contract, name, target?)`; `cues` in `scene`'s options script them for timed playback.
 - When page CSS or viewport changes and the mount re-measures (`ResizeObserver`, `resize`, font load, or `mounted.remeasure()`), `carry` transitions any element whose rest box moved from its old box to its new one.
 
 ## Checking

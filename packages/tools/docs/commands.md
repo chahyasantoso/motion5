@@ -28,7 +28,7 @@ Run from your project's folder. A page is a path inside the site with no leading
   For a `scene` piece a finding that names a time also names the beat there, and it
   adds: an element whose value changes outside its `.shows` windows (before the first, in a gap, or after the last),
   frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout
-  function that throws. Unmoved `"settle"` members driven by scroll, sticky ranges, trigger, pointer, or watched DOM events (`enter`, `down`, `click`, `focus`) are probed across their
+  function that throws. Unmoved `"settle"` members driven by scroll, sticky ranges, trigger, pointer, or `pageInputs` interaction values (`hovered`, `pressed`, `focused`) are probed across their
   reported drivers before being flagged as never moved. A step while an element, its parent or its parts are hidden by `.shows` is not a jump. An
   element's `.limits({ jump?, turn?, ratio? })` judges it by its own limits instead of the flags; a `custom` value is
   judged as a ratio.

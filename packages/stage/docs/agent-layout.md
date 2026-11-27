@@ -17,7 +17,7 @@ import { box, carry, scene } from "@gerak/stage";
 
 export default scene(
   { length: 2500 },
-  box("card", { watch: true }).moves(carry({ ms: 450, ease: ease.cubicOut, mode: "scale" })),
+  box("card").moves(carry({ ms: 450, ease: ease.cubicOut, mode: "scale" })),
 );
 ```
 
