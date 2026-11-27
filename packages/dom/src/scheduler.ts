@@ -2,11 +2,8 @@ import {
   INPUT_EVENTS,
   clamp,
   elapsedOf,
-  inputLog,
   inputs,
-  liveAt,
   pageInputs,
-  versionOf,
   type Signal,
   type Time,
 } from "@gerak/core";
@@ -48,6 +45,12 @@ import {
   type StageEvent,
   type StageValues,
 } from "./host";
+import {
+  liveClock,
+  liveClockControl,
+  type LiveClock,
+  type LiveClockScrollSource,
+} from "./live-clock";
 import { sameRest } from "./measure-dom";
 
 const WATCHED_TRIGGERS = [
@@ -72,11 +75,33 @@ const WATCHED_CONTRACT = inputs({
   },
 });
 
-function channelOfPageInput(name: string): "scroll" | "pointer" | "events" {
-  if (name === INPUT_EVENTS.scroll) return "scroll";
-  if (name === INPUT_EVENTS.pointerX || name === INPUT_EVENTS.pointerY) return "pointer";
-  return "events";
+const ROOT_TARGETS = new WeakMap<object, string>();
+let nextRootTargetId = 0;
+
+function rootTargetName(root: PageRoot): string {
+  const cached = ROOT_TARGETS.get(root);
+  if (cached !== undefined) return cached;
+  let name: string | undefined;
+  const getAttr: unknown = Reflect.get(root, "getAttribute");
+  if (typeof getAttr === "function") {
+    const cast: unknown = Reflect.apply(getAttr, root, ["data-cast"]);
+    if (typeof cast === "string" && cast.length > 0) name = cast;
+  }
+  if (name === undefined) {
+    const id: unknown = Reflect.get(root, "id");
+    if (typeof id === "string" && id.length > 0) name = id;
+  }
+  if (name === undefined) {
+    nextRootTargetId += 1;
+    name = `root-${nextRootTargetId}`;
+  }
+  ROOT_TARGETS.set(root, name);
+  return name;
 }
+
+const IN_GIVEN_SCROLL = new WeakSet<Driver>();
+const REENTERED_GIVEN = new WeakMap<Driver, Set<object>>();
+const SKIP_GIVEN_ONCE = new WeakMap<Driver, WeakSet<object>>();
 
 function mergeMemberInput(map: Map<string, InputNeed>, name: string, added: InputNeed): boolean {
   const prev = map.get(name);
@@ -152,9 +177,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   const measures: RestAt[] = [{ at: 0, rest: currentReader }];
 
   const frames: FrameSource = options.frames ?? pageFrames();
-  const now = options.now ?? (() => globalThis.performance.now());
-  const start = now();
-  const elapsed = (): number => Math.max(0, now() - start);
+  const settleMs = options.settleMs ?? stage.settleMs ?? 2000;
   const hosted =
     options.clock === "live" ? hostDriver({ length: stage.durationMs, root }) : undefined;
   const hostedLive = hosted !== undefined && hosted.now().clock.kind === "live";
@@ -163,9 +186,17 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
 
   let timed: ClockDriver | undefined;
   let given: Driver | undefined;
+  let builtLive: LiveClock | undefined;
+  let driver: Driver;
   let durationMs: number | undefined;
   switch (clock) {
     case "live":
+      builtLive = liveClock({
+        settleMs,
+        ...(options.now === undefined ? {} : { now: options.now }),
+        frames,
+      });
+      driver = builtLive;
       durationMs = undefined;
       break;
     case "timed":
@@ -173,12 +204,14 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
         duration: stage.durationMs,
         frames,
       });
+      driver = timed;
       durationMs = stage.durationMs;
       break;
     default:
       switch (clock.kind) {
         case "driver":
           given = clock.driver;
+          driver = given;
           durationMs = undefined;
           break;
         default:
@@ -186,10 +219,8 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       }
   }
 
-  const settleMs = options.settleMs ?? stage.settleMs ?? 2000;
-  const driverMs = (source: Driver): number => elapsedOf(source.now().clock) ?? 0;
-  const clockMs = (): number =>
-    timed !== undefined ? driverMs(timed) : given !== undefined ? driverMs(given) : elapsed();
+  const liveCtrl = liveClockControl(driver);
+  const clockMs = (): number => elapsedOf(driver.now().clock) ?? 0;
 
   const introBounds = (targetStage: Stage): number => {
     let end = 0;
@@ -199,11 +230,8 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   };
   let introMs = introBounds(stage);
   let activeUntil = introMs;
-  let frameHandle: number | undefined;
   let live = true;
-  let inTick = false;
   let frameInputs: Map<string, InputNeed> = new Map();
-  const listeners = new Set<() => void>();
   let lastScrollY = readScrollYOf(scrollTarget, root);
 
   const memberInputs = new Map<string, InputNeed>();
@@ -217,6 +245,15 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     }
   };
   seedInputs(stage);
+
+  const readsScroll = (): boolean => {
+    for (const member of stage.members) {
+      if (member.onScroll !== undefined) return true;
+      const need = memberInputs.get(member.name) ?? member.inputs;
+      if (need.scroll) return true;
+    }
+    return false;
+  };
 
   let pointerAttached = false;
   const needsPointer = (): boolean => {
@@ -235,15 +272,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     if (discoveredPointer) syncPointerListener();
   };
 
-  const notify = (): void => {
-    for (const listener of [...listeners]) listener();
-    drainFrameInputs();
-  };
-
   let fresh = false;
-  let dirtyScroll = false;
-  let dirtyPointer = false;
-  let dirtyEvents = false;
   let earlierMoves: ReadonlyMap<string, Moves> = new Map();
   let frameMoves = new Map<string, Moves>();
   let frameOnly: ReadonlySet<string> | undefined;
@@ -265,73 +294,16 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     .filter((member) => member.expect === "ambient")
     .map((member) => member.name);
 
-  let pendingScroll: { readonly value: number; readonly at: number } | undefined;
-  let pendingPointer: { readonly x: number; readonly y: number; readonly at: number } | undefined;
+  let pendingPointer: { readonly x: number; readonly y: number } | undefined;
 
-  const markLiveInput = (at: number, channel: "scroll" | "pointer" | "events"): void => {
-    activeUntil = Math.max(activeUntil, at + settleMs);
-    switch (channel) {
-      case "scroll":
-        dirtyScroll = true;
-        break;
-      case "pointer":
-        dirtyPointer = true;
-        break;
-      case "events":
-        dirtyEvents = true;
-        break;
-      default:
-        return unreachable(channel);
-    }
-    if (!inTick) schedule();
-  };
-
-  const makeLiveDriver = (): Driver => {
-    const log = inputLog({ windowMs: Math.max(settleMs, 4000) });
-    return {
-      now: (): Time => liveAt(elapsed()),
-      input: () => log.input,
-      options,
-      set(contract, name, value, target) {
-        if (!live) return;
-        const at = elapsed();
-        const before = versionOf(log.input);
-        log.set(at, contract, name, value, target);
-        if (versionOf(log.input) !== before) {
-          markLiveInput(at, Object.is(contract, pageInputs) ? channelOfPageInput(name) : "events");
-        }
-      },
-      trigger(contract, name, value, target) {
-        if (!live) return;
-        const at = elapsed();
-        log.trigger(at, contract, name, value, target);
-        markLiveInput(at, "events");
-      },
-      subscribe(listener) {
-        listeners.add(listener);
-        return () => {
-          listeners.delete(listener);
-        };
-      },
-    };
-  };
-
-  const driver: Driver =
-    timed !== undefined ? timed : given !== undefined ? given : makeLiveDriver();
-
-  const flushPendingInputs = (): void => {
-    const scrollSample = pendingScroll;
-    if (scrollSample !== undefined) {
-      pendingScroll = undefined;
-      lastScrollY = scrollSample.value;
-      driver.set(pageInputs, INPUT_EVENTS.scroll, scrollSample.value);
-    }
-    const pointerSample = pendingPointer;
-    if (pointerSample !== undefined) {
-      pendingPointer = undefined;
-      driver.set(pageInputs, INPUT_EVENTS.pointerX, pointerSample.x);
-      driver.set(pageInputs, INPUT_EVENTS.pointerY, pointerSample.y);
-    }
+  const ownScrollTarget = options.scrollTarget !== undefined && options.scrollTarget !== view;
+  const scrollEntryTarget = ownScrollTarget ? rootTargetName(root) : undefined;
+  const scrollSourceKey: object = ownScrollTarget ? root : (scrollTarget ?? root);
+  const scrollSource: LiveClockScrollSource = {
+    key: scrollSourceKey,
+    target: scrollEntryTarget,
+    read: () => readScrollYOf(scrollTarget, root),
+    readsScroll,
   };
 
   let wholeNext = 0 < introMs;
@@ -354,92 +326,56 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     return names;
   };
 
-  const syncScrollPoll = (at: number): void => {
+  const needsFrame = (afterMs: number): boolean =>
+    live &&
+    (ambientNames.length > 0 ||
+      afterMs < introMs ||
+      wholeNext ||
+      hasMedia ||
+      movingNow(afterMs < activeUntil).size > 0);
+
+  const flushPendingPointer = (): void => {
+    const pointerSample = pendingPointer;
+    if (pointerSample === undefined) return;
+    pendingPointer = undefined;
+    driver.set(pageInputs, INPUT_EVENTS.pointerX, pointerSample.x);
+    driver.set(pageInputs, INPUT_EVENTS.pointerY, pointerSample.y);
+  };
+
+  const syncScrollForNonLive = (): void => {
     const nextY = readScrollYOf(scrollTarget, root);
-    const current = pendingScroll?.value ?? lastScrollY;
-    if (nextY !== current) pendingScroll = { value: nextY, at };
+    if (nextY !== lastScrollY) {
+      lastScrollY = nextY;
+      driver.set(pageInputs, INPUT_EVENTS.scroll, nextY, scrollEntryTarget);
+    }
   };
 
-  const tick = (): void => {
-    frameHandle = undefined;
-    if (!live) return;
-    const nowMs = elapsed();
-    inTick = true;
-    try {
-      syncScrollPoll(nowMs);
-      flushPendingInputs();
-    } finally {
-      inTick = false;
-    }
+  if (liveCtrl !== undefined) {
+    if (readsScroll()) liveCtrl.seedScroll(scrollSource);
+  } else if (lastScrollY !== 0) {
+    driver.set(pageInputs, INPUT_EVENTS.scroll, lastScrollY, scrollEntryTarget);
+  }
 
-    const scrollChanged = dirtyScroll;
-    const pointerChanged = dirtyPointer;
-    const eventsChanged = dirtyEvents;
-    const whole =
-      fresh || wholeNext || hasReadout || Reflect.get(globalThis, CLOCK_FRAMES_OFF) === true;
-    fresh = false;
-    dirtyScroll = false;
-    dirtyPointer = false;
-    dirtyEvents = false;
-
-    const heldTriggers = hostedLive || Reflect.get(globalThis, HELD_CLOCK) === true;
-    if (whole) {
-      handoff.syncTriggers(clockMs(), driver.input(), currentReader, heldTriggers);
-      runOnly = handoff.engineOnly;
-      notify();
-      runOnly = undefined;
-    } else {
-      if (scrollChanged || eventsChanged) {
-        handoff.syncTriggers(clockMs(), driver.input(), currentReader, heldTriggers);
-      }
-      const names = movingNow(maybeNext);
-      for (const member of stage.members) {
-        const need = memberInputs.get(member.name) ?? member.inputs;
-        if (
-          (scrollChanged && (need.scroll || member.onScroll !== undefined)) ||
-          (pointerChanged && need.pointer) ||
-          (eventsChanged && need.events)
-        ) {
-          names.add(member.name);
-        }
-      }
-      const allowed = handoff.engineOnly;
-      const routed =
-        allowed === undefined ? names : new Set([...names].filter((name) => allowed.has(name)));
-      if (routed.size > 0) {
-        runOnly = routed;
-        notify();
-        runOnly = undefined;
-      }
-    }
-
-    const afterMs = elapsed();
-    wholeNext = afterMs < introMs;
-    maybeNext = afterMs < activeUntil;
-    if (live && (ambientNames.length > 0 || wholeNext || hasMedia || movingNow(maybeNext).size > 0))
-      schedule();
+  let playerStep: (() => void) | undefined;
+  const playerDriver: Driver = {
+    now: () => driver.now(),
+    input: () => driver.input(),
+    set: (contract, name, value, target) => driver.set(contract, name, value, target),
+    trigger: (contract, name, value, target) => driver.trigger(contract, name, value, target),
+    subscribe(listener) {
+      playerStep = listener;
+      return () => {
+        if (playerStep === listener) playerStep = undefined;
+      };
+    },
   };
-
-  function schedule(): void {
-    if (live && timed === undefined && given === undefined && frameHandle === undefined)
-      frameHandle = frames.requestFrame(tick);
-  }
-
-  if (lastScrollY !== 0) {
-    inTick = true;
-    try {
-      driver.set(pageInputs, INPUT_EVENTS.scroll, lastScrollY);
-    } finally {
-      inTick = false;
-    }
-    dirtyScroll = false;
-  }
 
   const unwatch: (() => void)[] = [];
   const watchTarget = (name: string, node: PageElement): (() => void) => {
     const removers = WATCHED_TRIGGERS.map(([type, triggerName]) => {
       const listener = (): void => {
-        flushPendingInputs();
+        flushPendingPointer();
+        if (liveCtrl !== undefined && readsScroll()) liveCtrl.syncScroll(scrollSource);
         driver.trigger(WATCHED_CONTRACT, triggerName, 1, name);
       };
       node.addEventListener(type, listener);
@@ -467,19 +403,14 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   }
 
   const onScroll = (): void => {
-    const nextY = readScrollYOf(scrollTarget, root);
-    const known = pendingScroll?.value ?? lastScrollY;
-    if (nextY === known) return;
-    if (given !== undefined) {
-      lastScrollY = nextY;
-      driver.set(pageInputs, INPUT_EVENTS.scroll, nextY);
+    if (liveCtrl !== undefined) {
+      if (readsScroll()) liveCtrl.wake();
       return;
     }
-    const at = elapsed();
-    pendingScroll = { value: nextY, at };
-    activeUntil = Math.max(activeUntil, at + settleMs);
-    maybeNext = true;
-    schedule();
+    const nextY = readScrollYOf(scrollTarget, root);
+    if (nextY === lastScrollY) return;
+    lastScrollY = nextY;
+    driver.set(pageInputs, INPUT_EVENTS.scroll, nextY, scrollEntryTarget);
   };
   if (timed === undefined) scrollTarget?.addEventListener("scroll", onScroll, { passive: true });
 
@@ -489,16 +420,13 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     if (!(vp.width > 0 && vp.height > 0)) return;
     const x = clamp(event.clientX / vp.width, 0, 1);
     const y = clamp(event.clientY / vp.height, 0, 1);
-    if (given !== undefined) {
-      driver.set(pageInputs, INPUT_EVENTS.pointerX, x);
-      driver.set(pageInputs, INPUT_EVENTS.pointerY, y);
+    if (liveCtrl !== undefined) {
+      pendingPointer = { x, y };
+      liveCtrl.wake();
       return;
     }
-    const at = elapsed();
-    pendingPointer = { x, y, at };
-    activeUntil = Math.max(activeUntil, at + settleMs);
-    maybeNext = true;
-    schedule();
+    driver.set(pageInputs, INPUT_EVENTS.pointerX, x);
+    driver.set(pageInputs, INPUT_EVENTS.pointerY, y);
   };
 
   const pointerTarget = eventTargetOf(root, doc);
@@ -519,17 +447,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       pointerAttached = false;
     }
   };
-  if (given !== undefined) {
-    unwatch.push(
-      given.subscribe(() => {
-        if (!live) return;
-        const at = clockMs();
-        syncScrollPoll(at);
-        flushPendingInputs();
-        handoff.syncTriggers(at, given.input(), currentReader, hostedLive);
-      }),
-    );
-  }
 
   let lastFrame: FrameOutput | undefined;
   let lastSceneMs = 0;
@@ -538,7 +455,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     lastSceneMs = elapsedOf(time.clock) ?? time.progress * stage.durationMs;
     const only = runOnly ?? handoff.engineOnly;
     const moves = new Map<string, Moves>();
-    const inputs = new Map<string, InputNeed>();
+    const inputsMap = new Map<string, InputNeed>();
     const ran = frameOf(stage, {
       time,
       events,
@@ -547,10 +464,10 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       counts: currentCounts,
       lines: currentLines,
       moves,
-      inputs,
+      inputs: inputsMap,
       ...(only === undefined ? {} : { only }),
     });
-    frameInputs = inputs;
+    frameInputs = inputsMap;
     drainFrameInputs();
 
     earlierMoves = lastMoves();
@@ -581,11 +498,135 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
 
   const player = play<StageValues>(
     sceneSignal,
-    driver,
+    playerDriver,
     stage.cues.length === 0 ? {} : { cues: stage.cues },
   );
   drainFrameInputs();
   syncPointerListener();
+
+  let seenScrollSeq = liveCtrl?.scrollSeq() ?? 0;
+  let seenPointerSeq = liveCtrl?.pointerSeq() ?? 0;
+  let seenEventsSeq = liveCtrl?.eventsSeq() ?? 0;
+
+  if (liveCtrl !== undefined) {
+    unwatch.push(liveCtrl.addScrollSource(scrollSource));
+    unwatch.push(
+      liveCtrl.addParticipant({
+        beforeTick: () => {
+          if (!live) return;
+          flushPendingPointer();
+        },
+        onTick: (nowMs) => {
+          if (!live) return;
+          const nextScrollSeq = liveCtrl.scrollSeq();
+          const nextPointerSeq = liveCtrl.pointerSeq();
+          const nextEventsSeq = liveCtrl.eventsSeq();
+          const scrollChanged = nextScrollSeq !== seenScrollSeq;
+          const pointerChanged = nextPointerSeq !== seenPointerSeq;
+          const eventsChanged = nextEventsSeq !== seenEventsSeq;
+          seenScrollSeq = nextScrollSeq;
+          seenPointerSeq = nextPointerSeq;
+          seenEventsSeq = nextEventsSeq;
+          if (scrollChanged || pointerChanged || eventsChanged) {
+            activeUntil = Math.max(activeUntil, nowMs + settleMs);
+          }
+
+          const whole =
+            fresh || wholeNext || hasReadout || Reflect.get(globalThis, CLOCK_FRAMES_OFF) === true;
+          fresh = false;
+          const heldTriggers = hostedLive || Reflect.get(globalThis, HELD_CLOCK) === true;
+          if (whole) {
+            handoff.syncTriggers(nowMs, driver.input(), currentReader, heldTriggers);
+            runOnly = handoff.engineOnly;
+            playerStep?.();
+            runOnly = undefined;
+          } else {
+            if (scrollChanged || eventsChanged) {
+              handoff.syncTriggers(nowMs, driver.input(), currentReader, heldTriggers);
+            }
+            const names = movingNow(maybeNext);
+            for (const member of stage.members) {
+              const need = memberInputs.get(member.name) ?? member.inputs;
+              if (
+                (scrollChanged && (need.scroll || member.onScroll !== undefined)) ||
+                (pointerChanged && need.pointer) ||
+                (eventsChanged && need.events)
+              ) {
+                names.add(member.name);
+              }
+            }
+            const allowed = handoff.engineOnly;
+            const routed =
+              allowed === undefined
+                ? names
+                : new Set([...names].filter((name) => allowed.has(name)));
+            if (routed.size > 0) {
+              runOnly = routed;
+              playerStep?.();
+              runOnly = undefined;
+            }
+          }
+
+          const afterMs = clockMs();
+          wholeNext = afterMs < introMs;
+          maybeNext = afterMs < activeUntil;
+        },
+        needsFrame,
+      }),
+    );
+  } else if (timed !== undefined) {
+    unwatch.push(
+      timed.subscribe(() => {
+        if (live) playerStep?.();
+      }),
+    );
+  } else if (given !== undefined) {
+    const mountToken = {};
+    unwatch.push(
+      given.subscribe(() => {
+        if (!live) return;
+        const skipSet = SKIP_GIVEN_ONCE.get(given);
+        if (skipSet?.has(mountToken)) {
+          skipSet.delete(mountToken);
+          return;
+        }
+        if (IN_GIVEN_SCROLL.has(given)) {
+          let reentered = REENTERED_GIVEN.get(given);
+          if (reentered === undefined) {
+            reentered = new Set();
+            REENTERED_GIVEN.set(given, reentered);
+          }
+          reentered.add(mountToken);
+          handoff.syncTriggers(clockMs(), given.input(), currentReader, hostedLive);
+          playerStep?.();
+          return;
+        }
+        IN_GIVEN_SCROLL.add(given);
+        try {
+          syncScrollForNonLive();
+          flushPendingPointer();
+        } finally {
+          IN_GIVEN_SCROLL.delete(given);
+        }
+        const reentered = REENTERED_GIVEN.get(given);
+        REENTERED_GIVEN.delete(given);
+        if (reentered !== undefined) {
+          let skips = SKIP_GIVEN_ONCE.get(given);
+          if (skips === undefined) {
+            skips = new WeakSet();
+            SKIP_GIVEN_ONCE.set(given, skips);
+          }
+          for (const token of reentered) {
+            if (token !== mountToken) skips.add(token);
+          }
+          if (reentered.has(mountToken)) return;
+        }
+        handoff.syncTriggers(clockMs(), given.input(), currentReader, hostedLive);
+        playerStep?.();
+      }),
+    );
+  }
+
   options.onDriver?.(driver);
   let stops = (options.binders ?? []).map((binder) => binder.start(player, stage));
 
@@ -635,7 +676,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     });
   };
   runHandOff();
-  schedule();
+  liveCtrl?.wake();
 
   const remeasure = (forceHandOff = false): void => {
     if (!live) return;
@@ -656,12 +697,21 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
         measures.push({ at, rest: currentReader });
       }
       activeUntil = Math.max(activeUntil, at + settleMs);
+      maybeNext = true;
       fresh = true;
     }
     const depsOk =
       !forceHandOff && handoff.depsUnchanged(readMaxScrollOf(doc), currentLines, currentRest);
-    syncScrollPoll(at);
-    flushPendingInputs();
+    if (liveCtrl !== undefined) {
+      flushPendingPointer();
+      if (readsScroll()) liveCtrl.syncScroll(scrollSource);
+      seenScrollSeq = liveCtrl.scrollSeq();
+      seenPointerSeq = liveCtrl.pointerSeq();
+      seenEventsSeq = liveCtrl.eventsSeq();
+    } else {
+      syncScrollForNonLive();
+      flushPendingPointer();
+    }
     if (!depsOk) runHandOff();
     else if (handoff.hasTriggers) {
       handoff.syncTriggers(
@@ -672,7 +722,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       );
     }
     player.refresh();
-    schedule();
+    if (liveCtrl !== undefined && needsFrame(clockMs())) liveCtrl.wake();
   };
 
   const scheduleRemeasure = (): void => {
@@ -734,6 +784,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
         .filter((member) => member.expect === "ambient")
         .map((member) => member.name);
       introMs = introBounds(stage);
+      wholeNext = clockMs() < introMs;
       memberInputs.clear();
       seedInputs(stage);
       for (const target of targets) {
@@ -749,13 +800,12 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       syncPointerListener();
       stops = (options.binders ?? []).map((binder) => binder.start(player, stage));
       drainFrameInputs();
+      if (liveCtrl !== undefined && needsFrame(clockMs())) liveCtrl.wake();
     },
     dispose(allNodes) {
       if (!live) return;
       live = false;
       cancelRemeasure();
-      if (frameHandle !== undefined) frames.cancelFrame(frameHandle);
-      frameHandle = undefined;
       scrollTarget?.removeEventListener("scroll", onScroll);
       if (pointerAttached) {
         pointerTarget.remove(onPointerMove);
@@ -774,8 +824,8 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       handoff.release();
       player.dispose();
       timed?.dispose();
+      builtLive?.dispose();
       for (const stop of stops) stop();
-      listeners.clear();
       config.onDisposeCleanup();
       writer.dispose(allNodes);
       fitted?.removeAttribute("data-gerak-frame");

@@ -21,12 +21,13 @@ import {
   type TriggerBeat,
 } from "@gerak/stage";
 import type { BoxPlacement } from "@gerak/stage/render";
-import type { PointerLike } from "./events";
 import type { FrameSource } from "./frames";
 import type { RenderStyle } from "./render";
 
 /** What a mount reads of a page event: a key, where it landed, and the element it landed on. */
-export interface StageEvent extends PointerLike {
+export interface StageEvent {
+  readonly clientX?: number;
+  readonly clientY?: number;
   readonly key?: string;
   readonly target?: unknown;
 }

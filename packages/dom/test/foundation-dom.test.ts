@@ -618,12 +618,15 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
     frames.tick(ms);
     expect(frames.pending).toBe(0);
 
-    // Flushing a scroll sample in tick() when already settled should not schedule an extra empty rAF.
+    // Flushing a scroll sample in tick() keeps frames running for settleMs, then stops cleanly.
     ms = 3000;
     scrollTarget.scrollY = 200;
     scrollTarget.fireScroll();
     expect(frames.pending).toBe(1);
     frames.tick(3000);
+    expect(frames.pending).toBe(1);
+    ms = 3100;
+    frames.tick(3100);
     expect(frames.pending).toBe(0);
 
     mounted.dispose();
