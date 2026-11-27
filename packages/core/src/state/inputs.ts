@@ -1,5 +1,4 @@
 import { clamp } from "../utility/clamp";
-import { baselineOf } from "../events/event-log";
 import type { InputChannel } from "./clock-watch";
 import { buildState, type State } from "./state";
 
@@ -46,10 +45,6 @@ function sampleState(
       return normalize(event.value);
     },
     {},
-    (events) => {
-      const value = baselineOf(events)?.get(eventName);
-      return value !== undefined && Number.isFinite(value) ? normalize(value) : start;
-    },
     channel,
   );
 }

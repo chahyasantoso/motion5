@@ -21,11 +21,11 @@ export interface EaseToOptions {
   readonly ease?: Ease;
 }
 
-/** The motion since the change before `logicalIndex`, from `from` to `to` over `stretch`. */
+/** The motion since the change before `index`, from `from` to `to` over `stretch`. */
 interface Run {
   readonly changesResetId: number | undefined;
   readonly fallbackList: readonly unknown[];
-  logicalIndex: number;
+  index: number;
   from: number;
   to: number;
   stretch: Span;
@@ -58,7 +58,6 @@ export function easeTo<S>(
     const { start, list } = changes(time, events);
     if (elapsedOf(time.clock) === undefined) return list[list.length - 1]?.to ?? start;
     const meta = changeMetaOf(list);
-    const listBase = meta?.base ?? 0;
 
     const kept = runSlot.own(
       (existing) =>
@@ -68,7 +67,7 @@ export function easeTo<S>(
       () => ({
         changesResetId: meta?.resetId,
         fallbackList: list,
-        logicalIndex: 0,
+        index: 0,
         from: start,
         to: start,
         stretch: span(0, 1),
@@ -76,10 +75,8 @@ export function easeTo<S>(
       (existing) => ({ ...existing, fallbackList: list }),
     );
 
-    const total = listBase + list.length;
-    if (kept.logicalIndex < listBase) kept.logicalIndex = listBase;
-    for (; kept.logicalIndex < total; kept.logicalIndex += 1) {
-      const change = list[kept.logicalIndex - listBase];
+    for (; kept.index < list.length; kept.index += 1) {
+      const change = list[kept.index];
       if (change === undefined) break;
       const rising = change.to > kept.to;
       kept.from = mix(kept.from, kept.to, kept.stretch.of(timeAt(time, change.at), curve).progress);

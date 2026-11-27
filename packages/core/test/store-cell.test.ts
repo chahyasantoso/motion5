@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStore, restore, snapshot, storeCell, withProbeStore, withStore } from "../src/index";
+import { createStore, storeCell, withProbeStore, withStore } from "../src/index";
 
 interface BoxCell {
   version: number;
@@ -41,38 +41,6 @@ describe("storeCell own", () => {
       expect(fresh).not.toBe(c1);
       expect(fresh).toEqual({ version: 2, items: [] });
       expect(c1.items).toEqual([1, 2]);
-    });
-  });
-
-  it("copies on write after snapshot and restore without mutating the captured snapshot", () => {
-    const slot = storeCell<BoxCell>();
-    const store = createStore();
-
-    const read = (): BoxCell =>
-      slot.own(
-        () => false,
-        () => ({ version: 1, items: [] }),
-        (cur) => ({ version: cur.version, items: cur.items.slice() }),
-      );
-
-    withStore(store, () => {
-      const initial = read();
-      initial.items.push(10);
-      const snap = snapshot(store);
-
-      const afterSnap = read();
-      expect(afterSnap).not.toBe(initial);
-      afterSnap.items.push(20);
-      expect(initial.items).toEqual([10]);
-
-      restore(store, snap);
-      const afterRestore = read();
-      expect(afterRestore).not.toBe(initial);
-      expect(afterRestore.items).toEqual([10]);
-      afterRestore.items.push(30);
-
-      restore(store, snap);
-      expect(read().items).toEqual([10]);
     });
   });
 });

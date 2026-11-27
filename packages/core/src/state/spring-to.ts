@@ -16,11 +16,11 @@ export interface SpringToOptions {
   readonly rest?: number;
 }
 
-/** The spring just after the change before `logicalIndex` set its goal at `since` ms. */
+/** The spring just after the change before `index` set its goal at `since` ms. */
 interface Run {
   readonly changesResetId: number | undefined;
   readonly fallbackList: readonly unknown[];
-  logicalIndex: number;
+  index: number;
   goal: number;
   value: number;
   speed: number;
@@ -51,7 +51,6 @@ export function springTo<S>(
     const { start, list } = changes(time, events);
     if (now === undefined) return list[list.length - 1]?.to ?? start;
     const meta = changeMetaOf(list);
-    const listBase = meta?.base ?? 0;
 
     const kept = runSlot.own(
       (existing) =>
@@ -61,7 +60,7 @@ export function springTo<S>(
       () => ({
         changesResetId: meta?.resetId,
         fallbackList: list,
-        logicalIndex: 0,
+        index: 0,
         goal: start,
         value: start,
         speed: 0,
@@ -70,10 +69,8 @@ export function springTo<S>(
       (existing) => ({ ...existing, fallbackList: list }),
     );
 
-    const total = listBase + list.length;
-    if (kept.logicalIndex < listBase) kept.logicalIndex = listBase;
-    for (; kept.logicalIndex < total; kept.logicalIndex += 1) {
-      const change = list[kept.logicalIndex - listBase];
+    for (; kept.index < list.length; kept.index += 1) {
+      const change = list[kept.index];
       if (change === undefined) break;
       const moved = spring(kept.value - kept.goal, kept.speed, (change.at - kept.since) / 1000, {
         stiffness,

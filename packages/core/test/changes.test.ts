@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStore, eventLog, liveAt, state, withProbeStore, withStore } from "../src/index";
+import { createStore, liveAt, state, withProbeStore, withStore } from "../src/index";
 import type { Events } from "../src/index";
 import { changeMetaOf, changesOf } from "../src/state/changes";
 
@@ -47,20 +47,6 @@ describe("changesOf", () => {
       const resetId = changeMetaOf(changes(liveAt(150), EVENTS).list)?.resetId;
       expect(changeMetaOf(changes(liveAt(350), EVENTS).list)?.resetId).toBe(resetId);
       expect(changeMetaOf(changes(liveAt(150), EVENTS).list)?.resetId).not.toBe(resetId);
-    });
-  });
-
-  it("raises the list base when live retention compacts settled changes", () => {
-    const log = eventLog({ retention: { kind: "live", windowMs: 1000 } });
-    const changes = changesOf(counter(), (value) => value);
-    withStore(createStore(), () => {
-      for (let i = 1; i <= 30; i += 1) {
-        log.add({ name: "inc", at: i * 100 });
-        changes(liveAt(i * 100 + 50), log.events);
-      }
-      const later = changes(liveAt(3050), log.events);
-      expect(later.list.length).toBeGreaterThan(0);
-      expect(changeMetaOf(later.list)?.base).toBeGreaterThan(0);
     });
   });
 });

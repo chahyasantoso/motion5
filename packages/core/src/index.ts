@@ -126,22 +126,14 @@ export { secondary, secondary3d } from "./principles/secondary";
 export { state, type State, type StateOptions, type Step } from "./state/state";
 export {
   createStore,
-  restore,
-  snapshot,
   storeCell,
   storeFor,
   withProbeStore,
   withStore,
-  type RuntimeSnapshot,
   type RuntimeStore,
   type StoreCell,
 } from "./state/store";
 export {
-  attachOnEvent,
-  baseIndexOf,
-  baselineOf,
-  compactEvents,
-  compactedBeforeOf,
   derivedEvents,
   eventLog,
   eventSerialsOf,
@@ -150,8 +142,6 @@ export {
   versionOf,
   type DerivedEvents,
   type EventLog,
-  type EventLogOptions,
-  type RetentionPolicy,
 } from "./events/event-log";
 export { INPUT_EVENTS, pointer, scroll, type PointerState, type ScrollState } from "./state/inputs";
 export { springTo, type SpringToOptions } from "./state/spring-to";

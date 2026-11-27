@@ -1,4 +1,3 @@
-import { compactedBeforeOf } from "../events/event-log";
 import type { Events, MotionEvent } from "../events/event-list";
 import { buildState, stepMetaOf, type Step } from "../state/state";
 import { storeCell } from "../state/store";
@@ -28,14 +27,11 @@ interface Held {
   readonly value: number;
 }
 
-/** Counted events of one list: retained times, held values, and cumulative area before each. */
+/** Counted events of one list: times, held values, and cumulative area before each. */
 interface Table {
   readonly sourceResetId: number | undefined;
   readonly fallbackSource: readonly Step<Held>[];
-  logicalCount: number;
-  anchorTime: number;
-  anchorValue: number;
-  anchorArea: number;
+  count: number;
   readonly times: number[];
   readonly values: number[];
   readonly areas: number[];
@@ -62,7 +58,6 @@ export function tally(options: TallyOptions): Tally {
   const tableOf = (events: Events): Table => {
     const steps = held.steps(atProgress(0), events);
     const meta = stepMetaOf(steps);
-    const stepBase = meta?.base ?? 0;
 
     const kept = tableSlot.own(
       (existing) =>
@@ -72,10 +67,7 @@ export function tally(options: TallyOptions): Tally {
       () => ({
         sourceResetId: meta?.resetId,
         fallbackSource: steps,
-        logicalCount: 0,
-        anchorTime: 0,
-        anchorValue: options.start,
-        anchorArea: 0,
+        count: 0,
         times: [],
         values: [],
         areas: [],
@@ -89,38 +81,20 @@ export function tally(options: TallyOptions): Tally {
       }),
     );
 
-    const totalSteps = stepBase + steps.length;
-    if (kept.logicalCount < stepBase) kept.logicalCount = stepBase;
-    for (; kept.logicalCount < totalSteps; kept.logicalCount += 1) {
-      const step = steps[kept.logicalCount - stepBase];
+    for (; kept.count < steps.length; kept.count += 1) {
+      const step = steps[kept.count];
       if (step === undefined) break;
       const count = kept.times.length;
-      const since = count === 0 ? kept.anchorTime : (kept.times[count - 1] ?? kept.anchorTime);
+      const since = count === 0 ? 0 : (kept.times[count - 1] ?? 0);
       if (step.at < since)
         throw new RangeError(
           `tally: events must be oldest first; one at ${step.at} ms follows ${since} ms.`,
         );
-      const before = count === 0 ? kept.anchorValue : (kept.values[count - 1] ?? 0);
-      const area = count === 0 ? kept.anchorArea : (kept.areas[count - 1] ?? 0);
+      const before = count === 0 ? options.start : (kept.values[count - 1] ?? 0);
+      const area = count === 0 ? 0 : (kept.areas[count - 1] ?? 0);
       kept.times.push(step.at);
       kept.values.push(step.value.value);
       kept.areas.push(area + (before * (step.at - since)) / 1000);
-    }
-
-    const compactedBefore = compactedBeforeOf(events);
-    if (compactedBefore !== undefined && kept.times.length > 0) {
-      let trim = 0;
-      while (trim < kept.times.length && (kept.times[trim] ?? Infinity) < compactedBefore) {
-        trim += 1;
-      }
-      if (trim > 0) {
-        kept.anchorTime = kept.times[trim - 1] ?? kept.anchorTime;
-        kept.anchorValue = kept.values[trim - 1] ?? kept.anchorValue;
-        kept.anchorArea = kept.areas[trim - 1] ?? kept.anchorArea;
-        kept.times.splice(0, trim);
-        kept.values.splice(0, trim);
-        kept.areas.splice(0, trim);
-      }
     }
 
     return kept;
@@ -128,14 +102,12 @@ export function tally(options: TallyOptions): Tally {
 
   const total = (events: Events): number => {
     const table = tableOf(events);
-    return table.areas.length > 0
-      ? (table.areas[table.areas.length - 1] ?? table.anchorArea)
-      : table.anchorArea;
+    return table.areas.length > 0 ? (table.areas[table.areas.length - 1] ?? 0) : 0;
   };
   const at = (time: Time, events: Events): number => {
     const now = elapsedOf(time.clock);
     if (now === undefined) return total(events);
-    const { anchorTime, anchorValue, anchorArea, times, values, areas } = tableOf(events);
+    const { times, values, areas } = tableOf(events);
     // The last counted event at or before `now`, by bisection.
     let low = 0;
     let high = times.length;
@@ -144,7 +116,7 @@ export function tally(options: TallyOptions): Tally {
       if ((times[middle] ?? 0) <= now) low = middle + 1;
       else high = middle;
     }
-    if (low === 0) return anchorArea + (anchorValue * Math.max(0, now - anchorTime)) / 1000;
+    if (low === 0) return (options.start * Math.max(0, now)) / 1000;
     const index = low - 1;
     return (areas[index] ?? 0) + ((values[index] ?? 0) * (now - (times[index] ?? 0))) / 1000;
   };
