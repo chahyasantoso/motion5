@@ -1,10 +1,12 @@
 import {
   ease,
   easeTo,
+  inputLog,
+  inputs,
   isInputEntry,
   motion,
   span,
-  state,
+  value,
   type Pose2d,
   type Time,
 } from "@gerak/core";
@@ -61,9 +63,15 @@ const demoDeviceIn = beat("deviceIn", 540, { at: 180 });
 const demoCapLabelIn = beat("capLabelIn", 340, { at: 380 });
 const demoFgOut = beat("fgOut", 170, { at: 4860 });
 
-const wordCount = state(0, (cur, ev) =>
-  ev.name === "word" && typeof ev.value === "number" ? ev.value : cur,
-);
+const explainerInputs = inputs({ values: { word: {} } });
+const cueLog = inputLog();
+for (const cue of captionCues) {
+  if (isInputEntry(cue) && cue.kind === "value" && cue.name === "word") {
+    cueLog.set(cue.at, explainerInputs, "word", cue.value);
+  }
+}
+
+const wordCount = value(explainerInputs, "word");
 const lineEnds = captionCues.map((cue) => cue.value);
 const wordLineOffsets = captionWords.map((_, index) => {
   let lineStart = 0;
@@ -137,7 +145,7 @@ const closingShot = scene(
 );
 
 export default scene(
-  { name: "explainer", cues: captionCues.filter(isInputEntry) },
+  { name: "explainer", cues: cueLog.input },
   shot(titleShot, { name: "title", length: 2200 }),
   shot(demoShot, { name: "demo", overlap: 340, length: 5200 }),
   shot(closingShot, { name: "closing", overlap: 340, length: 2500 }),

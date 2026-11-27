@@ -2,15 +2,15 @@ import {
   aim,
   ease,
   easeTo,
+  inputLog,
   inputs,
   isInputEntry,
-  mergeInput,
   mix,
   motion,
   orbit,
   span,
-  state,
   triggers,
+  value,
   type Lens3d,
   type Pose2d,
   type Pose3d,
@@ -57,7 +57,21 @@ const wordRise = motion(
   }),
 );
 
-const reelInputs = inputs({ triggers: { beat: {} } });
+const reelInputs = inputs({
+  values: { word: {} },
+  triggers: { beat: {} },
+});
+const cueLog = inputLog();
+for (const cue of musicCues) {
+  if (isInputEntry(cue) && cue.kind === "trigger" && cue.name === "beat") {
+    cueLog.trigger(cue.at, reelInputs, "beat", cue.value);
+  }
+}
+for (const cue of captionCues) {
+  if (isInputEntry(cue) && cue.kind === "value" && cue.name === "word") {
+    cueLog.set(cue.at, reelInputs, "word", cue.value);
+  }
+}
 
 // Shot 1: kinetic title hook (0..2500 ms).
 const hookEnter = beat("enter", 520, { at: 0 });
@@ -172,9 +186,7 @@ const revealScene = scene(
 const proofBgIn = beat("bgIn", 400, { at: 0 });
 const proofLabelIn = beat("labelIn", 460, { at: 320 });
 const proofFadeOut = beat("out", 400, { at: 3000 });
-const wordCount = state(0, (cur, ev) =>
-  ev.name === "word" && typeof ev.value === "number" ? ev.value : cur,
-);
+const wordCount = value(reelInputs, "word");
 const wordReveals = captionWords.map((_, index) =>
   easeTo(wordCount, (count) => (index < count ? 1 : 0), {
     ms: 160,
@@ -246,7 +258,7 @@ const ctaScene = scene(
 export default scene(
   {
     name: "reel",
-    cues: mergeInput(musicCues.filter(isInputEntry), captionCues.filter(isInputEntry)),
+    cues: cueLog.input,
   },
   shot(hookScene, { name: "hook", until: beatAt(5) }),
   shot(revealScene, { name: "reveal", overlap: 400, until: beatAt(13) }),
