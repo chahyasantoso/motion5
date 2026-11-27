@@ -74,7 +74,8 @@ export function inputSerialsOf(input: Input): readonly number[] | undefined {
   return recordOf(input).serials;
 }
 
-function upperBoundAt(list: Input, maxAt: number): number {
+/** First index in `list` whose entry has `at > maxAt`. */
+export function upperBoundAt(list: Input, maxAt: number): number {
   let low = 0;
   let high = list.length;
   while (low < high) {

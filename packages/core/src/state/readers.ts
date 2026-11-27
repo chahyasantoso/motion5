@@ -1,6 +1,6 @@
 import { pageInputs, type Contract, type InputSpec, type TargetOf } from "../events/contract";
 import type { EventPoint, Input, InputEntry } from "../events/event-list";
-import { generationOf, inputSerialsOf, sourceStreamOf } from "../events/event-log";
+import { generationOf, inputSerialsOf, sourceStreamOf, upperBoundAt } from "../events/event-log";
 import type { Signal } from "../time/shapes";
 import { elapsedOf } from "../time/time";
 import { unreachable } from "../utility/unreachable";
@@ -93,18 +93,17 @@ export function valueAt<
     const now = elapsedOf(rawTime(watched).clock);
     const limitAt = now === undefined ? trigger.at : Math.min(now, trigger.at);
     const serials = inputSerialsOf(input);
-    let held = 0;
-    for (let index = 0; index < input.length; index += 1) {
+    const upper = upperBoundAt(input, limitAt);
+    for (let index = upper - 1; index >= 0; index -= 1) {
       const entry = input[index];
-      if (entry === undefined || entry.at > limitAt) break;
+      if (entry === undefined) continue;
       switch (entry.kind) {
         case "value": {
           if (entry.name !== name) break;
           if (target !== undefined && entry.target !== target) break;
           const entrySerial = serialAt(serials, index);
           if (entry.at === trigger.at && entrySerial >= trigger.serial) break;
-          held = entry.value;
-          break;
+          return entry.value;
         }
         case "trigger":
           break;
@@ -112,7 +111,7 @@ export function valueAt<
           return unreachable(entry.kind);
       }
     }
-    return held;
+    return 0;
   };
 }
 
