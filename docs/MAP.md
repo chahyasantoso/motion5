@@ -94,14 +94,6 @@ Public: `.`, `./render`, `./dom`, `./provenance`
 - `src/render/`: strokes and morphs for renderers
 - `src/run/`: compile, frame, check, visibility, carry
 
-## packages/studio
-
-Public: `.`
-
-- `src/`: Studio graph, sources and gerak studio
-- `src/canvas/`: the canvas page
-- `src/server/`: the Studio dev server
-
 ## packages/three
 
 Public: `.`, `./react`

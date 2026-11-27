@@ -348,17 +348,6 @@ function jsonOf(run) {
   }
 }
 
-/** Why `gerak studio graph` fails on a new piece in an installed project, or undefined when it prints the graph. */
-function studioGraphError(dir) {
-  const created = sh("npx --no-install gerak new graph-check", dir);
-  if (created.code !== 0) return firstErrorLine(created.out || created.err);
-  const graph = sh("npx --no-install gerak studio graph graph-check --json", dir);
-  if (graph.code !== 0) return firstErrorLine(graph.out || graph.err);
-  return jsonOf({ out: graph.out.replace(/\s+/g, " ") })?.piece === "graph-check"
-    ? undefined
-    : `printed ${firstErrorLine(graph.out)}`;
-}
-
 /** Verifies the core-only install set without modules or the library. */
 function coreOnlyChecks(dir, tarballs, lock, check) {
   const installError = installSubset(dir, CORE_INSTALL_SET, tarballs, lock, CORE_PEERS);
@@ -614,7 +603,6 @@ export function packCheck({ keep = false, log = console.log } = {}) {
     const pagesError = pageServerError(project);
     if (pagesError !== undefined) failed += 1;
     log(formatResult("pages served from pieces/", pagesError));
-    check("gerak studio graph", studioGraphError(project));
     coreOnlyChecks(join(work, "core-only"), files, lock, check);
     return failed === 0 ? 0 : 1;
   } finally {

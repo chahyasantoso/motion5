@@ -15,19 +15,19 @@ byte ceiling.
   `@gerak/stage` owns pure per-scene element ownership inside `compileScene` (allowing sequential `shot()`s and independent scenes to reuse elements, honoring `shot` `length` and shifted `cues`), compiled member/part stack caching, per-member `InputNeed`, direct enumerable `Box.placement`, `box`/`shape`/`text`/`object` elements, `stagger`/`bind`/`bindEach`/`stayWith`/`carry`/`travel`/`slot3d`, `context.read`, and `frame`/`check`; `@gerak/player` (`play`, `Player` owning `RuntimeStore` + `snapshot`/`restore`, `Object.is` `subscribe` dedup, serial `on` notifications); `@gerak/dom` (modularized across `host`, `bind-dom`, `measure-dom`, `handoff`, `scheduler`, and `mount`, with default `"live"` retention `{ kind: "live", windowMs: Math.max(settleMs, 4000) }`, `onEvent`, 1/rAF `scroll`/`pointermove` coalescing, lazy `pointermove`, per-channel `InputNeed` frame routing, placement-aware `drawPaths`, root-scoped `BINDER_CASTS`, and Chromium compositor `ScrollTimeline`/trigger handoff); `@gerak/react` (`useSyncExternalStore`-based `useSignal`, wrapperless `useMount` + `<Stage>`, `usePlayer`, `useTarget`); and `@gerak/three` (`threeBinder` with full `Rest3d` capture/restore, shared-material isolation on `opacity`, dirty-gated `draw()`, `useTarget3d` list functions, and `createStage3d`).
   Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics`, `@gerak/rapier`) depend only on core (and paired core renderers); `@gerak/moves` adds plain moves, `squashed` couplings, `follow`, `react`, and stateless `noise1d`.
   `@gerak/tools` binds ephemeral port `0`, steps live mounts deterministically in held page tools via the host driver hook while keeping held-clock engine sync (ADR-196), shares one Vite server + Chromium browser in `gerak review <page>`, consolidates `gerak review <scene.ts>` to 3 passes under `withProbeStore`, deterministically hashes linked CSS/scripts/local imports/`.glb`/`.gltf` assets in `pageDigest` while excluding pure scene files, runs `talkPage` live with `"all"` retention, and removed retired `/__motion/source` and `/__motion/edit` endpoints.
-  `@gerak/studio` source remains in place ahead of a revamp on this foundation (`packages/studio/test` was removed; studio contracts are unmaintained until its revamp).
+  `@gerak/studio` has left the repository; its last state is the `studio/canvas-wip` branch and the `studio-before-removal` tag.
   Decisions are ADR-170 to ADR-208; each package ships its docs and generated `packages/<package>/docs/reference` pages.
 
 ## Next in line
 
-- **Studio revamp over the consolidated foundation:** rebuild `@gerak/studio` cards, drivers, and tests against the `RuntimeStore`, bounded live retention, modular `@gerak/dom`, and `@gerak/tools` changes.
+- **Foundation plan (`plan/foundation-plan.md`):** the app sets state through `set` and gerak only moves it; it starts with the cookie builder proof, and `plan/timeline-plan.md` follows.
 
 ## Open, and not scheduled
 
 - Retargeting remains a proposed design only.
 - React Three Fiber integration is deferred; `talk.html` is untried with a microphone.
 - Browser tests run in Chromium only.
-- `@gerak/studio` awaits a full revamp on top of the Slices 1–5 foundation refactor.
+- Studio returns as its own project once the packages are published.
 
 ## Where the rest of it lives
 

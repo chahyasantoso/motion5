@@ -56,9 +56,7 @@ describe("the gerak bin", () => {
     expect(unknown.out).toContain("Unknown command no-such-command.");
   });
 
-  it("forwards a command an installed @gerak package adds, and names the package when missing", () => {
-    const studio = run(gerak, ["studio"]);
-    expect(studio.out).toContain("usage: gerak studio <subcommand> [args]");
+  it("names the @gerak package a missing command would come from", () => {
     const missing = run(gerak, ["no-such-command"]);
     expect(missing.out).toContain("No installed package @gerak/no-such-command adds it.");
   });
