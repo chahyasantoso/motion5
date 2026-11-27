@@ -17,6 +17,7 @@ interface CapturedSlot {
 interface ObjectMaterialState {
   readonly slots: readonly CapturedSlot[];
   readonly cloned: Material[];
+  readonly clonedSet: Set<Material>;
   applied: boolean;
 }
 
@@ -102,7 +103,7 @@ export function captureMaterials(
     const slot = captureSlot(target, node, sharedMaterials, cloned, store);
     if (slot !== undefined) slots.push(slot);
   });
-  const state: ObjectMaterialState = { slots, cloned, applied: false };
+  const state: ObjectMaterialState = { slots, cloned, clonedSet: new Set(cloned), applied: false };
   store.objects.set(target, state);
   return state;
 }
@@ -155,16 +156,23 @@ export function applyObjectOpacity(
   const state = captureMaterials(target, undefined, store);
   state.applied = true;
   for (const slot of state.slots) {
-    if (store.isolate && !slot.replaced) {
-      const clonedSlot = slot.materials.map((mat) => {
+    if (store.isolate) {
+      let changed = false;
+      const nextMaterials = slot.materials.map((mat) => {
+        if (state.clonedSet.has(mat)) return mat;
         const copy = mat.clone();
+        if (store.owners.get(mat) === target) store.owners.delete(mat);
         store.owners.set(copy, target);
         state.cloned.push(copy);
+        state.clonedSet.add(copy);
+        changed = true;
         return copy;
       });
-      slot.materials = clonedSlot;
-      slot.replaced = true;
-      Reflect.set(slot.node, "material", slot.isArray ? clonedSlot : clonedSlot[0]);
+      if (changed) {
+        slot.materials = nextMaterials;
+        slot.replaced = true;
+        Reflect.set(slot.node, "material", slot.isArray ? nextMaterials : nextMaterials[0]);
+      }
     }
     slot.materials.forEach((mat, index) => {
       const base = slot.bases[index];

@@ -538,4 +538,49 @@ describe("threeBinder", () => {
     driver.seekMs(600);
     expect(calls).toEqual([]);
   });
+
+  it("isolates every entry in a mixed material array when fading so an outside mesh sharing one material stays untouched", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 1, transparent: false });
+    const unsharedMat = new MeshBasicMaterial({ opacity: 0.9, transparent: false });
+    const boundMesh = new Mesh(new BoxGeometry(1, 1, 1), [sharedMat, unsharedMat]);
+    boundMesh.name = "box";
+    const siblingMesh = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    siblingMesh.name = "sibling";
+    const root = new Object3D();
+    root.add(boundMesh, siblingMesh);
+    const outsideMesh = new Mesh(new BoxGeometry(1, 1, 1), unsharedMat);
+
+    const compiledStage = compileScene(
+      scene(
+        { length: 1000 },
+        object("box").moves((t) => (t.progress >= 0.5 ? { opacity: 0.5 } : {})),
+      ),
+    );
+    if (!compiledStage.ok) throw new Error(compiledStage.errors.map(formatStageError).join("\n"));
+
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play(
+      (time, events) => frame(compiledStage.stage, { time, events }).targets,
+      driver,
+    );
+    const stop = threeBinder(root).start(player, compiledStage.stage);
+
+    driver.seekMs(500);
+    expect(Array.isArray(boundMesh.material)).toBe(true);
+    if (!Array.isArray(boundMesh.material)) throw new Error("Expected material array.");
+    expect(boundMesh.material[0]).not.toBe(sharedMat);
+    expect(boundMesh.material[1]).not.toBe(unsharedMat);
+    expect(boundMesh.material[0]?.opacity).toBeCloseTo(0.5, 9);
+    expect(boundMesh.material[1]?.opacity).toBeCloseTo(0.45, 9);
+    expect(outsideMesh.material).toBe(unsharedMat);
+    expect(unsharedMat.opacity).toBeCloseTo(0.9, 9);
+    expect(unsharedMat.transparent).toBe(false);
+    expect(siblingMesh.material).toBe(sharedMat);
+    expect(sharedMat.opacity).toBe(1);
+
+    stop();
+    expect(boundMesh.material).toEqual([sharedMat, unsharedMat]);
+    expect(unsharedMat.opacity).toBeCloseTo(0.9, 9);
+    expect(unsharedMat.transparent).toBe(false);
+  });
 });
