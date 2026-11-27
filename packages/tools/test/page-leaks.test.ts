@@ -11,7 +11,7 @@ import { openSite, withPage, type SiteServer } from "../src/page/page";
 import { encodePng } from "../src/page/png";
 
 const FIXTURES = fileURLToPath(new URL("./fixtures/compare", import.meta.url));
-const PNG = encodePng({ width: 10, height: 10, rgb: new Uint8Array(10 * 10 * 3) });
+const PNG = Buffer.from(encodePng({ width: 10, height: 10, rgb: new Uint8Array(10 * 10 * 3) }));
 const URL_SOURCE = { kind: "url", base: "http://127.0.0.1/" } as const;
 
 interface FakePageOptions {
