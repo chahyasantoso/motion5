@@ -1,5 +1,5 @@
 import { notifyInputUse, rawTime, type InputChannel } from "./clock-watch";
-import { epochOf, storeCell } from "./store";
+import { ownCell, storeCell } from "./store";
 import { elapsedOf, type Time } from "../time/time";
 import type { Signal } from "../time/shapes";
 import type { Events, MotionEvent } from "../events/event-list";
@@ -41,7 +41,6 @@ export function stepMetaOf(steps: readonly Step<unknown>[]): StepMeta | undefine
 }
 
 interface StateCell<S> {
-  ownerEpoch: number;
   resetId: number;
   current: S;
   anchorAt: number;
@@ -105,26 +104,19 @@ export function buildState<S>(
   };
   const cellSlot = storeCell<StateCell<S>>();
 
-  const ensureOwned = (
-    existing: StateCell<S> | undefined,
-    epoch: number,
-  ): StateCell<S> | undefined => {
-    if (existing === undefined) return undefined;
-    if (existing.ownerEpoch === epoch) return existing;
-    const clonedSteps = existing.steps.slice();
-    const next: StateCell<S> = {
-      ...existing,
-      ownerEpoch: epoch,
-      steps: clonedSteps,
-      taken: existing.taken?.slice(),
-    };
-    STEP_META.set(clonedSteps, {
-      resetId: next.resetId,
-      base: next.stepBase,
-      anchorAt: next.anchorAt,
+  const trimStepsBefore = (cell: StateCell<S>, cutoff: number): void => {
+    const trim = upperBoundStrictlyBefore(cell.steps, cutoff);
+    if (trim === 0) return;
+    const lastTrimmed = cell.steps[trim - 1];
+    cell.anchorValue = lastTrimmed === undefined ? cell.anchorValue : lastTrimmed.value;
+    cell.anchorAt = lastTrimmed === undefined ? cutoff : Math.min(cutoff, lastTrimmed.at);
+    cell.steps.splice(0, trim);
+    cell.stepBase += trim;
+    STEP_META.set(cell.steps, {
+      resetId: cell.resetId,
+      base: cell.stepBase,
+      anchorAt: cell.anchorAt,
     });
-    cellSlot.set(next);
-    return next;
   };
 
   const fold = (time: Time, events: Events): StateCell<S> => {
@@ -134,157 +126,140 @@ export function buildState<S>(
     const stream = sourceStreamOf(events);
     const base = baseIndexOf(events) ?? 0;
     const compactedBefore = compactedBeforeOf(events);
-    const epoch = epochOf();
-    const existing = cellSlot.get();
-    const sameStream =
-      existing !== undefined &&
-      (events === existing.seen || (stream !== undefined && stream === existing.seenStream));
 
-    // Fast path for backward probes (or seeks inside retained window) when event stream did not reorder.
-    if (
-      existing !== undefined &&
-      now !== undefined &&
-      now < existing.latest &&
-      sameStream &&
+    const sameStream = (cell: StateCell<S>): boolean =>
+      events === cell.seen || (stream !== undefined && stream === cell.seenStream);
+
+    const canRewind = (cell: StateCell<S>, at: number): boolean =>
+      at < cell.latest &&
+      sameStream(cell) &&
       generation !== undefined &&
-      generation === existing.seenGeneration &&
-      now >= existing.anchorAt
-    ) {
-      const cutStep = upperBoundStep(existing.steps, now);
-      const cutEvent = upperBoundEvent(events, now);
-      const sliced = existing.steps.slice(0, cutStep);
-      const resetId = existing.resetId + 1;
-      const latestAt =
-        cutEvent > 0 ? (events[cutEvent - 1]?.at ?? existing.anchorAt) : existing.anchorAt;
-      const rewound: StateCell<S> = {
-        ownerEpoch: epoch,
-        resetId,
-        current:
-          cutStep > 0 ? (sliced[cutStep - 1]?.value ?? existing.anchorValue) : existing.anchorValue,
-        anchorAt: existing.anchorAt,
-        anchorValue: existing.anchorValue,
-        steps: sliced,
-        stepBase: existing.stepBase,
-        taken: undefined,
-        cursorLogical: base + cutEvent,
-        latest: latestAt,
-        seen: events,
-        seenStream: stream,
-        seenGeneration: generation,
-      };
-      STEP_META.set(sliced, {
-        resetId,
-        base: existing.stepBase,
-        anchorAt: existing.anchorAt,
-      });
-      cellSlot.set(rewound);
-      return rewound;
-    }
+      generation === cell.seenGeneration &&
+      at >= cell.anchorAt;
 
-    let resumes = existing !== undefined && (now === undefined || existing.latest <= now);
-    if (resumes && existing !== undefined) {
-      if (generation !== undefined) {
-        if (!sameStream || generation !== existing.seenGeneration) {
-          resumes = false;
-        }
-      } else {
-        const prevTaken = existing.taken;
-        if (prevTaken === undefined || events.length < prevTaken.length) {
-          resumes = false;
-        } else {
-          for (let index = 0; index < prevTaken.length; index += 1) {
-            if (events[index] !== prevTaken[index]) {
-              resumes = false;
-              break;
-            }
-          }
-        }
+    const canResume = (cell: StateCell<S>): boolean => {
+      if (now !== undefined && cell.latest > now) return false;
+      if (generation !== undefined) return sameStream(cell) && generation === cell.seenGeneration;
+      const prevTaken = cell.taken;
+      if (prevTaken === undefined || events.length < prevTaken.length) return false;
+      for (let index = 0; index < prevTaken.length; index += 1) {
+        if (events[index] !== prevTaken[index]) return false;
       }
-    }
-
-    const trimStepsBefore = (cell: StateCell<S>, cutoff: number): void => {
-      const trim = upperBoundStrictlyBefore(cell.steps, cutoff);
-      if (trim === 0) return;
-      const lastTrimmed = cell.steps[trim - 1];
-      cell.anchorValue = lastTrimmed === undefined ? cell.anchorValue : lastTrimmed.value;
-      cell.anchorAt = lastTrimmed === undefined ? cutoff : Math.min(cutoff, lastTrimmed.at);
-      cell.steps.splice(0, trim);
-      cell.stepBase += trim;
-      STEP_META.set(cell.steps, {
-        resetId: cell.resetId,
-        base: cell.stepBase,
-        anchorAt: cell.anchorAt,
-      });
+      return true;
     };
 
-    let work: StateCell<S>;
-    if (!resumes || existing === undefined) {
-      const initial = initialOf === undefined ? start : initialOf(events);
-      const steps: Step<S>[] = [];
-      const resetId = (existing?.resetId ?? 0) + 1;
-      work = {
-        ownerEpoch: epoch,
-        resetId,
-        current: initial,
-        anchorAt: -Infinity,
-        anchorValue: initial,
-        steps,
-        stepBase: 0,
-        taken: generation === undefined ? [] : undefined,
-        cursorLogical: generation === undefined ? 0 : base,
-        latest: -Infinity,
-        seen: events,
-        seenStream: stream,
-        seenGeneration: generation,
-      };
-      STEP_META.set(steps, { resetId, base: 0, anchorAt: -Infinity });
-      cellSlot.set(work);
-    } else {
-      work = ensureOwned(existing, epoch) ?? existing;
-      work.seen = events;
-      work.seenStream = stream;
-      work.seenGeneration = generation;
-      if (generation !== undefined && work.cursorLogical < base) {
-        if (
-          compactedBefore !== undefined &&
-          compactedBefore > work.anchorAt &&
-          work.steps.length > 0
-        ) {
-          trimStepsBefore(work, compactedBefore);
-        }
-        // Re-seed continuous baseline after compaction outpaced the cursor without clobbering anchors.
-        if (initialOf !== undefined) {
-          const prevCurrent = work.current;
-          const reseeded = initialOf(events);
-          const boundedNow =
-            now === undefined
-              ? compactedBefore !== undefined && Number.isFinite(compactedBefore)
-                ? compactedBefore
-                : Math.max(0, work.latest)
-              : Math.min(
-                  now,
-                  compactedBefore !== undefined && Number.isFinite(compactedBefore)
-                    ? compactedBefore
-                    : now,
-                );
-          if (!Object.is(reseeded, prevCurrent)) {
-            work.anchorValue = prevCurrent;
-            work.anchorAt = boundedNow - 1e-6;
-            work.current = reseeded;
-            work.steps.push({ at: boundedNow, value: reseeded });
-            work.latest = Math.max(work.latest, boundedNow);
-          } else {
-            work.anchorValue = reseeded;
-            work.anchorAt = Math.max(work.anchorAt, boundedNow - 1e-6);
-          }
-          STEP_META.set(work.steps, {
-            resetId: work.resetId,
-            base: work.stepBase,
-            anchorAt: work.anchorAt,
+    const work = ownCell(
+      cellSlot,
+      (existing) => !canResume(existing),
+      (existing) => {
+        // Fast path for backward probes (or seeks inside retained window) when event stream did not reorder.
+        if (existing !== undefined && now !== undefined && canRewind(existing, now)) {
+          const cutStep = upperBoundStep(existing.steps, now);
+          const cutEvent = upperBoundEvent(events, now);
+          const sliced = existing.steps.slice(0, cutStep);
+          const resetId = existing.resetId + 1;
+          const latestAt =
+            cutEvent > 0 ? (events[cutEvent - 1]?.at ?? existing.anchorAt) : existing.anchorAt;
+          STEP_META.set(sliced, {
+            resetId,
+            base: existing.stepBase,
+            anchorAt: existing.anchorAt,
           });
+          return {
+            resetId,
+            current:
+              cutStep > 0
+                ? (sliced[cutStep - 1]?.value ?? existing.anchorValue)
+                : existing.anchorValue,
+            anchorAt: existing.anchorAt,
+            anchorValue: existing.anchorValue,
+            steps: sliced,
+            stepBase: existing.stepBase,
+            taken: undefined,
+            cursorLogical: base + cutEvent,
+            latest: latestAt,
+            seen: events,
+            seenStream: stream,
+            seenGeneration: generation,
+          };
         }
-        work.cursorLogical = base;
+        const initial = initialOf === undefined ? start : initialOf(events);
+        const steps: Step<S>[] = [];
+        const resetId = (existing?.resetId ?? 0) + 1;
+        STEP_META.set(steps, { resetId, base: 0, anchorAt: -Infinity });
+        return {
+          resetId,
+          current: initial,
+          anchorAt: -Infinity,
+          anchorValue: initial,
+          steps,
+          stepBase: 0,
+          taken: generation === undefined ? [] : undefined,
+          cursorLogical: generation === undefined ? 0 : base,
+          latest: -Infinity,
+          seen: events,
+          seenStream: stream,
+          seenGeneration: generation,
+        };
+      },
+      (existing) => {
+        const clonedSteps = existing.steps.slice();
+        STEP_META.set(clonedSteps, {
+          resetId: existing.resetId,
+          base: existing.stepBase,
+          anchorAt: existing.anchorAt,
+        });
+        return {
+          ...existing,
+          steps: clonedSteps,
+          taken: existing.taken?.slice(),
+        };
+      },
+    );
+
+    work.seen = events;
+    work.seenStream = stream;
+    work.seenGeneration = generation;
+    if (generation !== undefined && work.cursorLogical < base) {
+      if (
+        compactedBefore !== undefined &&
+        compactedBefore > work.anchorAt &&
+        work.steps.length > 0
+      ) {
+        trimStepsBefore(work, compactedBefore);
       }
+      // Re-seed continuous baseline after compaction outpaced the cursor without clobbering anchors.
+      if (initialOf !== undefined) {
+        const prevCurrent = work.current;
+        const reseeded = initialOf(events);
+        const boundedNow =
+          now === undefined
+            ? compactedBefore !== undefined && Number.isFinite(compactedBefore)
+              ? compactedBefore
+              : Math.max(0, work.latest)
+            : Math.min(
+                now,
+                compactedBefore !== undefined && Number.isFinite(compactedBefore)
+                  ? compactedBefore
+                  : now,
+              );
+        if (!Object.is(reseeded, prevCurrent)) {
+          work.anchorValue = prevCurrent;
+          work.anchorAt = boundedNow - 1e-6;
+          work.current = reseeded;
+          work.steps.push({ at: boundedNow, value: reseeded });
+          work.latest = Math.max(work.latest, boundedNow);
+        } else {
+          work.anchorValue = reseeded;
+          work.anchorAt = Math.max(work.anchorAt, boundedNow - 1e-6);
+        }
+        STEP_META.set(work.steps, {
+          resetId: work.resetId,
+          base: work.stepBase,
+          anchorAt: work.anchorAt,
+        });
+      }
+      work.cursorLogical = base;
     }
 
     const startOffset =
