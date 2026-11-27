@@ -6,7 +6,6 @@ import {
   elapsedOf,
   liveAt,
   motion,
-  snapshot,
   springTo,
   state,
   withStore,
@@ -94,7 +93,7 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
     expect(d4).not.toBe(d3);
   });
 
-  it("mounts talkPage on a live clock with retention all", async () => {
+  it("mounts talkPage on a live clock", async () => {
     const saved = {
       document: Reflect.get(globalThis, "document"),
       window: Reflect.get(globalThis, "window"),
@@ -318,7 +317,16 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
     const mod = moduleFromStage(built.stage);
 
     const callerStore = createStore();
-    const before = snapshot(callerStore);
+    const controlStore = createStore();
+    const seed = [{ name: "go", at: 0, value: 50 }];
+    withStore(callerStore, () => {
+      sprung(liveAt(100), seed);
+      follower(liveAt(100), seed);
+    });
+    withStore(controlStore, () => {
+      sprung(liveAt(100), seed);
+      follower(liveAt(100), seed);
+    });
 
     const reviewed = withStore(callerStore, () =>
       reviewSceneModule(mod, {
@@ -329,7 +337,17 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
       }),
     );
     expect(reviewed.kind).toBe("reviewed");
-    expect(snapshot(callerStore)).toEqual(before);
+    expect(
+      withStore(callerStore, () => ({
+        sprung: sprung(liveAt(200), seed),
+        follower: follower(liveAt(200), seed),
+      })),
+    ).toEqual(
+      withStore(controlStore, () => ({
+        sprung: sprung(liveAt(200), seed),
+        follower: follower(liveAt(200), seed),
+      })),
+    );
   });
 
   it("isolates probes and consolidates passes in reviewSceneModule", () => {
@@ -351,7 +369,16 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
     };
 
     const callerStore = createStore();
-    const before = snapshot(callerStore);
+    const controlStore = createStore();
+    const seed = [{ name: "go", at: 0, value: 50 }];
+    withStore(callerStore, () => {
+      sprung(liveAt(100), seed);
+      follower(liveAt(100), seed);
+    });
+    withStore(controlStore, () => {
+      sprung(liveAt(100), seed);
+      follower(liveAt(100), seed);
+    });
 
     const reviewed = withStore(callerStore, () =>
       reviewSceneModule(plainModule, {
@@ -362,7 +389,17 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
       }),
     );
     expect(reviewed.kind).toBe("reviewed");
-    expect(snapshot(callerStore)).toEqual(before);
+    expect(
+      withStore(callerStore, () => ({
+        sprung: sprung(liveAt(200), seed),
+        follower: follower(liveAt(200), seed),
+      })),
+    ).toEqual(
+      withStore(controlStore, () => ({
+        sprung: sprung(liveAt(200), seed),
+        follower: follower(liveAt(200), seed),
+      })),
+    );
     // 6 passes used >= 50 evaluations (44 forward + 6 seek); 3 passes uses <= 28 evaluations.
     expect(evals).toBeLessThanOrEqual(28);
   });

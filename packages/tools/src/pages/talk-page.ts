@@ -50,7 +50,6 @@ export async function talkPage(pieces: ModuleGlob, components: ModuleGlob): Prom
   }
   const stage = mount(loaded.stage, {
     clock: "live",
-    retention: { kind: "all" },
     frame: "fit",
     root: frame,
   });
