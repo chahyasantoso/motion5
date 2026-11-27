@@ -1,6 +1,6 @@
 import { spring } from "../ease/spring";
 import { rawTime, stillMoving } from "./clock-watch";
-import { epochOf, storeCell } from "./store";
+import { ownCell, storeCell } from "./store";
 import { elapsedOf } from "../time/time";
 import type { Signal } from "../time/shapes";
 import { changeMetaOf, changesOf } from "./changes";
@@ -18,7 +18,6 @@ export interface SpringToOptions {
 
 /** The spring just after the change before `logicalIndex` set its goal at `since` ms. */
 interface Run {
-  ownerEpoch: number;
   readonly changesResetId: number | undefined;
   readonly fallbackList: readonly unknown[];
   logicalIndex: number;
@@ -53,19 +52,14 @@ export function springTo<S>(
     if (now === undefined) return list[list.length - 1]?.to ?? start;
     const meta = changeMetaOf(list);
     const listBase = meta?.base ?? 0;
-    const epoch = epochOf();
-    const existing = runSlot.get();
 
-    const resets =
-      existing === undefined ||
-      (meta !== undefined
-        ? meta.resetId !== existing.changesResetId
-        : existing.fallbackList !== list);
-
-    let kept: Run;
-    if (resets || existing === undefined) {
-      kept = {
-        ownerEpoch: epoch,
+    const kept = ownCell(
+      runSlot,
+      (existing) =>
+        meta !== undefined
+          ? meta.resetId !== existing.changesResetId
+          : existing.fallbackList !== list,
+      () => ({
         changesResetId: meta?.resetId,
         fallbackList: list,
         logicalIndex: 0,
@@ -73,14 +67,9 @@ export function springTo<S>(
         value: start,
         speed: 0,
         since: 0,
-      };
-      runSlot.set(kept);
-    } else if (existing.ownerEpoch !== epoch) {
-      kept = { ...existing, ownerEpoch: epoch, fallbackList: list };
-      runSlot.set(kept);
-    } else {
-      kept = existing;
-    }
+      }),
+      (existing) => ({ ...existing, fallbackList: list }),
+    );
 
     const total = listBase + list.length;
     if (kept.logicalIndex < listBase) kept.logicalIndex = listBase;
