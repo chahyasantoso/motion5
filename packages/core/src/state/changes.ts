@@ -3,7 +3,7 @@ import { timeAt } from "../time/time-at";
 import type { Time } from "../time/time";
 import type { Events } from "../events/event-list";
 import { compactedBeforeOf } from "../events/event-log";
-import { epochOf, storeCell, withProbeStore } from "./store";
+import { ownCell, storeCell, withProbeStore } from "./store";
 import { stepMetaOf, type State } from "./state";
 
 /** A moment a picked value changed, and the value it changed to. */
@@ -31,12 +31,12 @@ export function changeMetaOf(list: readonly Change<unknown>[]): ChangeMeta | und
 }
 
 interface ChangesCell<V> {
-  ownerEpoch: number;
   resetId: number;
   seenStepResetId: number | undefined;
   seenStepRef: readonly unknown[] | undefined;
   start: V;
   list: Change<V>[];
+  returned: boolean;
   listBase: number;
   countedLogical: number;
   last: V;
@@ -54,70 +54,57 @@ export function changesOf<S, V = number>(
     const now = source.steps(time, events);
     const meta = stepMetaOf(now);
     const stepBase = meta?.base ?? 0;
-    const epoch = epochOf();
-    const existing = cellSlot.get();
 
-    const resets =
-      existing === undefined ||
-      (meta !== undefined
-        ? meta.resetId !== existing.seenStepResetId
-        : now !== existing.seenStepRef || now.length < existing.countedLogical);
-
-    let cell: ChangesCell<V>;
-    if (resets || existing === undefined) {
-      let start: V;
-      if (meta !== undefined && meta.base > 0) {
-        if (now.length === 0) {
-          start = withProbeStore(() => pick(source(time, events)));
-        } else {
-          switch (time.clock.kind) {
-            case "timed":
-            case "live": {
-              const probeAt = Number.isFinite(meta.anchorAt)
-                ? meta.anchorAt
-                : (now[0]?.at ?? 0) - 0.0001;
-              start = withProbeStore(() => pick(source(timeAt(time, probeAt), events)));
-              break;
+    const cell = ownCell(
+      cellSlot,
+      (existing) =>
+        meta !== undefined
+          ? meta.resetId !== existing.seenStepResetId
+          : now !== existing.seenStepRef || now.length < existing.countedLogical,
+      (existing) => {
+        let start: V;
+        if (meta !== undefined && meta.base > 0) {
+          if (now.length === 0) {
+            start = withProbeStore(() => pick(source(time, events)));
+          } else {
+            switch (time.clock.kind) {
+              case "timed":
+              case "live": {
+                const probeAt = Number.isFinite(meta.anchorAt)
+                  ? meta.anchorAt
+                  : (now[0]?.at ?? 0) - 0.0001;
+                start = withProbeStore(() => pick(source(timeAt(time, probeAt), events)));
+                break;
+              }
+              case "untimed":
+                start = pick(source.start);
+                break;
+              default:
+                return unreachable(time.clock);
             }
-            case "untimed":
-              start = pick(source.start);
-              break;
-            default:
-              return unreachable(time.clock);
           }
+        } else {
+          start = pick(source.start);
         }
-      } else {
-        start = pick(source.start);
-      }
-      const list: Change<V>[] = [];
-      const resetId = (existing?.resetId ?? 0) + 1;
-      cell = {
-        ownerEpoch: epoch,
-        resetId,
-        seenStepResetId: meta?.resetId,
-        seenStepRef: now,
-        start,
-        list,
-        listBase: 0,
-        countedLogical: 0,
-        last: start,
-      };
-      CHANGE_META.set(list, { resetId, base: 0 });
-      cellSlot.set(cell);
-    } else if (existing.ownerEpoch !== epoch) {
-      const clonedList = existing.list.slice();
-      cell = {
+        return {
+          resetId: (existing?.resetId ?? 0) + 1,
+          seenStepResetId: meta?.resetId,
+          seenStepRef: now,
+          start,
+          list: [],
+          returned: false,
+          listBase: 0,
+          countedLogical: 0,
+          last: start,
+        };
+      },
+      (existing) => ({
         ...existing,
-        ownerEpoch: epoch,
         seenStepRef: now,
-        list: clonedList,
-      };
-      CHANGE_META.set(clonedList, { resetId: cell.resetId, base: cell.listBase });
-      cellSlot.set(cell);
-    } else {
-      cell = existing;
-      cell.seenStepRef = now;
-    }
+        list: existing.returned ? existing.list : existing.list.slice(),
+      }),
+    );
+    cell.seenStepRef = now;
 
     const totalSteps = stepBase + now.length;
     if (cell.countedLogical < stepBase) cell.countedLogical = stepBase;
@@ -126,6 +113,10 @@ export function changesOf<S, V = number>(
       if (step === undefined) break;
       const to = pick(step.value);
       if (Object.is(to, cell.last)) continue;
+      if (cell.returned) {
+        cell.list = cell.list.slice();
+        cell.returned = false;
+      }
       cell.list.push({ at: step.at, to });
       cell.last = to;
     }
@@ -139,10 +130,20 @@ export function changesOf<S, V = number>(
       }
       if (trim > 0) {
         cell.start = cell.list[trim - 1]?.to ?? cell.start;
-        cell.list.splice(0, trim);
+        if (cell.returned) {
+          cell.list = cell.list.slice(trim);
+          cell.returned = false;
+        } else {
+          cell.list.splice(0, trim);
+        }
         cell.listBase += trim;
-        CHANGE_META.set(cell.list, { resetId: cell.resetId, base: cell.listBase });
       }
+    }
+
+    if (!cell.returned) {
+      CHANGE_META.set(cell.list, { resetId: cell.resetId, base: cell.listBase });
+      Object.freeze(cell.list);
+      cell.returned = true;
     }
 
     return { start: cell.start, list: cell.list };
