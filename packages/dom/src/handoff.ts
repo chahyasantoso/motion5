@@ -11,7 +11,6 @@ import {
 import { HELD_CLOCK } from "./frames";
 import {
   COMPOSITOR_OFF,
-  TRIGGER_ANIMATION,
   TRIGGER_SLACK_MS,
   isDomElement,
   type BoundTarget,
@@ -136,7 +135,7 @@ export function createHandoff(): HandoffState {
     if (isGiven && !hostedLive) return;
     if (Reflect.get(globalThis, COMPOSITOR_OFF) === true) return;
     const heldClock = Reflect.get(globalThis, HELD_CLOCK) === true;
-    if (heldClock && !hostedLive) return;
+    if (heldClock) return;
 
     const Timeline: unknown = Reflect.get(globalThis, "ScrollTimeline");
     const source = doc?.documentElement;
@@ -243,7 +242,6 @@ export function createHandoff(): HandoffState {
             fill: "both",
             easing: "linear",
           });
-          Reflect.set(animation, TRIGGER_ANIMATION, true);
           animation.pause();
           return animation;
         },
@@ -263,7 +261,7 @@ export function createHandoff(): HandoffState {
     engineOnly = new Set(
       stage.members.map((member) => member.name).filter((name) => !handed.has(name)),
     );
-    syncTriggers(clockMs(), events(), reader, heldClock || hostedLive);
+    syncTriggers(clockMs(), events(), reader, hostedLive);
   };
 
   return {

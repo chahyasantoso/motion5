@@ -54,7 +54,7 @@ On a `"live"` `"page"` mount and on each remeasure, `mount` hands Chromium the e
 - **Scroll-driven:** every motion on the element plays in a scroll beat without `smooth`. It plays on one `ScrollTimeline` over the document's whole scroll range, sampled inside its active scroll intervals.
 - **Trigger-driven:** every motion on the element plays in one trigger beat, and its pose before the trigger fires equals its pose at the start. It plays on the document timeline; on each input the mount asks the beat which way it runs and how far it has come, so `reverse`, `stay` and `replay` stay the beat's to decide.
 - Either way the element sets only `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY` and `opacity` (with one fixed `anchor`), and its motions read nothing but their window's time and the measured boxes. A read of the clock, `events`, `carry` or another element, a `bind`, `travel`, `.loop`, `.modifies`, a timed or scroll `.shows`, or `.ambient()` keeps it in the engine, as does a `smooth` scroll beat.
-- Without `ScrollTimeline`, or with a `scrollTarget` other than the window, every element stays in the engine; a live mount driven by page tools via the host hook keeps Chromium compositor animations active.
+- Without `ScrollTimeline`, with a `scrollTarget` other than the window, or while the page tools hold the clock, every element stays in the engine for synchronous style reads; non-held hosted live drivers keep compositor animations active.
 - `ResizeObserver` callbacks coalesce onto a single microtask, and a remeasure skips rebuilding compositor animations when `maxScroll`, `lines`, and the measured boxes read by handed tracks are unchanged.
 
 ## Sections and CSS layout

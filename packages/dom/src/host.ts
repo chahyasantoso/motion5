@@ -273,7 +273,6 @@ export interface RawRect {
 export const CLOCK_FRAMES_OFF = Symbol.for("@gerak/dom/clock-frames-off");
 export const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
 export const TRIGGER_SLACK_MS = 34;
-export const TRIGGER_ANIMATION = Symbol.for("@gerak/dom/trigger-animation");
 
 interface BinderCastEntry {
   readonly read: () => Readonly<Record<string, BinderCastKind>>;

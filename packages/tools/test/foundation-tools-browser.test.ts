@@ -42,7 +42,7 @@ describe("Slice 5 browser/server foundation: port 0 and DRIVER_HOOK in page tool
     }
   }, 60000);
 
-  it("drives live mounts in withPage via DRIVER_HOOK while keeping ScrollTimeline compositor active", async () => {
+  it("drives live mounts via DRIVER_HOOK while keeping held tools synchronous and non-held hosted drivers composited", async () => {
     const dir = tempDir("driver-hook-");
     writeFileSync(
       join(dir, "live.html"),
@@ -75,12 +75,13 @@ mount(piece, { clock: "live" });
 `,
     );
 
-    const { value, pageErrors } = await withPage(
+    const heldResult = await withPage(
       {
         page: "live.html",
         width: 800,
         height: 600,
         source: { kind: "serve", root: dir },
+        actions: [{ kind: "scroll", target: { kind: "px", px: 300 }, at: 150 }],
       },
       async ({ page, advanceTo }) => {
         await advanceTo(300);
@@ -93,16 +94,57 @@ mount(piece, { clock: "live" });
             typeof nowFn === "function" ? Reflect.apply(nowFn, driverObj, []) : undefined;
           const clock: unknown = Reflect.get(Object(nowVal), "clock");
           const el = document.querySelector('[data-cast="card"]');
+          const transform = el === null ? "none" : getComputedStyle(el).transform;
           return {
             clock,
-            animations: el?.getAnimations().length ?? 0,
+            animations: el?.getAnimations().length ?? -1,
+            x: new DOMMatrix(transform === "none" ? "" : transform).m41,
           };
         });
       },
     );
 
-    expect(pageErrors).toEqual([]);
-    expect(value.clock).toEqual({ kind: "live", elapsed: 300 });
-    expect(value.animations).toBeGreaterThan(0);
+    expect(heldResult.pageErrors).toEqual([]);
+    expect(heldResult.value.clock).toEqual({ kind: "live", elapsed: 300 });
+    expect(heldResult.value.animations).toBe(0);
+    expect(heldResult.value.x).toBeCloseTo(60, 4);
+
+    const hostedRealResult = await withPage(
+      {
+        page: "live.html",
+        width: 800,
+        height: 600,
+        source: { kind: "serve", root: dir },
+        clock: "real",
+        prepare: async (page) => {
+          await page.addInitScript(() => {
+            const driver = {
+              now: () => ({ progress: 0, clock: { kind: "live" as const, elapsed: 0 } }),
+              subscribe: () => () => undefined,
+            };
+            Reflect.set(globalThis, Symbol.for("@gerak/dom/driver"), () => driver);
+          });
+        },
+      },
+      async ({ page }) => {
+        await page.waitForFunction(() => {
+          const mounts = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+          return Array.isArray(mounts) && mounts.length > 0;
+        });
+        await page.evaluate(
+          () =>
+            new Promise<void>((done) =>
+              requestAnimationFrame(() => requestAnimationFrame(() => done())),
+            ),
+        );
+        return page.evaluate(() => {
+          const el = document.querySelector('[data-cast="card"]');
+          return { animations: el?.getAnimations().length ?? 0 };
+        });
+      },
+    );
+
+    expect(hostedRealResult.pageErrors).toEqual([]);
+    expect(hostedRealResult.value.animations).toBeGreaterThan(0);
   }, 60000);
 });

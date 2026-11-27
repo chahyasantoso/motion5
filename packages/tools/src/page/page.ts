@@ -172,11 +172,9 @@ function stepAndHoldAnimations(ms: number): void {
   const seen: unknown = Reflect.get(window, "__motionBorn");
   const born = seen instanceof WeakMap ? seen : new WeakMap<Animation, number>();
   Reflect.set(window, "__motionBorn", born);
-  const triggerAnimation = Symbol.for("@gerak/dom/trigger-animation");
   for (const animation of document.getAnimations()) {
-    // Scroll-timeline and hosted trigger animations follow scripted scroll / step triggers directly.
+    // Scroll-timeline animations follow scripted scroll directly rather than document time.
     if (animation.timeline !== document.timeline) continue;
-    if (Reflect.get(animation, triggerAnimation) === true) continue;
     const start: unknown = born.get(animation);
     const from = typeof start === "number" ? start : ms;
     if (typeof start !== "number") born.set(animation, from);
@@ -261,7 +259,7 @@ async function openPageSession(
   const real = target.clock === "real";
   if (target.prepare !== undefined) await target.prepare(page);
   if (!real) {
-    // Hold timed/CSS clocks and install the live DRIVER_HOOK so compositor tracks stay active.
+    // Keep gerak elements in the synchronous engine under HELD_CLOCK while stepping hosted live drivers deterministically.
     await page.addInitScript(() => {
       Reflect.set(globalThis, Symbol.for("@gerak/dom/held-clock"), true);
       let currentMs = 0;
