@@ -156,8 +156,11 @@ export function useMount(
         return;
       }
     }
-    kept?.mounted.dispose();
-    active.current = undefined;
+    if (kept !== undefined) {
+      kept.mounted.dispose();
+      active.current = undefined;
+      setMounted(undefined);
+    }
     const resolvedOptions: MountOptions = {
       ...options,
       root: element,

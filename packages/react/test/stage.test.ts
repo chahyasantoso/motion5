@@ -1,4 +1,4 @@
-import { StrictMode, createElement, useRef } from "react";
+import { Component, StrictMode, createElement, useRef, type ReactNode } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { motion, type Pose2d } from "@gerak/core";
@@ -267,6 +267,56 @@ describe("<Stage />", () => {
       renderer?.update(createElement(StrictMode, null, createElement(Probe, { tick: 1 })));
     });
     expect(mounts).toBe(afterInitial);
+
+    await act(() => renderer?.unmount());
+  });
+
+  it("disposes the old mount, clears active state, and surfaces the error when remounting throws", async () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
+    const valid = slid(10);
+    const missingNode = scene(
+      { length: 2000 },
+      box("missing").moves(motion((): Pose2d => ({ x: 20 }))),
+    );
+    const handles: (ReturnType<typeof useMount> | undefined)[] = [];
+    const errors: unknown[] = [];
+
+    class Boundary extends Component<
+      { readonly children: ReactNode },
+      { readonly failed: boolean }
+    > {
+      override state = { failed: false };
+      static getDerivedStateFromError(): { readonly failed: boolean } {
+        return { failed: true };
+      }
+      override componentDidCatch(error: unknown): void {
+        errors.push(error);
+      }
+      override render(): ReactNode {
+        return this.state.failed ? null : this.props.children;
+      }
+    }
+
+    const Probe = ({ s }: { readonly s: typeof valid }) => {
+      const ref = useRef<PageRoot | null>(root);
+      handles.push(useMount(ref, s, { clock: "timed", frames: NO_FRAMES }));
+      return null;
+    };
+
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(createElement(Boundary, null, createElement(Probe, { s: valid })));
+    });
+    expect(handles.at(-1)).toBeDefined();
+    expect(card.style.transform).toBe("translate3d(10px, 0px, 0px)");
+
+    await act(() => {
+      renderer?.update(createElement(Boundary, null, createElement(Probe, { s: missingNode })));
+    });
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(Error);
+    expect(card.style.transform).toBe("");
 
     await act(() => renderer?.unmount());
   });
