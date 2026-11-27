@@ -85,7 +85,9 @@ describe('mount with frame "fit"', () => {
         expect(seen.overflow).toBe("hidden");
         expect(seen.drawnWidth).toBeCloseTo(200, 3);
         expect(seen.dotLeft).toBeCloseTo(140, 3);
-        expect(seen.rest).toEqual({ dot: { x: 300, y: 100, width: 40, height: 40 } });
+        expect(seen.rest).toEqual({
+          dot: { x: 300, y: 100, width: 40, height: 40, placement: { kind: "flow" } },
+        });
       },
     );
   });

@@ -388,7 +388,13 @@ describe("mount", () => {
     );
     const mounted = mount(piece, { root, frames: fakeFrames(), clock: "live", now: () => 0 });
     expect(line.attributes.get("d")).toBe("M 50 20 C 50 20, 200 20, 200 20");
-    expect(mounted.rest["line"]).toEqual({ x: 125, y: 20, width: 150, height: 1 });
+    expect(mounted.rest["line"]).toEqual({
+      x: 125,
+      y: 20,
+      width: 150,
+      height: 1,
+      placement: { kind: "flow" },
+    });
     mounted.dispose();
   });
 

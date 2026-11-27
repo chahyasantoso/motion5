@@ -1,9 +1,11 @@
 import {
   eventLog,
   liveAt,
+  unreachable,
   type Events,
   type MotionEvent,
   type Point2d,
+  type RetentionPolicy,
   type Time,
 } from "@gerak/core";
 import type { Driver } from "@gerak/player";
@@ -33,13 +35,21 @@ export const WATCHED: Readonly<Record<string, string>> = Object.freeze({
   focusout: "blur",
 });
 
+/** Options for configuring event log retention and synchronous event streaming. */
+export interface EventRecorderOptions {
+  readonly retention?: RetentionPolicy | undefined;
+  readonly onEvent?: ((event: MotionEvent) => void) | undefined;
+}
+
 /** A log of pointer events, in order of `at`, and the watching that fills it. */
 export interface EventRecorder {
   readonly log: Events;
-  /** Logs an event by hand at the ms `now` gives, and tells `onRecord` that ms. */
-  record(name: string, target?: string, point?: Point2d): void;
-  /** Logs a sample of a live number by hand at the ms `now` gives, and tells `onRecord` that ms. */
-  sample(name: string, value: number, target?: string): void;
+  /** Logs an event by hand at `at` or the ms `now` gives, and tells `onRecord` that ms. */
+  record(name: string, target?: string, point?: Point2d, at?: number): void;
+  /** Logs a sample of a live number at `at` or the ms `now` gives, and tells `onRecord` that ms. */
+  sample(name: string, value: number, target?: string, at?: number): void;
+  /** Evicts retained events strictly older than `beforeMs`, preserving channel baselines. */
+  compact(beforeMs: number): number;
   /** Logs `WATCHED` events on `element` for `target`; the returned function stops it. */
   watch(target: string, element: EventSource): () => void;
   /** Forgets every event logged. */
@@ -52,23 +62,30 @@ export interface EventRecorder {
 export function eventRecorder(
   now: () => number,
   onRecord: (at: number) => void = () => undefined,
+  options: EventRecorderOptions = {},
 ): EventRecorder {
-  const log = eventLog();
+  const log = eventLog({
+    ...(options.retention === undefined ? {} : { retention: options.retention }),
+    ...(options.onEvent === undefined ? {} : { onEvent: options.onEvent }),
+  });
   const unwatch = new Set<() => void>();
-  const add = (event: Omit<MotionEvent, "at">): void => {
-    const at = now();
+  const add = (event: Omit<MotionEvent, "at">, explicitAt?: number): void => {
+    const at = explicitAt ?? now();
     log.add({ ...event, at });
     onRecord(at);
   };
-  const record = (name: string, target?: string, point?: Point2d): void =>
-    add({ name, ...(target === undefined ? {} : { target }), ...(point ?? {}) });
+  const record = (name: string, target?: string, point?: Point2d, at?: number): void =>
+    add({ name, ...(target === undefined ? {} : { target }), ...(point ?? {}) }, at);
   return {
     log: log.events,
     record,
-    sample(name, value, target) {
+    sample(name, value, target, at) {
       if (!Number.isFinite(value))
         throw new RangeError(`sample "${name}": the value must be a finite number, not ${value}.`);
-      add({ name, ...(target === undefined ? {} : { target }), value });
+      add({ name, ...(target === undefined ? {} : { target }), value }, at);
+    },
+    compact(beforeMs) {
+      return log.compact(beforeMs);
     },
     watch(target, element) {
       const removers = Object.entries(WATCHED).map(([type, name]) => {
@@ -99,7 +116,7 @@ export function eventRecorder(
   };
 }
 
-/** Settings of `eventDriver`: `settleMs` (default 2000 ms), `introMs` (0), `frames` and `clock`. */
+/** Settings of `eventDriver`: `settleMs` (default 2000 ms), `introMs` (0), `frames`, `clock`, `retention`, and `onEvent`. */
 export interface EventDriverOptions {
   /** How long frames keep coming after the last event, for a response to settle; default 2000 ms. */
   readonly settleMs?: number;
@@ -108,6 +125,10 @@ export interface EventDriverOptions {
   readonly frames?: FrameSource;
   /** The page's clock in ms; default `performance.now`. */
   readonly clock?: () => number;
+  /** Retention policy for the driver's event log; default keeps full history. */
+  readonly retention?: RetentionPolicy;
+  /** Receives every recorded event synchronously as it is logged. */
+  readonly onEvent?: (event: MotionEvent) => void;
 }
 
 /** A live driver: its clock runs from creation, and it logs the events of the elements it watches. */
@@ -121,6 +142,20 @@ export interface EventDriver extends Driver {
   dispose(): void;
 }
 
+function windowMsOf(policy: RetentionPolicy | undefined): number | undefined {
+  if (policy === undefined) return undefined;
+  switch (policy.kind) {
+    case "all":
+      return undefined;
+    case "live":
+      return policy.windowMs ?? 4000;
+    case "window":
+      return policy.windowMs;
+    default:
+      return unreachable(policy);
+  }
+}
+
 /** A live clock that logs events: `.watch`, `.watchView` and `.emit`. `introMs` keeps frames coming for
  * an intro, `settleMs` after the last event. */
 export function eventDriver(options: EventDriverOptions = {}): EventDriver {
@@ -130,6 +165,7 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
   const start = clock();
   const listeners = new Set<() => void>();
   const unwatch = new Set<() => void>();
+  const retentionWindowMs = windowMsOf(options.retention);
   let until = options.introMs ?? 0;
   let handle: number | undefined;
   const elapsed = (): number => clock() - start;
@@ -138,18 +174,27 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
   };
   const frame = (): void => {
     handle = undefined;
+    if (retentionWindowMs !== undefined) recorder.compact(elapsed() - retentionWindowMs);
     notify();
     if (elapsed() < until) handle = frames.requestFrame(frame);
   };
   const run = (): void => {
     if (handle === undefined && elapsed() < until) handle = frames.requestFrame(frame);
   };
-  const recorder = eventRecorder(elapsed, (at) => {
-    until = Math.max(until, at + settleMs);
-    notify();
-    run();
-  });
-  const emit = recorder.record;
+  const recorder = eventRecorder(
+    elapsed,
+    (at) => {
+      until = Math.max(until, at + settleMs);
+      notify();
+      run();
+    },
+    {
+      ...(options.retention === undefined ? {} : { retention: options.retention }),
+      ...(options.onEvent === undefined ? {} : { onEvent: options.onEvent }),
+    },
+  );
+  const emit = (name: string, target?: string, point?: Point2d): void =>
+    recorder.record(name, target, point);
   const driver: EventDriver = {
     now: (): Time => liveAt(elapsed()),
     events: (): Events => recorder.log,

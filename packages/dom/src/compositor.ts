@@ -3,6 +3,7 @@ import {
   NO_EVENTS,
   liveAt,
   unreachable,
+  withProbeStore,
   type Anchor,
   type Events,
 } from "@gerak/core";
@@ -408,78 +409,80 @@ export function scrollTracks(
   input: TrackInput,
   maxScroll: number,
 ): SampledTracks<Track> {
-  if (input.names.size === 0 || maxScroll <= 0 || maxScroll / GRID_PX > MAX_SAMPLES / 2) {
-    return { tracks: new Map(), deps: new Set() };
-  }
-  const found = runFrame(stage, input, 0, NO_EVENTS, input.names);
-  const elementBeatDeps = new Map<string, Set<string>>();
-  const groups = new Map<
-    string,
-    {
-      readonly names: Set<string>;
-      readonly intervals: readonly (readonly [number, number])[];
-      readonly edges: Set<number>;
+  return withProbeStore(() => {
+    if (input.names.size === 0 || maxScroll <= 0 || maxScroll / GRID_PX > MAX_SAMPLES / 2) {
+      return { tracks: new Map(), deps: new Set() };
     }
-  >();
-  for (const name of input.names) {
-    const drive = scrollDrive(found.drives.get(name));
-    if (drive === undefined || found.moves.has(name)) continue;
-    const beatDeps = new Set<string>();
-    const spy = trackRest(input.rest, beatDeps);
-    const raw: [number, number][] = [];
-    const elEdges = new Set<number>();
-    for (const beat of drive.beats) {
-      const start = beat.from.at(spy);
-      const end = beat.to.at(spy);
-      if (end > start) {
-        const lo = Math.max(0, start);
-        const hi = Math.min(maxScroll, end);
-        if (lo > 0 && lo < maxScroll) elEdges.add(lo);
-        if (hi > 0 && hi < maxScroll) elEdges.add(hi);
-        if (lo < hi) raw.push([lo, hi]);
-      } else if (start >= 0 && start < maxScroll) {
-        if (start > 0) elEdges.add(start);
-        const hi = Math.min(maxScroll, start + GRID_PX);
-        if (hi > 0 && hi < maxScroll) elEdges.add(hi);
-        if (start < hi) raw.push([start, hi]);
+    const found = runFrame(stage, input, 0, NO_EVENTS, input.names);
+    const elementBeatDeps = new Map<string, Set<string>>();
+    const groups = new Map<
+      string,
+      {
+        readonly names: Set<string>;
+        readonly intervals: readonly (readonly [number, number])[];
+        readonly edges: Set<number>;
       }
+    >();
+    for (const name of input.names) {
+      const drive = scrollDrive(found.drives.get(name));
+      if (drive === undefined || found.moves.has(name)) continue;
+      const beatDeps = new Set<string>();
+      const spy = trackRest(input.rest, beatDeps);
+      const raw: [number, number][] = [];
+      const elEdges = new Set<number>();
+      for (const beat of drive.beats) {
+        const start = beat.from.at(spy);
+        const end = beat.to.at(spy);
+        if (end > start) {
+          const lo = Math.max(0, start);
+          const hi = Math.min(maxScroll, end);
+          if (lo > 0 && lo < maxScroll) elEdges.add(lo);
+          if (hi > 0 && hi < maxScroll) elEdges.add(hi);
+          if (lo < hi) raw.push([lo, hi]);
+        } else if (start >= 0 && start < maxScroll) {
+          if (start > 0) elEdges.add(start);
+          const hi = Math.min(maxScroll, start + GRID_PX);
+          if (hi > 0 && hi < maxScroll) elEdges.add(hi);
+          if (start < hi) raw.push([start, hi]);
+        }
+      }
+      const intervals = mergeIntervals(raw);
+      elementBeatDeps.set(name, beatDeps);
+      const signature = intervals.map(([a, b]) => `${a}:${b}`).join(",");
+      const group = groups.get(signature) ?? { names: new Set(), intervals, edges: new Set() };
+      group.names.add(name);
+      for (const edge of elEdges) group.edges.add(edge);
+      groups.set(signature, group);
     }
-    const intervals = mergeIntervals(raw);
-    elementBeatDeps.set(name, beatDeps);
-    const signature = intervals.map(([a, b]) => `${a}:${b}`).join(",");
-    const group = groups.get(signature) ?? { names: new Set(), intervals, edges: new Set() };
-    group.names.add(name);
-    for (const edge of elEdges) group.edges.add(edge);
-    groups.set(signature, group);
-  }
-  const allTracks = new Map<string, Track>();
-  const deps = new Set<string>();
-  const budget = { taken: 0 };
-  for (const group of groups.values()) {
-    const groupRestDeps = new Set<string>();
-    const groupInput: TrackInput = { ...input, rest: trackRest(input.rest, groupRestDeps) };
-    const groupTracks = sampleTracks(
-      stage,
-      group.names,
-      maxScroll,
-      GRID_PX,
-      [...group.edges],
-      (y, only) =>
-        runFrame(stage, groupInput, 0, [{ name: INPUT_EVENTS.scroll, at: 0, value: y }], only),
-      (name, _, sampled) =>
-        scrollDrive(sampled.drives.get(name)) !== undefined && !sampled.moves.has(name),
-      group.intervals,
-      budget,
-    );
-    if (budget.taken > MAX_SAMPLES) return { tracks: new Map(), deps: new Set() };
-    if (groupTracks.size === 0) continue;
-    for (const [name, track] of groupTracks) {
-      allTracks.set(name, track);
-      for (const dep of elementBeatDeps.get(name) ?? []) deps.add(dep);
+    const allTracks = new Map<string, Track>();
+    const deps = new Set<string>();
+    const budget = { taken: 0 };
+    for (const group of groups.values()) {
+      const groupRestDeps = new Set<string>();
+      const groupInput: TrackInput = { ...input, rest: trackRest(input.rest, groupRestDeps) };
+      const groupTracks = sampleTracks(
+        stage,
+        group.names,
+        maxScroll,
+        GRID_PX,
+        [...group.edges],
+        (y, only) =>
+          runFrame(stage, groupInput, 0, [{ name: INPUT_EVENTS.scroll, at: 0, value: y }], only),
+        (name, _, sampled) =>
+          scrollDrive(sampled.drives.get(name)) !== undefined && !sampled.moves.has(name),
+        group.intervals,
+        budget,
+      );
+      if (budget.taken > MAX_SAMPLES) return { tracks: new Map(), deps: new Set() };
+      if (groupTracks.size === 0) continue;
+      for (const [name, track] of groupTracks) {
+        allTracks.set(name, track);
+        for (const dep of elementBeatDeps.get(name) ?? []) deps.add(dep);
+      }
+      for (const dep of groupRestDeps) deps.add(dep);
     }
-    for (const dep of groupRestDeps) deps.add(dep);
-  }
-  return { tracks: allTracks, deps };
+    return { tracks: allTracks, deps };
+  });
 }
 
 /** Whether every part shows its first sample before the trigger fires, with no clock note. */
@@ -497,50 +500,52 @@ function restsAtStart(member: Member, track: Track, before: Sampled): boolean {
 
 /** Trigger-driven tracks of `input.names` and their read rest box names, sampled across each beat's ms. */
 export function triggerTracks(stage: Stage, input: TrackInput): SampledTracks<TriggerTrack> {
-  if (input.names.size === 0) return { tracks: new Map(), deps: new Set() };
-  const found = runFrame(stage, input, 0, NO_EVENTS, input.names);
-  const byBeat = new Map<TriggerBeat, Set<string>>();
-  for (const name of input.names) {
-    const drive = triggerDrive(found.drives.get(name));
-    if (drive === undefined) continue;
-    const names = byBeat.get(drive.beat) ?? new Set<string>();
-    names.add(name);
-    byBeat.set(drive.beat, names);
-  }
-  const members = new Map(stage.members.map((member) => [member.name, member]));
-  const out = new Map<string, TriggerTrack>();
-  const deps = new Set<string>();
-  for (const [beat, names] of byBeat) {
-    const beatDeps = new Set<string>();
-    const trackedInput: TrackInput = { ...input, rest: trackRest(input.rest, beatDeps) };
-    const threshold = beat.when.point.at(trackedInput.rest);
-    const crossed: Events = [{ name: INPUT_EVENTS.scroll, at: 0, value: threshold }];
-    const tracks = sampleTracks(
-      stage,
-      names,
-      beat.ms,
-      beat.ms / TRIGGER_GRID,
-      [],
-      (ms, only) => runFrame(stage, trackedInput, ms, crossed, only),
-      (name, ms, sampled) => {
-        const drive = triggerDrive(sampled.drives.get(name));
-        if (drive === undefined || drive.beat !== beat) return false;
-        // While the trigger runs it moves with time; once done, any clock note is the motion's own.
-        return ms < beat.ms || !sampled.moves.has(name);
-      },
-    );
-    const before = threshold > 0 ? runFrame(stage, trackedInput, 0, NO_EVENTS, names) : undefined;
-    let keptAny = false;
-    for (const [name, track] of tracks) {
-      const member = members.get(name);
-      if (member === undefined) continue;
-      if (before !== undefined && !restsAtStart(member, track, before)) continue;
-      out.set(name, { ...track, beat });
-      keptAny = true;
+  return withProbeStore(() => {
+    if (input.names.size === 0) return { tracks: new Map(), deps: new Set() };
+    const found = runFrame(stage, input, 0, NO_EVENTS, input.names);
+    const byBeat = new Map<TriggerBeat, Set<string>>();
+    for (const name of input.names) {
+      const drive = triggerDrive(found.drives.get(name));
+      if (drive === undefined) continue;
+      const names = byBeat.get(drive.beat) ?? new Set<string>();
+      names.add(name);
+      byBeat.set(drive.beat, names);
     }
-    if (keptAny) for (const dep of beatDeps) deps.add(dep);
-  }
-  return { tracks: out, deps };
+    const members = new Map(stage.members.map((member) => [member.name, member]));
+    const out = new Map<string, TriggerTrack>();
+    const deps = new Set<string>();
+    for (const [beat, names] of byBeat) {
+      const beatDeps = new Set<string>();
+      const trackedInput: TrackInput = { ...input, rest: trackRest(input.rest, beatDeps) };
+      const threshold = beat.when.point.at(trackedInput.rest);
+      const crossed: Events = [{ name: INPUT_EVENTS.scroll, at: 0, value: threshold }];
+      const tracks = sampleTracks(
+        stage,
+        names,
+        beat.ms,
+        beat.ms / TRIGGER_GRID,
+        [],
+        (ms, only) => runFrame(stage, trackedInput, ms, crossed, only),
+        (name, ms, sampled) => {
+          const drive = triggerDrive(sampled.drives.get(name));
+          if (drive === undefined || drive.beat !== beat) return false;
+          // While the trigger runs it moves with time; once done, any clock note is the motion's own.
+          return ms < beat.ms || !sampled.moves.has(name);
+        },
+      );
+      const before = threshold > 0 ? runFrame(stage, trackedInput, 0, NO_EVENTS, names) : undefined;
+      let keptAny = false;
+      for (const [name, track] of tracks) {
+        const member = members.get(name);
+        if (member === undefined) continue;
+        if (before !== undefined && !restsAtStart(member, track, before)) continue;
+        out.set(name, { ...track, beat });
+        keptAny = true;
+      }
+      if (keptAny) for (const dep of beatDeps) deps.add(dep);
+    }
+    return { tracks: out, deps };
+  });
 }
 
 /** The fields a part ever moves off their rest value. */

@@ -1,4 +1,4 @@
-import { atProgress, type Events, type Time, unreachable } from "@gerak/core";
+import { atProgress, type Events, type MotionEvent, type Time, unreachable } from "@gerak/core";
 import { createLoopCycle, type LoopCycle } from "./loop-cycle";
 import type { Driver } from "@gerak/player";
 import { eventRecorder, type EventSource } from "./events";
@@ -16,6 +16,8 @@ export interface ClockOptions {
   readonly reducedMotion?: "end" | "play";
   /** Whether the person asked for reduced motion; the page's media query when absent. */
   readonly prefersReducedMotion?: () => boolean;
+  /** Receives every recorded event synchronously as it is logged. */
+  readonly onEvent?: (event: MotionEvent) => void;
 }
 
 function pagePrefersReducedMotion(): boolean {
@@ -95,7 +97,11 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   const notify = (): void => {
     for (const listener of [...listeners]) listener();
   };
-  const recorder = eventRecorder(elapsedNow, () => notify());
+  const recorder = eventRecorder(
+    elapsedNow,
+    () => notify(),
+    options.onEvent === undefined ? {} : { onEvent: options.onEvent },
+  );
   const forgetters = new Set<() => void>();
   const forget = (): void => {
     recorder.clear();
