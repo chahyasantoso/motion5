@@ -37,6 +37,10 @@ Each has one owner and a test that fails before the change.
 | T3 | A trigger starts on any condition, not only on scroll. | `stage` | `triggered` on `reached`, `ended`, `is` and `on` each start, stay, reverse and replay as `back` says |
 | T4 | The compositor hands a timeline to the browser only from its declared `native`, read with an exhaustive `switch`. | `dom` compositor | no `"scroll-beat"` or `"trigger-beat"` check remains in `stage` or `dom`; the compositor browser tests pass unchanged |
 | T5 | A section mixing a clock beat, a scroll beat, a trigger beat and a loop gives the same poses as before the change. | `stage` | `gerak sample` on the cookie, yuzu and reel pieces gives the same poses as on the merged foundation branch |
+| T7 | An element goes to the browser only when all its motions declare one `native`; otherwise the whole element stays on the main thread. | `dom` compositor | a compositor browser test: one element on a `scroll` and a `smooth` beat, and one on a `scroll` and a `clock` beat, hand nothing; one on two `scroll` beats over the same scroll range hands both |
+| T8 | `clock(ms, { after })` takes only a clock beat; a clock after any other beat is `triggered(ended(beat), clock(ms))`. | `stage` | `packages/stage/test/timeline.types.test.ts`: `@ts-expect-error` on `after` a `scroll` beat |
+| T9 | An element's motions layer in list order by core's field rules whatever timelines their beats run on. | `stage` | a scroll motion and a triggered motion both setting `y` give the scroll's `y` plus the pop's, and a `.take()` triggered motion replaces it from its start |
+| T10 | On a timed clock, `scroll` and `view` timelines read the scroll position recorded as a value at times, so a reel can use them. | `stage` | a reel scene with a `scroll` beat renders the same frames in order and in shuffled order |
 
 ## Decisions
 
@@ -108,6 +112,12 @@ interface StageTimeline extends Timeline<StageInput> {
   headless.
 - A timeline is a pure function of time, the scroll position and the app's input. It never reads outside state
   such as a video's `currentTime`; syncing to a video is a driver's job.
+- `clock(ms, { after })` takes only a clock beat, since only a clock beat ends at a known ms. A clock that follows a
+  `scroll`, `view` or `triggered` beat is `triggered(ended(beat), clock(ms))`, the one form for it (T8).
+- On a timed clock the scroll position is a value recorded at times like any other, so `scroll` and `view`
+  timelines run in a reel the same way they run on a page (T10).
+- An element's motions layer in list order by core's field rules whatever timelines their beats run on, and a
+  `.take()` motion replaces the fields it sets from its beat's start. Mixing timelines changes nothing about it (T9).
 
 ### 4. Conditions start triggers
 
@@ -124,6 +134,9 @@ interface StageTimeline extends Timeline<StageInput> {
 - `handoff.ts` and `compositor.ts` choose a browser `ScrollTimeline`, a `ViewTimeline` or a triggered animation
   from `native`, in one exhaustive `switch`. The `Map<TriggerBeat, TriggerRun>` keys on the beat.
 - A `smooth` timeline declares no `native` and stays on the main thread, as smooth scroll beats do today.
+- The browser animates a whole element, so an element goes to the browser only when all its motions declare the
+  same `native` (one clock, or one scroll range, or one view range). When they differ, or one declares none, the
+  whole element stays on the main thread (T7).
 
 ### 6. Moving every piece
 
@@ -146,9 +159,9 @@ One pull request for the plan. Each slice gets its own cold review.
 
 | Slice | Scope | Done when |
 | --- | --- | --- |
-| 1 | Tests first: T1–T6 | T5 passes on the merged foundation; T1–T4 and T6 fail for the reasons above |
+| 1 | Tests first: T1–T10 | T5 passes on the merged foundation; T1–T4 and T6–T10 fail for the reasons above |
 | 2 | Decisions 1, 1b and 2: the port, declared lookback, `Span` as a timeline, `beat(name, timeline)` beside the old forms | T1 and T6 green; existing tests green |
-| 3 | Decisions 3–4: the timelines and conditions | T2 and T3 green |
-| 4 | Decision 5: the compositor reads `native` | T4 green; compositor browser tests green |
+| 3 | Decisions 3–4: the timelines and conditions | T2, T3, T8, T9 and T10 green |
+| 4 | Decision 5: the compositor reads `native` | T4 and T7 green; compositor browser tests green |
 | 5 | Decision 6: codemod, old forms deleted, docs, ADR | T5 green; `check`, `test:browser` and `pack:check` green |
 | 6 | Measure | Token counts recorded in the pull request |
