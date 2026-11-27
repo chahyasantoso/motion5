@@ -69,7 +69,7 @@ branch as it stands.
 | I6 | The live window is at least the longest time any move looks back: `max(settleMs, 4000)`. | `liveClock` | a `settleMs: 6000` live mount with injected `now` and `frames` keeps 6 s of input |
 | I7 | No motion file in `dom` imports the adapter. | boundary scan | a new boundary-scan rule, with a fixture that breaks it |
 | I8 | App input reaches a scene only through a declared contract: `set` takes only its values, `trigger` only its triggers, and only declared targets. | typecheck | `packages/core/test/inputs.types.test.ts` with `@ts-expect-error` on a typo, a trigger sent as a value, a value sent as a trigger, and an undeclared target; `MotionEvent`, `Events`, `eventLog`, `send` and `emit` are gone from every package's public exports |
-| I9 | Mounts that share one `liveClock` see one time and one set of input: a `set` reaches all of them in the same frame, the clock asks for one frame per tick, and the window's scroll is read once per frame. | `liveClock` | `packages/dom/test/shared-clock.test.ts` with two section mounts on one clock |
+| I9 | Mounts that share one `liveClock` see one time and one set of input: a `set` reaches all of them in the same frame, the clock asks for one frame per tick, and the window's scroll is read once per frame. | `liveClock` | `packages/dom/test/shared-clock.test.ts` with two section mounts on one clock, including a `set` that only the second mount reads while the first has settled, and one step per mount per frame |
 | I10 | `valueAt(trigger)` reads the value as it was when the trigger arrived, by arrival order, even when a new value arrives in the same ms. | the input log | `packages/core/test/value-at.test.ts`: `trigger` then `set` at one ms reads the old value |
 
 ## Decisions
