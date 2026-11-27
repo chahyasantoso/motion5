@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, inputLog, inputs, liveAt, state, type Input, type Time } from "@gerak/core";
+import {
+  atProgress,
+  elapsedOf,
+  inputLog,
+  inputs,
+  liveAt,
+  state,
+  value,
+  type Input,
+  type Time,
+} from "@gerak/core";
 import { hop } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 
@@ -343,5 +353,83 @@ describe("observe", () => {
     log.trigger(100, taps, "tap");
     driver.seekMs(100);
     expect(seen).toEqual([0]);
+  });
+});
+
+describe("re-entrant driver notifications", () => {
+  it("delivers a driver.set made inside a player.on callback during seekMs without another tick", () => {
+    const contract = inputs({ values: { level: {} } });
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play(
+      (time, input) => ({ level: value(contract, "level")(time, input) }),
+      driver,
+      { cues: [{ kind: "trigger", name: "cue", at: 300, value: 1 }] },
+    );
+    player.on("cue", () => {
+      driver.set(contract, "level", 99);
+    });
+    driver.seekMs(500);
+    expect(player.values.level).toBe(99);
+  });
+
+  it("notifies all subscribers at the final time without extra calls when subscribers seek during a pass", () => {
+    const driver = manualDriver({ durationMs: 1000 });
+    const seen1: number[] = [];
+    const seen2: number[] = [];
+    driver.subscribe(() => {
+      const ms = elapsedOf(driver.now().clock) ?? 0;
+      seen1.push(ms);
+      if (ms === 200) driver.seekMs(500);
+    });
+    driver.subscribe(() => {
+      const ms = elapsedOf(driver.now().clock) ?? 0;
+      seen2.push(ms);
+      if (ms === 500) driver.seekMs(600);
+    });
+    driver.seekMs(200);
+    expect(seen1).toEqual([200, 600]);
+    expect(seen2).toEqual([500, 600]);
+  });
+
+  it("steps two players on one manualDriver once per distinct time when the first seeks during a pass", () => {
+    const driver = manualDriver({ durationMs: 1000 });
+    const times1: number[] = [];
+    const times2: number[] = [];
+    const p1 = play(
+      (time) => {
+        const ms = elapsedOf(time.clock) ?? 0;
+        times1.push(ms);
+        return { ms };
+      },
+      driver,
+      { cues: [{ kind: "trigger", name: "jump", at: 200, value: 1 }] },
+    );
+    const p2 = play((time) => {
+      const ms = elapsedOf(time.clock) ?? 0;
+      times2.push(ms);
+      return { ms };
+    }, driver);
+    p1.on("jump", () => {
+      driver.seekMs(500);
+    });
+
+    times1.length = 0;
+    times2.length = 0;
+    driver.seekMs(200);
+    expect(p1.values.ms).toBe(500);
+    expect(p2.values.ms).toBe(500);
+    expect(times1).toEqual([200, 500]);
+    expect(times2).toEqual([500]);
+  });
+
+  it("throws past the pass cap when a listener sets a new value on every pass", () => {
+    const contract = inputs({ values: { count: {} } });
+    const driver = manualDriver();
+    let n = 0;
+    driver.subscribe(() => {
+      n += 1;
+      driver.set(contract, "count", n);
+    });
+    expect(() => driver.set(contract, "count", 0)).toThrow(/pass/i);
   });
 });

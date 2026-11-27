@@ -1,5 +1,5 @@
 import { atProgress, elapsedOf, inputLog, unreachable, versionOf, type Time } from "@gerak/core";
-import type { Driver } from "@gerak/player";
+import { createNotifier, type Driver } from "@gerak/player";
 import { createLoopCycle, type LoopCycle } from "./loop-cycle";
 import { pageFrames, type FrameSource } from "./frames";
 
@@ -82,15 +82,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   let ended = false;
   const elapsedNow = (): number => progress * duration + overtime;
   const runsOver = (): boolean => elapsedNow() < settleUntil;
-  let notifying = false;
-  const notify = (): void => {
-    notifying = true;
-    try {
-      for (const listener of [...listeners]) listener();
-    } finally {
-      notifying = false;
-    }
-  };
+  const notify = createNotifier(listeners);
   const log = inputLog();
   const forgetters = new Set<() => void>();
   const forget = (): void => {
@@ -195,13 +187,13 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       const before = versionOf(log.input);
       log.set(at, contract, name, value, target);
       extendSettle(at);
-      if (!notifying && versionOf(log.input) !== before) notify();
+      if (versionOf(log.input) !== before) notify();
     },
     trigger(contract, name, value, target) {
       const at = elapsedNow();
       log.trigger(at, contract, name, value, target);
       extendSettle(at);
-      if (!notifying) notify();
+      notify();
     },
     forgets(listener) {
       forgetters.add(listener);
@@ -312,15 +304,7 @@ export function scrollDriver(options: {
       : { progress, clock: { kind: "timed", elapsed: progress * length, length } };
   };
   const elapsedMs = (): number => (length === undefined ? 0 : (elapsedOf(now().clock) ?? 0));
-  let notifying = false;
-  const tell = (): void => {
-    notifying = true;
-    try {
-      for (const listener of [...listeners]) listener();
-    } finally {
-      notifying = false;
-    }
-  };
+  const tell = createNotifier(listeners);
   return {
     now,
     input: () => log.input,
@@ -328,11 +312,11 @@ export function scrollDriver(options: {
     set(contract, name, value, targetName) {
       const before = versionOf(log.input);
       log.set(elapsedMs(), contract, name, value, targetName);
-      if (!notifying && versionOf(log.input) !== before) tell();
+      if (versionOf(log.input) !== before) tell();
     },
     trigger(contract, name, value, targetName) {
       log.trigger(elapsedMs(), contract, name, value, targetName);
-      if (!notifying) tell();
+      tell();
     },
     subscribe(listener) {
       if (listeners.size === 0) target.addEventListener("scroll", tell);

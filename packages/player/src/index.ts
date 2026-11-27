@@ -1,3 +1,4 @@
+export { createNotifier } from "./notify";
 export {
   manualDriver,
   play,

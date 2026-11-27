@@ -1,5 +1,6 @@
 # @gerak/player: index
 
+- **`createNotifier`** `(listeners: Iterable<() => void>, maxPasses?: number): () => void`: Runs `listeners` in full passes, folding re-entrant calls into follow-up passes up to `maxPasses`.
 - **`manualDriver`** `(options?: { readonly durationMs?: number; }): ManualDriver`: A driver moved by hand: `.seek(progress)`, `.seekMs(ms)`. Timed when given `durationMs`, untimed otherwise.
 - **`play`** `<T extends object>(scene: Signal<T>, driver: Driver, options?: PlayOptions): Player<T>`: Runs `scene` against `driver`, telling each target's subscribers its value on every step.
 - **`Driver`** `type Driver = { now: () => Time; input: () => Input; set: <V extends Record<string, InputSpec>, T extends Record<string, InputSpec>, K extends keyof V & string>(contract: Contract<V, T>, name: K, value: number, target?: TargetOf<V[K]> | undefined) => void; trigger: <V extends Record<string, InputSpec>, T extends Record<string, InputSpec>, K extends keyof T & string>(contract: Contract<V, T>, name: K, value?: number, target?: TargetOf<T[K]> | undefined) => void; subscribe: (listener: () => void) => () => void; options?: object }`: What drives a scene: the time now, the input log, typed input writers, and a signal each time it moves.

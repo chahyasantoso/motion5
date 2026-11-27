@@ -10,7 +10,7 @@ import {
   type TargetOf,
   type Time,
 } from "@gerak/core";
-import type { Driver } from "@gerak/player";
+import { createNotifier, type Driver } from "@gerak/player";
 import { pageFrames, type FrameSource } from "./frames";
 
 /** Settings of `liveClock`: `introMs` (0), `settleMs` (2000), `now`, and `frames`. */
@@ -82,6 +82,7 @@ export function liveClock(options: LiveClockOptions = {}): LiveClock {
   let pointerSeq = 0;
   let eventsSeq = 0;
   const listeners = new Set<() => void>();
+  const notify = createNotifier(listeners);
   const participants = new Set<LiveClockParticipant>();
   const scrollBuckets = new Map<object, ScrollBucket>();
 
@@ -173,7 +174,7 @@ export function liveClock(options: LiveClockOptions = {}): LiveClock {
     // Inputs flushed in this tick are delivered immediately below, so only future inputs re-arm.
     pendingFrame = false;
     for (const participant of [...participants]) participant.onTick(nowMs);
-    for (const listener of [...listeners]) listener();
+    notify();
     schedule();
   };
 

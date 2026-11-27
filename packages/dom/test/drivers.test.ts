@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inputs } from "@gerak/core";
+import { inputs, value } from "@gerak/core";
 import { play } from "@gerak/player";
 import { clockDriver, scrollDriver, type FrameSource } from "@gerak/dom";
 
@@ -383,5 +383,84 @@ describe("clockDriver input port", () => {
     driver.trigger(voice, "click", 1, "card");
     expect(heard).toBe(1);
     driver.dispose();
+  });
+
+  it("delivers a set made inside a player.on callback during seek on a paused clockDriver without a frame tick", () => {
+    const contract = inputs({ values: { level: {} } });
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, autoplay: false, frames: source });
+    const player = play(
+      (time, input) => ({ level: value(contract, "level")(time, input) }),
+      driver,
+      { cues: [{ kind: "trigger", name: "cue", at: 300, value: 1 }] },
+    );
+    player.on("cue", () => {
+      driver.set(contract, "level", 99);
+    });
+    driver.seek(0.5);
+    expect(source.waiting).toBe(0);
+    expect(player.values.level).toBe(99);
+  });
+
+  it("throws past the pass cap when a clockDriver listener writes on every pass", () => {
+    const contract = inputs({ values: { count: {} } });
+    const driver = clockDriver({ duration: 1000, autoplay: false, frames: frames() });
+    let n = 0;
+    driver.subscribe(() => {
+      n += 1;
+      driver.set(contract, "count", n);
+    });
+    expect(() => driver.seek(0.5)).toThrow(/pass/i);
+  });
+});
+
+describe("scrollDriver re-entrant notifications", () => {
+  it("delivers a set made by a subscriber during a scroll pass without a frame tick", () => {
+    const listeners = new Set<() => void>();
+    const page = {
+      scrollY: 0,
+      addEventListener(_: "scroll", listener: () => void) {
+        listeners.add(listener);
+      },
+      removeEventListener(_: "scroll", listener: () => void) {
+        listeners.delete(listener);
+      },
+    };
+    const contract = inputs({ values: { level: {} } });
+    const driver = scrollDriver({ target: page, start: 0, end: 100 });
+    const player = play(
+      (time, input) => ({ level: value(contract, "level")(time, input) }),
+      driver,
+    );
+    driver.subscribe(() => {
+      if (driver.now().progress >= 0.5) driver.set(contract, "level", 77);
+    });
+    page.scrollY = 50;
+    for (const listener of [...listeners]) listener();
+    expect(player.values.level).toBe(77);
+  });
+
+  it("throws past the pass cap when a scrollDriver listener writes on every pass", () => {
+    const listeners = new Set<() => void>();
+    const page = {
+      scrollY: 0,
+      addEventListener(_: "scroll", listener: () => void) {
+        listeners.add(listener);
+      },
+      removeEventListener(_: "scroll", listener: () => void) {
+        listeners.delete(listener);
+      },
+    };
+    const contract = inputs({ values: { count: {} } });
+    const driver = scrollDriver({ target: page, start: 0, end: 100 });
+    let n = 0;
+    driver.subscribe(() => {
+      n += 1;
+      driver.set(contract, "count", n);
+    });
+    page.scrollY = 50;
+    expect(() => {
+      for (const listener of [...listeners]) listener();
+    }).toThrow(/pass/i);
   });
 });

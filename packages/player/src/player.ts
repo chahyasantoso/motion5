@@ -7,8 +7,10 @@ import {
   generationOf,
   inputLog,
   inputSerialsOf,
+  unreachable,
   versionOf,
   withStore,
+  type Clock,
   type Contract,
   type Input,
   type InputEntry,
@@ -18,6 +20,25 @@ import {
   type TargetOf,
   type Time,
 } from "@gerak/core";
+import { createNotifier } from "./notify";
+
+function sameClock(a: Clock, b: Clock): boolean {
+  if (a.kind !== b.kind) return false;
+  switch (a.kind) {
+    case "timed":
+      return b.kind === "timed" && Object.is(a.elapsed, b.elapsed) && Object.is(a.length, b.length);
+    case "live":
+      return b.kind === "live" && Object.is(a.elapsed, b.elapsed);
+    case "untimed":
+      return true;
+    default:
+      return unreachable(a);
+  }
+}
+
+function sameTime(a: Time, b: Time): boolean {
+  return Object.is(a.progress, b.progress) && sameClock(a.clock, b.clock);
+}
 
 /** What drives a scene: the time now, the input log, typed input writers, and a signal each time it moves. */
 export interface Driver {
@@ -88,8 +109,13 @@ export function play<T extends object>(
 
   let current = scene;
   const initialPage = driver.input();
-  let values = withStore(store, () => current(time, resolveEvents()));
+  const initialAll = resolveEvents();
+  let values = withStore(store, () => current(time, initialAll));
   let reached = elapsedOf(time.clock);
+  let lastTime = time;
+  let lastAll = initialAll;
+  let lastAllVersion = versionOf(initialAll);
+  let lastAllGeneration = generationOf(initialAll);
 
   let seenPage: Input | undefined = initialPage;
   let seenPageGen: number | undefined = generationOf(initialPage);
@@ -182,12 +208,27 @@ export function play<T extends object>(
     }
   };
 
-  const step = (): void => {
+  const runStep = (force: boolean): void => {
     const nextTime = driver.now();
     const nextNow = elapsedOf(nextTime.clock);
-    time = nextTime;
     const page = driver.input();
     const all = eventCache.resolve(cues, page, nextNow);
+    const allVersion = versionOf(all);
+    const allGeneration = generationOf(all);
+    if (
+      !force &&
+      sameTime(nextTime, lastTime) &&
+      all === lastAll &&
+      allVersion === lastAllVersion &&
+      allGeneration === lastAllGeneration
+    ) {
+      return;
+    }
+    time = nextTime;
+    lastTime = nextTime;
+    lastAll = all;
+    lastAllVersion = allVersion;
+    lastAllGeneration = allGeneration;
     withStore(store, () => {
       if (Reflect.get(globalThis, "__gerakTiming") === true) {
         const started = performance.now();
@@ -207,7 +248,7 @@ export function play<T extends object>(
     announce(nextNow, page);
   };
 
-  const leave = driver.subscribe(step);
+  const leave = driver.subscribe(() => runStep(false));
   return {
     get time() {
       return time;
@@ -243,11 +284,11 @@ export function play<T extends object>(
         observers.delete(observer);
       };
     },
-    refresh: step,
+    refresh: () => runStep(true),
     replace(next, nextCues) {
       current = next;
       if (nextCues !== undefined) cues = nextCues;
-      step();
+      runStep(true);
     },
     on(name, listener) {
       const set = handlers.get(name) ?? new Set();
@@ -291,15 +332,7 @@ export function manualDriver(options: { readonly durationMs?: number } = {}): Ma
           },
         };
   const elapsedMs = (): number => elapsedOf(now().clock) ?? 0;
-  let notifying = false;
-  const tell = (): void => {
-    notifying = true;
-    try {
-      for (const listener of [...listeners]) listener();
-    } finally {
-      notifying = false;
-    }
-  };
+  const tell = createNotifier(listeners);
   return {
     now,
     input: () => log.input,
@@ -307,11 +340,11 @@ export function manualDriver(options: { readonly durationMs?: number } = {}): Ma
     set(contract, name, value, target) {
       const before = versionOf(log.input);
       log.set(elapsedMs(), contract, name, value, target);
-      if (!notifying && versionOf(log.input) !== before) tell();
+      if (versionOf(log.input) !== before) tell();
     },
     trigger(contract, name, value, target) {
       log.trigger(elapsedMs(), contract, name, value, target);
-      if (!notifying) tell();
+      tell();
     },
     subscribe(listener) {
       listeners.add(listener);
