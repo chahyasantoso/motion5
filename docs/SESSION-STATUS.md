@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Foundation plan (`plan/foundation-plan.md`):** the app sets state through `set` and gerak only moves it; it starts with the cookie builder proof, and `plan/timeline-plan.md` follows.
+- **Foundation plan (`plan/foundation-plan.md`), slice 2 onward:** the app owns rules and lasting state and sends values and triggers through a typed contract; cookie's builder already runs this way. `plan/timeline-plan.md` follows.
 
 ## Open, and not scheduled
 
