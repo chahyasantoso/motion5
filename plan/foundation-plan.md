@@ -1,58 +1,215 @@
-# Foundation consolidation and bounded live state
+# Foundation: the app sets state, gerak moves it
 
 ## Goal
 
-People and agents building always-on web pages, interactive 3D scenes, React views, and rendered reels get flat O(1) memory and CPU on live pages, opt-in event recording and server streaming when needed, and predictable behavior across multiple mounts, shots, live edits, and browser checks — without changing how a scene is written. The code moves hidden closure caches into a per-player `RuntimeStore` with snapshot/restore support, bounds live event and layout history, deletes dead `defineStage` and `gerak live` remnants, modularizes `mount`, fixes 3D rest/opacity and React mount ergonomics, and unifies `tools` around handed drivers and shared browser sessions.
+People and agents build a page normally (React, or plain HTML and CSS) and use gerak only for its motion; a reel is
+the same kind of page played on a timed clock and rendered to video. The app owns interaction and state, and tells
+gerak how things are through one port, `set`; a gerak scene says only how things move when a value changes. An
+opt-in adapter sets hover, press, focus and pointer values for apps that want it.
 
-Status: Slices 1–5 implemented, 2026-11-27 (`feat/foundation`). Five slices in order. Studio source was left untouched and `packages/studio/test` was removed per user instruction ahead of a separate Studio revamp.
+The code replaces events with values on every surface an app or an author touches, stops gerak listening to the DOM
+for user interaction, gives each player its own cursors, and on a live page keeps each value's current state plus
+the changes a running motion still reads. A live page keeps flat memory and the same values for hours, through
+re-renders and remounts; a reel gives the same frame at a time however that time is reached.
+
+Scroll stays on gerak's side: it is a position the page reads, and the timeline plan (`plan/timeline-plan.md`,
+after this one) makes it a timeline. Until then, `mount` keeps reading scroll once per frame as it does today.
+
+Out of this plan: Studio, rewind (`"window"`), checkpoints, player snapshots, `onEvent` streaming, one 3D draw per
+frame across mounts, ordering mounts that read each other's elements, and a separate input package. Accepted loss: once a mount on a handed driver stops recording the
+page's real input, the Studio canvas no longer sees real hover while it scrubs. Typecheck does not catch this, and
+Studio has no tests; its revamp rebuilds it on `set` and `listen`.
 
 Read `AGENTS.md` first. Every rule there applies.
 
+## The boundary
+
+| gerak (motion) | app (interaction and state) |
+| --- | --- |
+| how an element moves when a value changes, beats, timelines, how motions relate | what a click, a key or a form does to state; routing |
+| the clock, and reading the page's scroll position | listening to the DOM, or opting into the adapter |
+| when each value changed, for as long as a motion reads it | every value: what is in the jar, which flavour is chosen, whether the CTA is hovered |
+
+```ts
+// app
+mounted.set("slot-3", FLAVOR.choc);
+mounted.set("hovered", 1, "cta");
+
+// scene: when the value changes, move between its looks
+const hover = transition(value("hovered", "cta"), { ms: 200 });
+cta.moves((t, ctx) => lift(hover(t, ctx.values).progress));
+```
+
+- `set(name, value, target?)` is the one inbound port, on `Mounted` and on every driver. There is no `send`, and no
+  event on any surface an app or an author writes. A value is a number, as today.
+- `set` records a change only when the value differs from the latest for that name and target, so setting the same
+  value twice plays nothing.
+- The stored entry looks much like today's event: a name, a target, a number and a time. What changes is the
+  contract. An entry says a value became this, the latest entry per name and target is the current state, and
+  nothing public reports a happening, so a scene cannot count or interpret interaction.
+- Inside, gerak records when each value changed, because a 200 ms motion needs its start. That record is internal,
+  as a tween's start time is.
+- Something momentary is a value too: the adapter sets `pressed` to 1 on press and 0 on release, so a bounce plays
+  on the change.
+- A reel writes its input the same way: `cues` become values at times, `{ name: "slot-3", value: choc, at: 2000 }`.
+
+## Invariants
+
+Each has one owner and a test. I1 guards what reels already rely on and passes on `main`; the others fail on the
+branch as it stands.
+
+| # | Invariant | Owner | Test |
+| --- | --- | --- | --- |
+| I1 | On a timed or handed run, a scene's value at a time is the same whether reached by playing, by seeking forward or back, in a second player, or inside a probe. | `player` | `packages/player/test/timed-equivalence.test.ts`: frames rendered in order, in shuffled order and by two players match. |
+| I2 | On a live clock, a scene's value is the same after `replace` as a fresh mount over the same retained values, and two mounts of one scene do not disturb each other. | `player` | `packages/dom/test/live-equivalence.test.ts` on a live mount with injected `now` and `frames`: `set("x", 0.4)`, six `set("slot-n", flavour)`, `set("hovered", 1, "cta")`, then 20 s of nothing, then `replace`, reads `x: 0.4`, the six slots, and the CTA lifted. |
+| I3 | `mount` attaches no DOM listener for user interaction. Its one listener is a passive `scroll` listener that wakes an idle clock. | `mount` | a browser test counts listeners on a mount with no adapter: one passive `scroll`, none for pointer, enter, leave, down, up, click, focus or blur |
+| I4 | On a live clock gerak keeps each value's latest state and drops a change only when it is older than the window. On a timed or handed clock it drops nothing. | the value log, `liveClock` | `packages/core/test/retention.test.ts` |
+| I5 | Retained changes and work per frame do not grow with session length. | the value log, `dom` scheduler | soak test (Measure, below) |
+| I6 | The live window is at least the longest time any move looks back: `max(settleMs, 4000)`. | `liveClock` | a `settleMs: 6000` live mount with injected `now` and `frames` keeps 6 s of changes |
+| I7 | No motion file in `dom` imports the adapter. | boundary scan | a new boundary-scan rule, with a fixture that breaks it |
+| I8 | No exported name in `core`, `stage`, `player`, `dom` or `react` takes or returns an event. | typecheck | `MotionEvent`, `Events`, `eventLog`, `send` and `emit` are gone from every package's public exports; a test lists the exports |
+| I9 | Mounts that share one `liveClock` see one time and one set of values: a `set` reaches all of them in the same frame, the clock asks for one frame per tick, and the window's scroll is read once per frame. | `liveClock` | `packages/dom/test/shared-clock.test.ts` with two section mounts on one clock |
+
 ## Decisions
 
-### 1. Per-player `RuntimeStore` and snapshot foundation
+### 1. Values replace events
 
-- `packages/core/src/state/store.ts` owns `RuntimeStore` (`createStore`, `withStore`, `withProbeStore`, `storeFor`, `snapshot`, `restore`).
-- Stateful primitives (`state`, `scroll.y`, `pointer.x/y`, `changesOf`, `springTo`, `easeTo`, `transition`, `tally`, `shared`, `TriggerBeat`) hold zero mutable state in closures; each keys its immutable cell inside the active `RuntimeStore`.
-- `play(scene, driver)` owns one `RuntimeStore` per `Player` and exposes `snapshot()` / `restore(snapshot)`.
-- Backward/off-time probes (`speedOf`, `anticipation`, `arc`, `trail`, `stayWith`, `context.read(el, { time })`, compositor sampling, `movedUnderDriver`) run under `withProbeStore` so they never reset or overwrite live forward cursors.
+- The value log replaces `eventLog`. Each entry is a change: a name, an optional target, the new value, and the ms
+  it changed at. It is the only record of input, and it is internal to the runtime.
+- A scene's second argument is `values`, read through `value(name, target?)` (the value at a time), `changesOf` and
+  `transition`, which already exist and move from reading events to reading changes. `value` returns a `State`, so
+  `changesOf` and `transition` take it directly.
+- `follow` springs towards a value. `react` plays on a change. `pointer.x`, `pointer.y` and `scroll.y` read the
+  `pointer-x`, `pointer-y` and `scroll` values.
+- `state` and `tally` stay as folds over changes, for timed scenes. On a live page a fold sees the latest value
+  and the window, and the docs say so: state that lasts is the app's.
 
-### 2. Recording as a feature (`RetentionPolicy`, `onEvent`, input coalescing)
+### 2. The proof comes first
 
-- Closed union `RetentionPolicy` read with an exhaustive `switch`:
-  - `"all"`: full history from `t = 0` (`clock: "timed"`, handed drivers, `manualDriver`, `gerak review`/`sample`/`render`, bare `eventLog()`).
-  - `"live"`: default for `mount(..., { clock: "live" })`; evicts events/steps/measures older than `now - windowMs` (default `Math.max(settleMs, 4000)`) via monotonic `baseIndex` compaction without bumping `generation`, preserving the latest sample per continuous channel (`scroll`, `pointer-x`, `pointer-y`) in `baselineOf`.
-  - `"window"`: bounded rewind for games/replay; `Player` keeps `maxCheckpoints` periodic `(atMs, RuntimeSnapshot)` pairs (thinning 2× past cap) and compacts older events.
-- `onEvent?: (event: MotionEvent) => void` on `EventLogOptions`, `EventDriverOptions`, and `MountOptions` streams every event synchronously for analytics/server replay.
-- `state` drops duplicate `taken: MotionEvent[]` copying on `eventLog` inputs; `changesOf` drops duplicate `held.list`; `react()` binary-searches ordered logs and calls `stillMoving()`; `noise1d` uses stateless O(1) hashing.
+- Before anything else, `apps/pieces/cookie`'s builder section moves to values on a spike: `cookie-main.ts` holds
+  the jar and sets each slot's flavour and the sealed flag; `builderState` stops folding the jar; `cookie-main.ts`
+  stops asking gerak what is in the jar.
+- It runs on today's runtime: the slot values go through today's `send`, whose entries already carry a name, a
+  target and a number. It tests the authoring model before the runtime changes.
+- It passes when a scripted session (add four cookies, remove one, seal) samples to the same poses as today and the
+  builder scene and `cookie-main.ts` together are shorter than today. If it fails, the plan stops and comes back to
+  the owner.
 
-### 3. Core time, player, and `motion` invariant fixes
+### 3. gerak stops listening to the DOM
 
-- `Motion` preserves call order of `.in(window, ease)` and `.loop(ms)` via an ordered pipeline, exposing `loopsForever`; bounded loops inside finite windows settle cleanly.
-- `nowOf` honors `clock.elapsed` during overtime (`progress === 1 && clock.elapsed > clock.length`), while keeping eased/reversed timed progress inside `[0, length]`.
-- `keyframes` interpolates stops over `clamp(time.progress, 0, 1)` so it works on `UNTIMED` clocks (`ScrollBeat`) without throwing `RangeError`.
-- `trail` and `trailTurn` call `stillMoving()` until spring rest; `Player.events()` caches merged cues+log with `derivedEvents`; `Player.on` announces live `eventLog` events on `clockDriver` and same-ms bursts via monotonic serial tracking; `Player.subscribe` skips unchanged values by `Object.is`.
+- `mount` deletes its pointer listeners, `watch: true` listening, lazy pointer attaching and pointer coalescing.
+  `watch` is deleted from `box`, `text` and `shape`.
+- `Driver` becomes `now()`, `values()`, `set()` and `subscribe()`, all required. Every driver owns its value log:
+  `liveClock`, `clockDriver` and `manualDriver`. `mounted.set` forwards to the mount's driver, so a handed driver
+  and the shared clock of Decision 5b take values the same way.
+- `watch` on `clockDriver` is deleted and its `send` becomes `set`. `eventDriver` is replaced by
+  `liveClock({ introMs?, settleMs? })`: a live clock with `set` and no listening, for players outside `mount`.
+  `useWatch` is deleted; `usePlayer` takes a `liveClock`, and `apps/pieces/card` exports
+  `clock = () => liveClock(...)` and calls `listen` for its hover.
+- The scroll position is read once per frame, as today, and recorded as a value on every clock, a handed one
+  included: it is a position gerak reads, not input the app owns.
 
-### 4. `@gerak/stage` pure ownership, de-layering, and stack caching
+### 4. The adapter is opt-in and outside the motion
 
-- Delete module-global `OWNERS` and `INCLUDED_IN` `WeakMap`s; enforce single binding and single sub-scene inclusion per compiled `Scene`. Sequential `shot()`s can animate the same element, and `shot()` honors `length` and shifts shot-local `cues`.
-- Historical `context.read(el, { time })` (e.g. `stayWith`) probes without mutating `env.moves`; `bindEach` memoizes `signal(index)` and `bind`/`bindEach` respect windowed `_time`; `shotEvents` requires `version !== undefined`; `ScrollBeat.moving` checks `stillMoving()`; `withMeta` preserves `.travel` for 3D `stagger`, `travel3d` wraps `watchClock`, `partCounts` counts 3D lists, `drawStrokes` keeps `ObjectRest`.
-- Delete vestigial `defineStage`, `CastBuilder`, `each`, and `Modifiers.on`; compile `Scene` directly to `Stage`.
-- Store `placement?: BoxPlacement` directly on `Box`; track per-element `InputNeed` (`scroll`, `pointer`, `events`); cache compiled element/part motion stacks on the compiled plan; hoist `carryFor` timestamp indexing once per frame.
+- `packages/dom/src/adapter/` exports `listen(port, { elements?, pointer? })`, where `port` is anything with `set`:
+  a `Mounted` or a `liveClock`. For each element named it sets `hovered`, `pressed` and `focused` to 1 or 0, with
+  the element's name as the target. With `pointer: true` it sets `pointer-x` and `pointer-y` once per frame,
+  attaching the listener only then. It returns a function that detaches everything.
+- The app decides whether to use it. `cookie`, `yuzu`, `yuzu-3d`, `card` and the browser tests that read the pointer
+  or watched elements call it, and their scenes move from `enter`/`leave`/`down`/`up`/`click` to those values; a
+  reel never does.
 
-### 5. `@gerak/three`, `@gerak/react`, `@gerak/dom`, and `@gerak/tools`
+### 5. Retention: one rule, the log drops, the live clock decides the window
 
-- `@gerak/three`: capture/restore full `Rest3d` (`position`, `quaternion`, `scale`, `visible`, base materials) per `Object3D`; fix `opacity` across `Group`s, `Material[]`, cloned shared materials, and rest reset; skip `renderer.render` when 3D outputs are unchanged; support stage `(index, count) => Pose3d` lists in `useTarget3d`.
-- `@gerak/react`: rewrite `useSignal` on `useSyncExternalStore`; add `useMount(ref, scene, options)` with no wrapper `<div>` and reactive options; rebuild `<Stage>` on `useMount`.
-- `@gerak/dom`: split `mount.ts` into `host.ts`, `bind-dom.ts`, `measure-dom.ts`, `handoff.ts`, `scheduler.ts`, and `mount.ts`; coalesce `scroll`/`pointer` to 1 sample per rAF; attach `pointermove` lazily; route input frames only to elements reading the changed channel; fix `drawPaths` page coords + `BoxPlacement`; scope `BINDER_CASTS` cleanup on thrown mounts; unify `eventDriver` onto the same retention/coalescing core.
-- `@gerak/tools`: use `port: 0`; drive `"live"` page mounts deterministically in tools via `DRIVER_HOOK` while preserving held-clock engine sync (`HELD_CLOCK`, ADR-196) and keeping compositor `ScrollTimeline`/`TriggerRun` active for non-held hosted live drivers; share one Vite + browser session across `gerak review <page>`; prune redundant passes in `gerak review <scene.ts>`; extend `pageDigest` to linked CSS, `-main.ts`, local imports, and `.glb`/`.gltf` assets (excluding pure scene files); mount `talkPage` live with `"all"` retention; delete retired `/__motion/source` and `/__motion/edit` endpoints.
+- The value log belongs to the driver (Decision 3). `clock: "live"` on `mount` builds a `liveClock`, so every live
+  page has one, and only a `liveClock` gives its log a window: `max(settleMs, 4000)`. There is no option to set it; a page that
+  needs more sets `settleMs`. A timed or handed clock keeps everything and forgets it when it loops or replays, as
+  today.
+- The log drops a change older than the window unless it is the latest of its name and target. A drop bumps
+  `generation`, and readers refold the retained list. Drops run in batches, when the oldest droppable change is
+  older than twice the window.
+- `RetentionPolicy`, the `retention` option, the baseline map, `baseIndex`, `compactedBefore`, the `initialOf`
+  reseed, `CONTINUOUS_CHANNELS`, the step trimming in `state`, `changesOf` and `tally`, and the trimming in the
+  player, the scheduler and the event driver are deleted.
+
+### 5b. Several mounts share one clock
+
+- A started `liveClock` can be handed to several mounts: `const clock = liveClock(); mount(heroScene, { clock,
+  root: heroEl }); mount(builderScene, { clock, root: builderEl })`. They share its time, its value log and its
+  frame requests, so the app sets a value once and every section sees it in the same frame.
+- The clock reads the window's scroll once per frame while any of its mounts reads scroll. A mount with its own
+  `scrollTarget` records that scroll with the mount's root as the target.
+- React passes the clock through `useMount`'s options; the comparator compares it by identity.
+- Each mount still has its own player and cursors. Ordering mounts that read each other's elements, and one 3D draw
+  per frame, wait for the section-players plan.
+
+### 6. One record per value list
+
+- The side `WeakMap`s become one record per list: `version`, `generation`, serials. A plain array gets a default
+  record, so every reader has one code path and the `taken` path in `state` is deleted.
+- A plain array is read as unchanged while its identity is unchanged. A test that pushes into a list it reuses
+  passes a new array instead.
+- Every merged list goes through `derivedEvents`, renamed for values, which carries a record, so a handed driver
+  does not refold every frame.
+- Core exports what another package reads and nothing else. Check `docs/ADR-INDEX.md` before adding one.
+
+### 7. Cursors per player, written through one helper
+
+- `RuntimeStore` stays as internal plumbing: one per `Player`, and a copy-on-write overlay for probes. Its
+  `snapshot` and `restore`, and `Player.snapshot` and `Player.restore`, are deleted.
+- One `store.ts` helper hands a primitive a cell it may mutate. The six hand-written `ownerEpoch` copies in `state`,
+  `changesOf`, `tally`, `springTo`, `easeTo` and `TriggerBeat` use it, and `epochOf` stops being exported.
+- No primitive returns an array it mutates later. `changesOf` returns a list that never changes after it is returned.
+
+### 8. Fixes to work already on the branch
+
+- `react`: `sameMountOptions` becomes a comparator table typed over every key of `StageMountOptions`, so a new
+  mount option fails typecheck until it is compared. Comparison happens inside the effect; no ref is written during
+  render.
+- `three`: captured material state belongs to the mount that captured it, not to module-wide maps.
+- `stage`: the shot-events cache keys on `version` and `generation`.
+- `onEvent` is deleted from `eventLog`, `clockDriver` and `mount`.
+
+### 9. Work already on the branch that stays as built
+
+These pass the gates. They stay, each reviewed as its own slice rather than rebuilt: `three` rest and opacity,
+`react` `useSignal` and `useMount`, `motion` call order, `keyframes` on untimed clocks, the `defineStage` and
+`CastBuilder` deletion, the `mount.ts` split, and the `tools` changes (port `0`, the shared review session,
+`pageDigest`, the retired endpoints). The pointer and watched-element code the split moved into `scheduler.ts` is
+deleted by Decision 3, not reviewed.
+
+### 10. Records
+
+- ADR-209 records the boundary: values instead of events, the one `set` port, the app owning interaction and state,
+  the adapter, and gerak not listening to the DOM. It supersedes ADR-208's retention, store, snapshot and `onEvent`
+  decisions; ADR-207's rule that a mount on a handed driver records the page's real input (scroll is still read
+  there); ADR-181's `send`; and ADR-175's events on a clock.
+- `core.md`, `stage.md`, `page.md` and the guide teach values: the app sets, the scene moves on change. The cues in
+  `explainer` and `reel` become values at times.
+- `docs/SESSION-STATUS.md` is rewritten for the merged state. This plan carries no status.
+
+## Measure
+
+- Decision 2's proof: same poses, shorter code.
+- Soak, in `packages/dom/test/soak.test.ts` on a live mount with injected `now` and `frames`: three simulated
+  hours of 60 Hz `pointer-x` and scroll values plus one slot change a second.
+- It gates on counters, not wall time. It passes when:
+  - retained changes stay at or below the window times the change rate, plus one per name and target;
+  - rule calls per frame, averaged over each drop, stay within the retained change count;
+  - the jar the scene shows matches the jar the app holds.
+- Wall time per frame is reported but does not gate.
+- Reels: I1's shuffled-order render. No interaction: I3. No events anywhere public: I8.
 
 ## Slices
 
-| PR | Scope | Decisions | Done when |
-| --- | --- | --- | --- |
-| 1 | `core`, `player`, `moves` | 1, 2, 3 | `RuntimeStore` + snapshots + `live`/`window`/`all` retention; 100k events stay O(1); `motion.in().loop()`, `keyframes` untimed, `player.on`, `stillMoving` on `trail`/`react` green |
-| 2 | `stage` | 4 | Pure ownership across `replace`/`shot`; `stayWith` idle rAF gone; `bindEach` memoized; `defineStage` deleted; stack caching & `InputNeed` tracking green |
-| 3 | `three`, `react` | 5 (`three`, `react`) | Full `Rest3d` & `opacity` fixed; idle 3D skips `render`; `useTarget3d` list fn works; `useSignal` synchronous; `useMount` & `<Stage>` green |
-| 4 | `dom` | 2, 5 (`dom`) | `mount.ts` modularized; 1/rAF input coalescing & lazy `pointermove`; per-input element routing; `drawPaths` & `BINDER_CASTS` fixed |
-| 5 | `tools`, docs, ADRs, skills | 5 (`tools`) | Handed driver in page tools; shared `gerak review <page>` session; `pageDigest` extended; retired vite live endpoints deleted; `check`, `test:browser`, `pack:check`, cold review green |
+One pull request for the plan. Each slice gets its own cold review. A slice that moves code changes no behaviour.
+
+| Slice | Scope | Done when |
+| --- | --- | --- |
+| 1 | Decision 2: the cookie builder proof | Same poses, shorter code; otherwise stop and report |
+| 2 | Tests first: I1–I9 and the soak test | I1 passes on `main`; the others fail on the branch for the reasons above, and only for those |
+| 3 | Decisions 6–7 (value-list record, store helper) | I1 green; existing tests green |
+| 4 | Decisions 1 and 5 (values replace events, retention, `set`) | I2, I4–I6, I8 and the soak test green |
+| 5 | Decisions 3–4 and 5b (stop listening, `liveClock`, the adapter, the shared clock, pieces moved) | I3, I7 and I9 green; every piece and browser test green |
+| 6 | Decision 8 | Each fix has a test that failed before it |
+| 7 | Decision 9 reviews, Decision 10 records | Cold reviews done; `check`, `test:browser` and `pack:check` green |
