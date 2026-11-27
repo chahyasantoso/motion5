@@ -127,6 +127,7 @@ export { secondary, secondary3d } from "./principles/secondary";
 export { state, type State, type StateOptions, type Step } from "./state/state";
 export {
   createStore,
+  ownCell,
   restore,
   snapshot,
   storeCell,

@@ -32,8 +32,14 @@ export interface StoreCell<T> {
   set(value: T, store?: RuntimeStore): void;
 }
 
+interface CellEntry<T> {
+  readonly epoch: number;
+  readonly value: T;
+}
+
 const STORES = new WeakMap<RuntimeStore, StoreImpl>();
 const SNAPSHOTS = new WeakMap<RuntimeSnapshot, SnapshotData>();
+const CELL_EPOCHS = new WeakMap<object, (impl: StoreImpl) => number | undefined>();
 
 let nextEpoch = 1;
 
@@ -136,7 +142,7 @@ export function restore(store: RuntimeStore, snap: RuntimeSnapshot): void {
 
 /** Declares an isolated cell backed per RuntimeStore without closure mutation. */
 export function storeCell<T>(): StoreCell<T> {
-  const backing = new WeakMap<object, T>();
+  const backing = new WeakMap<object, CellEntry<T>>();
   const capture: StoreCapture = (owner) => {
     const saved = readFromChain(backing, owner);
     if (saved === undefined) return undefined;
@@ -145,12 +151,37 @@ export function storeCell<T>(): StoreCell<T> {
       target.touched.add(capture);
     };
   };
-  return {
-    get: (store = activeStore) => readFromChain(backing, implOf(store)),
+  const cell: StoreCell<T> = {
+    get: (store = activeStore) => readFromChain(backing, implOf(store))?.value,
     set: (value, store = activeStore) => {
       const impl = implOf(store);
-      backing.set(impl.token, value);
+      backing.set(impl.token, { epoch: impl.epoch, value });
       if (impl.recordTouched) impl.touched.add(capture);
     },
   };
+  CELL_EPOCHS.set(cell, (impl) => readFromChain(backing, impl)?.epoch);
+  return cell;
+}
+
+/** Returns `cell`'s value owned by the active store epoch, resetting or copying on write as needed. */
+export function ownCell<T>(
+  cell: StoreCell<T>,
+  reset: (current: T) => boolean,
+  create: (previous: T | undefined) => T,
+  copy: (current: T) => T,
+  store: RuntimeStore = activeStore,
+): T {
+  const impl = implOf(store);
+  const current = cell.get(store);
+  if (current === undefined || reset(current)) {
+    const fresh = create(current);
+    cell.set(fresh, store);
+    return fresh;
+  }
+  const readEpoch = CELL_EPOCHS.get(cell);
+  if (readEpoch === undefined) throw new TypeError("Invalid StoreCell.");
+  if (readEpoch(impl) === impl.epoch) return current;
+  const copied = copy(current);
+  cell.set(copied, store);
+  return copied;
 }
