@@ -41,6 +41,7 @@ Each has one owner and a test that fails before the change.
 | T8 | `clock(ms, { after })` takes only a clock beat; a clock after any other beat is `triggered(ended(beat), clock(ms))`. | `stage` | `packages/stage/test/timeline.types.test.ts`: `@ts-expect-error` on `after` a `scroll` beat |
 | T9 | An element's motions layer in list order by core's field rules whatever timelines their beats run on. | `stage` | a scroll motion and a triggered motion both setting `y` give the scroll's `y` plus the pop's, and a `.take()` triggered motion replaces it from its start |
 | T10 | On a timed clock, `scroll` and `view` timelines read the scroll position recorded as a value at times, so a reel can use them. | `stage` | a reel scene with a `scroll` beat renders the same frames in order and in shuffled order |
+| T11 | A motion's looping and its beats come from every timeline it runs in. | `core` | `motion(fn).in(scrollBeat).loop(500)` is not `loopsForever`, and `.in(a).in(b)` reports both beats; both fail today |
 
 ## Decisions
 
@@ -97,6 +98,10 @@ interface StageTimeline extends Timeline<StageInput> {
   `TriggerBeat`, `isScrollBeat` and `isInputBeat`.
 - `.in`, `.shows`, `.take`, `stagger` and `bind` take a beat, so any timeline. `.shows([from, to])` over scroll
   points becomes `.shows` over a `scroll` beat.
+- Whether a motion loops forever comes from its timelines, not from whether its window is a `Span`: a `.loop(ms)`
+  inside any finite timeline (a `scroll`, `view` or `triggered` beat included) does not loop forever, so the page
+  stops asking for frames when that timeline is idle. Chained `.in(a).in(b)` keeps both timelines, so stage
+  collects every beat a motion runs in (T11).
 
 ### 3. The timelines gerak ships
 
@@ -165,8 +170,8 @@ One pull request for the plan. Each slice gets its own cold review.
 
 | Slice | Scope | Done when |
 | --- | --- | --- |
-| 1 | Tests first: T1–T10 | T5 passes on the merged foundation; T1–T4 and T6–T10 fail for the reasons above |
-| 2 | Decisions 1, 1b and 2: the port, declared lookback, `Span` as a timeline, `beat(name, timeline)` beside the old forms | T1 and T6 green; existing tests green |
+| 1 | Tests first: T1–T11 | T5 passes on the merged foundation; T1–T4 and T6–T11 fail for the reasons above |
+| 2 | Decisions 1, 1b and 2: the port, declared lookback, `Span` as a timeline, `beat(name, timeline)` beside the old forms | T1, T6 and T11 green; existing tests green |
 | 3 | Decisions 3–4: the timelines and conditions | T2, T3, T8, T9 and T10 green |
 | 4 | Decision 5: the compositor reads `native` | T4 and T7 green; compositor browser tests green |
 | 5 | Decision 6: codemod, old forms deleted, docs, ADR | T5 green; `check`, `test:browser` and `pack:check` green |
