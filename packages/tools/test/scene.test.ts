@@ -103,7 +103,7 @@ describe("scene tools and events", () => {
       { kind: "time", ms: [1400] },
       ["card"],
       ["y"],
-      [{ kind: "trigger", name: "enter", at: 1000, value: 1, target: "card" }],
+      [{ kind: "value", name: "hovered", at: 1000, value: 1, target: "card" }],
     );
     expect(lifted[0]?.targets.card).toSatisfy(
       (card: unknown) =>

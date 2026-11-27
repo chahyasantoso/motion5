@@ -52,10 +52,6 @@ function asEventTarget(value: unknown): EventTargetLike | undefined {
   };
 }
 
-function castSelector(name: string): string {
-  return `[data-cast="${name.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"]`;
-}
-
 function containsTarget(node: unknown, target: unknown): boolean {
   if (!isObjectRecord(node) || !isObjectRecord(target)) return false;
   const contains: unknown = Reflect.get(node, "contains");
@@ -97,7 +93,8 @@ export function listen(port: Pick<Driver, "set">, options: ListenOptions = {}): 
       port.set(pageInputs, channel, set.size > 0 ? 1 : 0, name);
     };
 
-    for (const node of Array.from(root.querySelectorAll(castSelector(name)))) {
+    const selector = `[data-cast="${name.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"]`;
+    for (const node of Array.from(root.querySelectorAll(selector))) {
       const target = asEventTarget(node);
       if (target === undefined) continue;
 

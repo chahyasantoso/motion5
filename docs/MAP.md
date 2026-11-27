@@ -31,6 +31,7 @@ Public: `.`
 Public: `.`
 
 - `src/`: DOM and SVG renderer
+- `src/adapter/`: opt-in DOM interaction adapter
 
 ## packages/moves
 

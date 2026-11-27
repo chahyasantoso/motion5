@@ -43,6 +43,7 @@ export const OWNERS = {
   "packages/rig/src/ik/solve2d": "2D solve",
   "packages/rig/src/ik/solve3d": "3D solve",
   "packages/dom/src": "DOM and SVG renderer",
+  "packages/dom/src/adapter": "opt-in DOM interaction adapter",
   "packages/moves/src": "the one entry point",
   "packages/moves/src/parts/oscillation": "the private shake",
   "packages/moves/src/parts/coupling": "poses from an amount or a speed: squashes",
