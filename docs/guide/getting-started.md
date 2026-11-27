@@ -1,7 +1,7 @@
 # Getting started
 
-gerak makes motion from code. A **scene** is a function from time, and the events so far, to one value per target.
-A **player** runs a scene on a **driver** (a clock, the page's scroll, or your hand), and a renderer writes each value
+gerak makes motion from code. A **scene** is a function from time, and the input so far, to one value per target.
+A **player** runs a scene on a **driver** (a clock, the page's scroll, or your hand), which owns an `inputLog` with typed `set` and `trigger` writers and `input()`, and a renderer writes each value
 onto an element or a Three.js object.
 
 ## A scene on a plain page

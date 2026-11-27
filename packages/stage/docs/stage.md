@@ -80,6 +80,7 @@ The app owns rules and every state that lasts (what is selected, what is in a ja
 
 - **Values** (`value(contract, name, target?)`): how something is now, as a `State<number>` starting at 0 (`springTo`, `easeTo`, `transition`, and `follow` take it). `valueAt(contract, name, trigger, target?)` reads the value as it was when `trigger` arrived.
 - **Triggers** (`triggers(contract, name, target?)`): discrete moments with `at <= now` in arrival order (the retention window on a live clock, all of them on a timed clock), which `react` plays on.
+- **Sending from the app:** `mounted.set(contract, name, value, target?)` and `mounted.trigger(contract, name, value?, target?)` forward to `mounted.driver` and record into its `inputLog`, read back via `mounted.driver.input()`.
 - `state` and `tally` stay as folds for timed scenes; on a live page a fold sees only each name-and-target's latest entry and the retention window.
 
 ## Motions
