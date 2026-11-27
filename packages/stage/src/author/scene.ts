@@ -622,13 +622,11 @@ function isElement(value: unknown): value is Element {
   if (typeof value !== "object" || value === null) return false;
   const kind: unknown = Reflect.get(value, "kind");
   const name: unknown = Reflect.get(value, "name");
-  const opts: unknown = Reflect.get(value, "options");
   return (
     (kind === "box" || kind === "shape" || kind === "text") &&
     typeof name === "string" &&
     name !== "" &&
-    typeof opts === "object" &&
-    opts !== null
+    isScrollPoint(Reflect.get(value, "top"))
   );
 }
 
@@ -1325,11 +1323,9 @@ function membersOf(state: State): readonly MemberInput[] {
             );
   const memberFor = (element: SceneElement): MemberInput => {
     const entry = state.entries.get(element.name) ?? NO_ENTRY;
-    const watch = element.kind === "object" ? false : (element.options.watch ?? false);
     const base = {
       name: element.name,
       expect: expectOf(entry),
-      watch,
       inputs: staticInputsOf(entry),
       ...(entry.show.length > 0 ? { on: entry.show } : {}),
       ...(entry.scrollShow.length > 0 ? { onScroll: entry.scrollShow } : {}),

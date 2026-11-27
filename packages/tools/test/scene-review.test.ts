@@ -5,10 +5,12 @@ import { pathToFileURL } from "node:url";
 import {
   elapsedOf,
   motion,
+  pageInputs,
   pointer,
   scroll,
   state,
   transition,
+  value,
   type Input,
   type Pose2d,
   type Pose3d,
@@ -209,7 +211,6 @@ describe("gerak review on a value's shape", () => {
       stage({
         name: "mouth",
         expect: "settle",
-        watch: false,
         inputs: NO_INPUTS,
         kind: "actor",
         content: { kind: "stroke", path: line },
@@ -226,7 +227,6 @@ describe("gerak review on a value's shape", () => {
           stage({
             name: "mouth",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: { kind: "morph", shapes: [line, target] },
@@ -246,7 +246,6 @@ describe("gerak review on time itself", () => {
         {
           name: "snow",
           expect: ambient ? "ambient" : "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
@@ -268,7 +267,6 @@ describe("gerak review on time itself", () => {
         {
           name: "snow",
           expect: "ambient",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
@@ -391,7 +389,6 @@ describe("gerak review expectations and shape mismatches", () => {
     const orbMember: MemberInput = {
       name: "orb",
       expect: "ambient",
-      watch: false,
       inputs: NO_INPUTS,
       kind: "actor",
       content: { kind: "box" },
@@ -436,11 +433,10 @@ describe("gerak review expectations and shape mismatches", () => {
     const broken = directStage({
       beats: { show: [0, 400] },
       members: [
-        { name: "row", expect: "settle", watch: false, inputs: NO_INPUTS, kind: "list" },
+        { name: "row", expect: "settle", inputs: NO_INPUTS, kind: "list" },
         {
           name: "dot",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
@@ -474,7 +470,6 @@ describe("gerak review expectations and shape mismatches", () => {
         {
           name: "flake",
           expect: "ambient",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
@@ -499,7 +494,7 @@ describe("gerak review expectations and shape mismatches", () => {
   it("emits findings for frame shape_mismatch errors instead of throwing", () => {
     const mismatch = directStage({
       beats: { show: [0, 400] },
-      members: [{ name: "dots", expect: "settle", watch: false, inputs: NO_INPUTS, kind: "list" }],
+      members: [{ name: "dots", expect: "settle", inputs: NO_INPUTS, kind: "list" }],
       scene: () => ({ dots: [{ x: 0 }] }),
     });
     expect(review(mismatch).findings).toContain(
@@ -629,16 +624,12 @@ describe("driver probing and --events in gerak review", () => {
     expect(motionFindings(review(piece, {}, cache))).toEqual([]);
   });
 
-  it("probes watched target interaction events on unmoved settle members", () => {
-    const hovered = state(
-      false,
-      (cur, ev) => (ev.name === "enter" ? true : ev.name === "leave" ? false : cur),
-      { target: "btn" },
-    );
+  it("probes pageInputs interaction values on unmoved settle members", () => {
+    const hovered = value(pageInputs, "hovered", "btn");
     const piece = scene(
       { length: 400 },
-      box("btn", { watch: true }),
-      box("lid").moves((_t, ctx) => ({ y: hovered(ctx.time, ctx.events) ? -12 : 0 })),
+      box("btn"),
+      box("lid").moves((_t, ctx) => ({ y: hovered(ctx.time, ctx.events) > 0 ? -12 : 0 })),
     );
     expect(motionFindings(review(piece))).toEqual([]);
   });

@@ -86,7 +86,7 @@ export interface PageElement {
   readonly ownerSVGElement?: unknown;
 }
 
-/** Container queried by `mount` to bind the cast and listen for viewport pointer motion. */
+/** Container queried by `mount` to bind the cast. */
 export interface PageRoot {
   querySelector(selector: string): unknown;
   querySelectorAll(selector: string): ArrayLike<unknown>;
@@ -439,33 +439,6 @@ export function resolvePageStage(input: StageInput): Stage {
       `mount: every DOM element needs a selector or node (missing ${missing.join(", ")}).`,
     );
   return stage;
-}
-
-/** Returns passive pointermove attach/detach hooks on `doc` or `root`. */
-export function eventTargetOf(
-  root: PageRoot,
-  doc: PageDocument | undefined,
-): {
-  add(listener: (event: StageEvent) => void): void;
-  remove(listener: (event: StageEvent) => void): void;
-} {
-  if (doc?.addEventListener !== undefined && doc.removeEventListener !== undefined) {
-    const addFn = doc.addEventListener;
-    const removeFn = doc.removeEventListener;
-    return {
-      add: (listener) => Reflect.apply(addFn, doc, ["pointermove", listener, { passive: true }]),
-      remove: (listener) => Reflect.apply(removeFn, doc, ["pointermove", listener]),
-    };
-  }
-  if (root.addEventListener !== undefined && root.removeEventListener !== undefined) {
-    const addFn = root.addEventListener;
-    const removeFn = root.removeEventListener;
-    return {
-      add: (listener) => Reflect.apply(addFn, root, ["pointermove", listener, { passive: true }]),
-      remove: (listener) => Reflect.apply(removeFn, root, ["pointermove", listener]),
-    };
-  }
-  return { add: () => undefined, remove: () => undefined };
 }
 
 export function viewOfRoot(

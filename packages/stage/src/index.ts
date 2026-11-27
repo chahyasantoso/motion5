@@ -22,7 +22,6 @@ export {
   type Element,
   type Edges,
   type ElementBody,
-  type ElementOptions,
   type ObjectElement,
   type ObjectOptions,
   type ObjectView,

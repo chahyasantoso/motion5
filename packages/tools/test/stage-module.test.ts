@@ -43,7 +43,6 @@ const markedBy = (path: (rest: RestReader) => ReturnType<typeof level>): readonl
   {
     name: "stage",
     expect: "static",
-    watch: false,
     inputs: NO_INPUTS,
     kind: "actor",
     content: { kind: "box" },
@@ -51,7 +50,6 @@ const markedBy = (path: (rest: RestReader) => ReturnType<typeof level>): readonl
   {
     name: "dot",
     expect: "settle",
-    watch: false,
     inputs: NO_INPUTS,
     on: [{ kind: "beats", from: "go", to: "go" }],
     kind: "actor",
@@ -60,7 +58,6 @@ const markedBy = (path: (rest: RestReader) => ReturnType<typeof level>): readonl
   {
     name: "word",
     expect: "settle",
-    watch: false,
     inputs: NO_INPUTS,
     kind: "list",
     split: "letters",
@@ -68,7 +65,6 @@ const markedBy = (path: (rest: RestReader) => ReturnType<typeof level>): readonl
   {
     name: "mark",
     expect: "static",
-    watch: false,
     inputs: NO_INPUTS,
     kind: "actor",
     content: { kind: "stroke", path },
@@ -134,7 +130,6 @@ describe("gerak review of a member still ringing", () => {
         {
           name: "stage",
           expect: "static",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
@@ -142,7 +137,6 @@ describe("gerak review of a member still ringing", () => {
         {
           name: "dot",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: on.map((beat) => ({ kind: "beats" as const, from: beat, to: beat })),
           kind: "actor",
@@ -151,7 +145,6 @@ describe("gerak review of a member still ringing", () => {
         {
           name: "word",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "list",
           split: "letters",
@@ -159,7 +152,6 @@ describe("gerak review of a member still ringing", () => {
         {
           name: "mark",
           expect: "static",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
@@ -251,7 +243,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "stage",
             expect: "static",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: { kind: "box" },
@@ -259,7 +250,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "dot",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             on: [{ kind: "beats", from: "go", to: "go" }],
             kind: "actor",
@@ -268,7 +258,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "word",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "list",
             split: "letters",
@@ -276,7 +265,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "mark",
             expect: "static",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: {
@@ -290,7 +278,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "line",
             expect: "static",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: { kind: "stroke", path: level(0, 10, 0) },
@@ -307,7 +294,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "stage",
             expect: "static",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: { kind: "box" },
@@ -315,7 +301,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "dot",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             on: [{ kind: "beats", from: "go", to: "go" }],
             kind: "actor",
@@ -324,7 +309,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "word",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "list",
             split: "letters",
@@ -332,7 +316,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "a",
             expect: "static",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: {
@@ -343,7 +326,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "b",
             expect: "static",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: {
@@ -374,7 +356,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "dot",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: { kind: "box" },
@@ -382,7 +363,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "clock",
             expect: "static",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: {
@@ -412,7 +392,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "dot",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: { kind: "box" },
@@ -420,7 +399,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "clock",
             expect: "static",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: { kind: "readout", format: badFormat },
@@ -450,7 +428,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "dot",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             on: [
               { kind: "beats", from: "early", to: "early" },
@@ -471,7 +448,6 @@ describe("gerak review on a stage module", () => {
           {
             name: "dot",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: { kind: "box" },
@@ -488,17 +464,15 @@ describe("gerak review on a stage module", () => {
           {
             name: "outer",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             on: [{ kind: "beats", from: "late", to: "late" }],
             kind: "actor",
             content: { kind: "box" },
           },
-          { name: "dust", expect: "settle", watch: false, inputs: NO_INPUTS, kind: "list" },
+          { name: "dust", expect: "settle", inputs: NO_INPUTS, kind: "list" },
           {
             name: "solo",
             expect: "settle",
-            watch: false,
             inputs: NO_INPUTS,
             kind: "actor",
             content: { kind: "box" },
@@ -524,28 +498,6 @@ describe("gerak review on a stage module", () => {
     expect(nested.some((line) => /jumps/.test(line))).toBe(false);
   });
 
-  it("lets a watched member move only on events", () => {
-    const beats = { all: [0, 500] } as const;
-    expect(
-      findings(
-        directStage({
-          beats,
-          members: [
-            {
-              name: "play",
-              expect: "settle",
-              watch: true,
-              inputs: NO_INPUTS,
-              kind: "actor",
-              content: { kind: "box" },
-            },
-          ],
-          scene: () => ({}),
-        }),
-      ),
-    ).toEqual([]);
-  });
-
   it("finds a member changing before its first stretch and after its last, with the beat there", () => {
     expect(findings(outside)).toEqual([
       'dot changes at 16 ms (beat "intro"), before its beat "go" starts at 400 ms.',
@@ -561,7 +513,6 @@ describe("gerak review on a stage module", () => {
         {
           name: "dot",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: [
             { kind: "beats", from: "a", to: "a" },

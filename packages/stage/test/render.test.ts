@@ -33,7 +33,6 @@ describe("outlines", () => {
         {
           name: "blob",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "morph", shapes: [SQUARE, CIRCLE] },
@@ -58,7 +57,6 @@ describe("drawStrokes", () => {
         {
           name: "follower",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: {
@@ -70,7 +68,6 @@ describe("drawStrokes", () => {
         {
           name: "leader",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "stroke", path: line },
@@ -92,7 +89,6 @@ describe("drawStrokes", () => {
         {
           name: "a",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: {
@@ -103,7 +99,6 @@ describe("drawStrokes", () => {
         {
           name: "b",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: {
@@ -114,7 +109,6 @@ describe("drawStrokes", () => {
         {
           name: "c",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: {

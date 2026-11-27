@@ -18,20 +18,15 @@ import type { Path } from "./cast";
 import type { Carry, RestReader } from "./layout";
 import type { Limits } from "./stage";
 
-/** What stays true of an element in any scene: whether pointer events reach it. */
-export interface ElementOptions {
-  readonly watch?: boolean | undefined;
-}
-
 /** Options of `box`: whether it binds to a list of parts, or a media clip. */
-export interface BoxOptions extends ElementOptions {
+export interface BoxOptions {
   readonly parts?: boolean | undefined;
   /** Binds a `<video>` or `<audio>` whose playhead the scene owns. */
   readonly media?: boolean | undefined;
 }
 
 /** Options of `text`: how to split it into parts. */
-export interface TextOptions extends ElementOptions {
+export interface TextOptions {
   readonly split?: "letters" | "words" | undefined;
 }
 
@@ -59,20 +54,17 @@ export type ElementBody =
       readonly name: string;
       readonly parts?: boolean | undefined;
       readonly media?: true | undefined;
-      readonly options: ElementOptions;
     }
   | {
       readonly kind: "shape";
       readonly name: string;
       readonly outline: Outline;
-      readonly options: ElementOptions;
     }
   | {
       readonly kind: "text";
       readonly name: string;
       readonly content?: ((time: Time) => string) | undefined;
       readonly split: "letters" | "words" | undefined;
-      readonly options: ElementOptions;
     };
 
 /** An element of a piece, made once with a name; `kind` says what it is. */
@@ -178,13 +170,6 @@ function edged(made: ElementBody): Element {
   return full;
 }
 
-function optionsOf(options: ElementOptions | undefined): ElementOptions {
-  const { watch } = options ?? {};
-  return Object.freeze({
-    ...(watch === undefined ? {} : { watch }),
-  });
-}
-
 /** A page element styled by CSS; `parts: true` binds it to a list of parts. */
 export function box<N extends string = string>(
   name: N,
@@ -198,14 +183,12 @@ export function box<N extends string = string>(name: N, options?: BoxOptions): E
   const own = named("box", name);
   if (options?.parts === true && options?.media === true)
     throw new TypeError(`box "${own}": \`media: true\` cannot be combined with \`parts: true\`.`);
-  const opts = optionsOf(options);
   return options?.parts === true
-    ? edged({ kind: "box", name: own, parts: true, options: opts })
+    ? edged({ kind: "box", name: own, parts: true })
     : edged({
         kind: "box",
         name: own,
         ...(options?.media === true ? { media: true } : {}),
-        options: opts,
       });
 }
 
@@ -217,9 +200,8 @@ function isMorph(value: ShapeSource): value is MorphSource {
 export function shape<N extends string = string>(
   name: N,
   outline: ShapeSource,
-  options?: ElementOptions,
 ): Element & { readonly name: N };
-export function shape(name: string, outline: ShapeSource, options?: ElementOptions): Element {
+export function shape(name: string, outline: ShapeSource): Element {
   const drawn: Outline = isMorph(outline)
     ? { kind: "morph", base: outline.base, targets: outline.targets }
     : { kind: "path", path: outline };
@@ -227,7 +209,6 @@ export function shape(name: string, outline: ShapeSource, options?: ElementOptio
     kind: "shape",
     name: named("shape", name),
     outline: Object.freeze(drawn),
-    options: optionsOf(options),
   });
 }
 
@@ -239,23 +220,21 @@ export function text<N extends string = string>(
 export function text<N extends string = string>(
   name: N,
   content: (time: Time) => string,
-  options?: ElementOptions,
 ): Element & { readonly name: N };
 export function text<N extends string = string>(
   name: N,
   second?: TextOptions | ((time: Time) => string),
-  third?: ElementOptions,
+  third?: unknown,
 ): Element {
   const own = named("text", name);
   if (typeof second === "function") {
-    if (third !== undefined && Reflect.get(third, "split") !== undefined)
+    if (third !== undefined && typeof third === "object" && third !== null && "split" in third)
       throw new TypeError(`text "${own}": a readout cannot be split into parts.`);
     return edged({
       kind: "text",
       name: own,
       content: second,
       split: undefined,
-      options: optionsOf(third),
     });
   }
   if (second !== undefined && (typeof second !== "object" || second === null))
@@ -264,7 +243,6 @@ export function text<N extends string = string>(
     kind: "text",
     name: own,
     split: second?.split,
-    options: optionsOf(second),
   });
 }
 

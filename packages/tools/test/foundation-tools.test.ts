@@ -307,7 +307,7 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
     const built = compileScene(
       scene(
         { length: 160 },
-        box("idle", { watch: true }).moves(
+        box("idle").moves(
           motion((t, ctx): Pose2d => {
             const events = ctx?.events ?? [];
             const val = sprung(t, events) + follower(t, events);

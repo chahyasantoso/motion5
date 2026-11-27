@@ -96,7 +96,6 @@ describe("compileScene and compileDirectStage", () => {
         {
           name: "x.y",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
@@ -104,7 +103,6 @@ describe("compileScene and compileDirectStage", () => {
         {
           name: "dup",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: [{ kind: "beats", from: "missing", to: "missing" }],
           kind: "actor",
@@ -113,7 +111,6 @@ describe("compileScene and compileDirectStage", () => {
         {
           name: "late",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: [{ kind: "beats", from: "b", to: "a" }],
           kind: "actor",
@@ -122,7 +119,6 @@ describe("compileScene and compileDirectStage", () => {
         {
           name: "blob",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: {
@@ -172,7 +168,6 @@ describe("compileScene and compileDirectStage", () => {
         {
           name: "blob",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "morph", shapes: [SQUARE, CIRCLE] },

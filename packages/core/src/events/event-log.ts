@@ -29,8 +29,6 @@ export interface InputLog {
     value?: number,
     target?: TargetOf<T[K]> | undefined,
   ): void;
-  /** Records an entry with no contract. */
-  add(entry: InputEntry): void;
   /** Empties the log. */
   clear(): void;
 }
@@ -550,10 +548,6 @@ export function inputLog(options?: { readonly windowMs?: number }): InputLog {
         target === undefined
           ? { kind: "trigger", name, at, value }
           : { kind: "trigger", name, at, value, target };
-      insert(entry);
-    },
-    /** Records an entry with no contract. */
-    add(entry) {
       insert(entry);
     },
     clear() {

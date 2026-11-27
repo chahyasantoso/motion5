@@ -30,11 +30,10 @@ describe("frame", () => {
     const stage = compiled({
       beats: { a: [0, 1000] },
       members: [
-        { name: "dots", expect: "settle", watch: false, inputs: NO_INPUTS, kind: "list" },
+        { name: "dots", expect: "settle", inputs: NO_INPUTS, kind: "list" },
         {
           name: "word",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "list",
           split: "letters",
@@ -59,16 +58,14 @@ describe("frame", () => {
         {
           name: "box",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
         },
-        { name: "dots", expect: "settle", watch: false, inputs: NO_INPUTS, kind: "list" },
+        { name: "dots", expect: "settle", inputs: NO_INPUTS, kind: "list" },
         {
           name: "card",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
@@ -98,7 +95,6 @@ describe("frame", () => {
         {
           name: "always",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
@@ -106,7 +102,6 @@ describe("frame", () => {
         {
           name: "early",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: [{ kind: "beats", from: "a", to: "a" }],
           kind: "actor",
@@ -115,7 +110,6 @@ describe("frame", () => {
         {
           name: "gap",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: [{ kind: "beats", from: "b", to: "b" }],
           kind: "actor",
@@ -124,7 +118,6 @@ describe("frame", () => {
         {
           name: "tail",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: [{ kind: "beats", from: "c", to: "c" }],
           kind: "actor",
@@ -153,7 +146,6 @@ describe("frame", () => {
         {
           name: "one",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: [
             { kind: "beats", from: "a", to: "a" },
@@ -165,7 +157,6 @@ describe("frame", () => {
         {
           name: "two",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: [{ kind: "beats", from: "a", to: "b" }],
           kind: "actor",
@@ -174,7 +165,6 @@ describe("frame", () => {
         {
           name: "three",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: [{ kind: "beats", from: "b", to: "b" }],
           kind: "actor",
@@ -208,7 +198,6 @@ describe("frame", () => {
         {
           name: "shot",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           on: [{ kind: "beats", from: "c", to: "c" }],
           kind: "actor",
@@ -241,7 +230,6 @@ describe("frame", () => {
         {
           name: "card",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },
@@ -276,7 +264,6 @@ describe("frame", () => {
         {
           name: "toString",
           expect: "settle",
-          watch: false,
           inputs: NO_INPUTS,
           kind: "actor",
           content: { kind: "box" },

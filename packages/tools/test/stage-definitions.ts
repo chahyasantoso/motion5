@@ -47,7 +47,6 @@ export const cleanDefinition: StageInput = {
     {
       name: "stage",
       expect: "static",
-      watch: false,
       inputs: NO_INPUTS,
       kind: "actor",
       content: { kind: "box" },
@@ -55,7 +54,6 @@ export const cleanDefinition: StageInput = {
     {
       name: "dot",
       expect: "settle",
-      watch: false,
       inputs: NO_INPUTS,
       on: [{ kind: "beats", from: "go", to: "go" }],
       kind: "actor",
@@ -64,7 +62,6 @@ export const cleanDefinition: StageInput = {
     {
       name: "word",
       expect: "settle",
-      watch: false,
       inputs: NO_INPUTS,
       kind: "list",
       split: "letters",
@@ -72,7 +69,6 @@ export const cleanDefinition: StageInput = {
     {
       name: "mark",
       expect: "static",
-      watch: false,
       inputs: NO_INPUTS,
       kind: "actor",
       content: { kind: "box" },
@@ -95,7 +91,6 @@ export const unusedDefinition: StageInput = {
     {
       name: "stage",
       expect: "static",
-      watch: false,
       inputs: NO_INPUTS,
       kind: "actor",
       content: { kind: "box" },
@@ -103,7 +98,6 @@ export const unusedDefinition: StageInput = {
     {
       name: "dot",
       expect: "settle",
-      watch: false,
       inputs: NO_INPUTS,
       on: [{ kind: "beats", from: "go", to: "go" }],
       kind: "actor",
@@ -112,7 +106,6 @@ export const unusedDefinition: StageInput = {
     {
       name: "word",
       expect: "settle",
-      watch: false,
       inputs: NO_INPUTS,
       kind: "list",
       split: "letters",
@@ -120,7 +113,6 @@ export const unusedDefinition: StageInput = {
     {
       name: "spare",
       expect: "settle",
-      watch: false,
       inputs: NO_INPUTS,
       kind: "actor",
       content: { kind: "box" },

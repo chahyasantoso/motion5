@@ -75,15 +75,7 @@ describe("core input readers", () => {
 
   it("triggers returns retained triggers with at <= now in arrival order including other and point", () => {
     const log = inputLog();
-    log.add({
-      kind: "trigger",
-      name: "hit",
-      at: 200,
-      value: 2,
-      target: "a",
-      other: "wall",
-      point: { x: 12, y: 34, z: 5 },
-    });
+    log.trigger(200, sceneInputs, "hit", 2, "a");
     log.trigger(100, sceneInputs, "hit", 3, "a");
     log.trigger(150, sceneInputs, "hit", 4, "b");
     log.trigger(300, sceneInputs, "hit", 5, "a");
@@ -96,6 +88,31 @@ describe("core input readers", () => {
 
     const mid = hitA(liveAt(200), log.input);
     expect(mid).toEqual([
+      { at: 200, value: 2, target: "a", serial: 1 },
+      { at: 100, value: 3, target: "a", serial: 2 },
+    ]);
+    // Returning to a larger input does not mutate earlier snapshots.
+    expect(early).toHaveLength(1);
+
+    const allUntimed = hitA({ progress: 0, clock: UNTIMED }, log.input);
+    expect(allUntimed.map((t) => t.at)).toEqual([200, 100, 300]);
+
+    const withContact = triggers(
+      sceneInputs,
+      "hit",
+      "a",
+    )(liveAt(200), [
+      {
+        kind: "trigger",
+        name: "hit",
+        at: 200,
+        value: 2,
+        target: "a",
+        other: "wall",
+        point: { x: 12, y: 34, z: 5 },
+      },
+    ]);
+    expect(withContact).toEqual([
       {
         at: 200,
         value: 2,
@@ -104,13 +121,7 @@ describe("core input readers", () => {
         other: "wall",
         point: { x: 12, y: 34, z: 5 },
       },
-      { at: 100, value: 3, target: "a", serial: 2 },
     ]);
-    // Returning to a larger input does not mutate earlier snapshots.
-    expect(early).toHaveLength(1);
-
-    const allUntimed = hitA({ progress: 0, clock: UNTIMED }, log.input);
-    expect(allUntimed.map((t) => t.at)).toEqual([200, 100, 300]);
   });
 
   it("triggers isolates probe stores and refolds cleanly when inputLog drops aged entries", () => {

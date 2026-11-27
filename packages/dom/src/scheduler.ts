@@ -1,12 +1,4 @@
-import {
-  INPUT_EVENTS,
-  clamp,
-  elapsedOf,
-  inputs,
-  pageInputs,
-  type Signal,
-  type Time,
-} from "@gerak/core";
+import { INPUT_EVENTS, elapsedOf, pageInputs, type Signal, type Time } from "@gerak/core";
 import { play, type Driver, type Player } from "@gerak/player";
 import {
   check,
@@ -27,12 +19,10 @@ import { HELD_CLOCK, hostDriver, pageFrames, type FrameSource } from "./frames";
 import type { HandoffState } from "./handoff";
 import {
   CLOCK_FRAMES_OFF,
-  eventTargetOf,
   isDomElement,
   isObjectRecord,
   readMaxScrollOf,
   readScrollYOf,
-  readViewportOf,
   unreachable,
   type BoundTarget,
   type MediaState,
@@ -42,7 +32,6 @@ import {
   type PageElement,
   type PageRoot,
   type PageScrollTarget,
-  type StageEvent,
   type StageValues,
 } from "./host";
 import {
@@ -52,28 +41,6 @@ import {
   type LiveClockScrollSource,
 } from "./live-clock";
 import { sameRest } from "./measure-dom";
-
-const WATCHED_TRIGGERS = [
-  ["pointerenter", "enter"],
-  ["pointerleave", "leave"],
-  ["pointerdown", "down"],
-  ["pointerup", "up"],
-  ["click", "click"],
-  ["focusin", "focus"],
-  ["focusout", "blur"],
-] as const;
-
-const WATCHED_CONTRACT = inputs({
-  triggers: {
-    enter: {},
-    leave: {},
-    down: {},
-    up: {},
-    click: {},
-    focus: {},
-    blur: {},
-  },
-});
 
 const ROOT_TARGETS = new WeakMap<object, string>();
 let nextRootTargetId = 0;
@@ -103,15 +70,13 @@ const IN_GIVEN_SCROLL = new WeakSet<Driver>();
 const REENTERED_GIVEN = new WeakMap<Driver, Set<object>>();
 const SKIP_GIVEN_ONCE = new WeakMap<Driver, WeakSet<object>>();
 
-function mergeMemberInput(map: Map<string, InputNeed>, name: string, added: InputNeed): boolean {
+function mergeMemberInput(map: Map<string, InputNeed>, name: string, added: InputNeed): void {
   const prev = map.get(name);
-  const next: InputNeed = {
+  map.set(name, {
     scroll: (prev?.scroll ?? false) || added.scroll,
     pointer: (prev?.pointer ?? false) || added.pointer,
     events: (prev?.events ?? false) || added.events,
-  };
-  map.set(name, next);
-  return next.pointer && !(prev?.pointer ?? false);
+  });
 }
 
 export interface MountRuntimeConfig {
@@ -152,7 +117,7 @@ export interface MountRuntime {
   dispose(allNodes: readonly PageElement[]): void;
 }
 
-/** Coordinates clocks, coalesced inputs, lazy pointer listening, and per-channel routing. */
+/** Coordinates clocks, scroll waking, and per-channel routing. */
 export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   let stage = config.initialStage;
   const {
@@ -255,21 +220,12 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     return false;
   };
 
-  let pointerAttached = false;
-  const needsPointer = (): boolean => {
-    for (const need of memberInputs.values()) if (need.pointer) return true;
-    return false;
-  };
-  let syncPointerListener: () => void = () => undefined;
-
   const drainFrameInputs = (): void => {
     if (frameInputs.size === 0) return;
-    let discoveredPointer = false;
     for (const [name, need] of frameInputs) {
-      if (mergeMemberInput(memberInputs, name, need)) discoveredPointer = true;
+      mergeMemberInput(memberInputs, name, need);
     }
     frameInputs.clear();
-    if (discoveredPointer) syncPointerListener();
   };
 
   let fresh = false;
@@ -293,8 +249,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   let ambientNames = stage.members
     .filter((member) => member.expect === "ambient")
     .map((member) => member.name);
-
-  let pendingPointer: { readonly x: number; readonly y: number } | undefined;
 
   const ownScrollTarget = options.scrollTarget !== undefined && options.scrollTarget !== view;
   const scrollEntryTarget = ownScrollTarget ? rootTargetName(root) : undefined;
@@ -334,14 +288,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       hasMedia ||
       movingNow(afterMs < activeUntil).size > 0);
 
-  const flushPendingPointer = (): void => {
-    const pointerSample = pendingPointer;
-    if (pointerSample === undefined) return;
-    pendingPointer = undefined;
-    driver.set(pageInputs, INPUT_EVENTS.pointerX, pointerSample.x);
-    driver.set(pageInputs, INPUT_EVENTS.pointerY, pointerSample.y);
-  };
-
   const syncScrollForNonLive = (): void => {
     const nextY = readScrollYOf(scrollTarget, root);
     if (nextY !== lastScrollY) {
@@ -370,37 +316,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     },
   };
 
-  const unwatch: (() => void)[] = [];
-  const watchTarget = (name: string, node: PageElement): (() => void) => {
-    const removers = WATCHED_TRIGGERS.map(([type, triggerName]) => {
-      const listener = (): void => {
-        flushPendingPointer();
-        if (liveCtrl !== undefined && readsScroll()) liveCtrl.syncScroll(scrollSource);
-        driver.trigger(WATCHED_CONTRACT, triggerName, 1, name);
-      };
-      node.addEventListener(type, listener);
-      return () => node.removeEventListener(type, listener);
-    });
-    return () => {
-      for (const remove of removers) remove();
-    };
-  };
-  for (const target of targets) {
-    const member = target.member;
-    if (!member.watch) continue;
-    switch (member.kind) {
-      case "list":
-        target.items.forEach((item, index) =>
-          unwatch.push(watchTarget(`${member.name}.${index}`, item)),
-        );
-        break;
-      case "actor":
-        unwatch.push(watchTarget(member.name, target.node));
-        break;
-      default:
-        return unreachable(member);
-    }
-  }
+  const cleanups: (() => void)[] = [];
 
   const onScroll = (): void => {
     if (liveCtrl !== undefined) {
@@ -413,40 +329,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     driver.set(pageInputs, INPUT_EVENTS.scroll, nextY, scrollEntryTarget);
   };
   if (timed === undefined) scrollTarget?.addEventListener("scroll", onScroll, { passive: true });
-
-  const onPointerMove = (event: StageEvent): void => {
-    if (event.clientX === undefined || event.clientY === undefined) return;
-    const vp = readViewportOf(options, view, scrollTarget, root);
-    if (!(vp.width > 0 && vp.height > 0)) return;
-    const x = clamp(event.clientX / vp.width, 0, 1);
-    const y = clamp(event.clientY / vp.height, 0, 1);
-    if (liveCtrl !== undefined) {
-      pendingPointer = { x, y };
-      liveCtrl.wake();
-      return;
-    }
-    driver.set(pageInputs, INPUT_EVENTS.pointerX, x);
-    driver.set(pageInputs, INPUT_EVENTS.pointerY, y);
-  };
-
-  const pointerTarget = eventTargetOf(root, doc);
-  syncPointerListener = (): void => {
-    if (!live || timed !== undefined) {
-      if (pointerAttached) {
-        pointerTarget.remove(onPointerMove);
-        pointerAttached = false;
-      }
-      return;
-    }
-    const want = needsPointer();
-    if (want && !pointerAttached) {
-      pointerTarget.add(onPointerMove);
-      pointerAttached = true;
-    } else if (!want && pointerAttached) {
-      pointerTarget.remove(onPointerMove);
-      pointerAttached = false;
-    }
-  };
 
   let lastFrame: FrameOutput | undefined;
   let lastSceneMs = 0;
@@ -502,20 +384,16 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     stage.cues.length === 0 ? {} : { cues: stage.cues },
   );
   drainFrameInputs();
-  syncPointerListener();
 
   let seenScrollSeq = liveCtrl?.scrollSeq() ?? 0;
   let seenPointerSeq = liveCtrl?.pointerSeq() ?? 0;
   let seenEventsSeq = liveCtrl?.eventsSeq() ?? 0;
 
   if (liveCtrl !== undefined) {
-    unwatch.push(liveCtrl.addScrollSource(scrollSource));
-    unwatch.push(
+    cleanups.push(liveCtrl.addScrollSource(scrollSource));
+    cleanups.push(
       liveCtrl.addParticipant({
-        beforeTick: () => {
-          if (!live) return;
-          flushPendingPointer();
-        },
+        beforeTick: () => undefined,
         onTick: (nowMs) => {
           if (!live) return;
           const nextScrollSeq = liveCtrl.scrollSeq();
@@ -575,14 +453,14 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       }),
     );
   } else if (timed !== undefined) {
-    unwatch.push(
+    cleanups.push(
       timed.subscribe(() => {
         if (live) playerStep?.();
       }),
     );
   } else if (given !== undefined) {
     const mountToken = {};
-    unwatch.push(
+    cleanups.push(
       given.subscribe(() => {
         if (!live) return;
         const skipSet = SKIP_GIVEN_ONCE.get(given);
@@ -604,7 +482,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
         IN_GIVEN_SCROLL.add(given);
         try {
           syncScrollForNonLive();
-          flushPendingPointer();
         } finally {
           IN_GIVEN_SCROLL.delete(given);
         }
@@ -703,14 +580,12 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     const depsOk =
       !forceHandOff && handoff.depsUnchanged(readMaxScrollOf(doc), currentLines, currentRest);
     if (liveCtrl !== undefined) {
-      flushPendingPointer();
       if (readsScroll()) liveCtrl.syncScroll(scrollSource);
       seenScrollSeq = liveCtrl.scrollSeq();
       seenPointerSeq = liveCtrl.pointerSeq();
       seenEventsSeq = liveCtrl.eventsSeq();
     } else {
       syncScrollForNonLive();
-      flushPendingPointer();
     }
     if (!depsOk) runHandOff();
     else if (handoff.hasTriggers) {
@@ -797,7 +672,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       for (const stop of stops) stop();
       player.replace(sceneSignal, nextStage.cues);
       drainFrameInputs();
-      syncPointerListener();
       stops = (options.binders ?? []).map((binder) => binder.start(player, stage));
       drainFrameInputs();
       if (liveCtrl !== undefined && needsFrame(clockMs())) liveCtrl.wake();
@@ -807,10 +681,6 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       live = false;
       cancelRemeasure();
       scrollTarget?.removeEventListener("scroll", onScroll);
-      if (pointerAttached) {
-        pointerTarget.remove(onPointerMove);
-        pointerAttached = false;
-      }
       if (
         view !== undefined &&
         isObjectRecord(view) &&
@@ -820,7 +690,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       }
       observer?.disconnect();
       fonts?.removeEventListener("loadingdone", fontsLoaded);
-      for (const stop of unwatch) stop();
+      for (const stop of cleanups) stop();
       handoff.release();
       player.dispose();
       timed?.dispose();

@@ -19,7 +19,6 @@ import { visibility, windowOf, type Window } from "./timeline";
 export type Member = {
   readonly name: string;
   readonly expect: Expect;
-  readonly watch: boolean;
   /** Input streams statically known to affect this member's pose or visibility. */
   readonly inputs: InputNeed;
   /** Selector of the DOM nodes this member binds to: `[data-cast="<name>"]`; an object has none. */
@@ -41,7 +40,6 @@ export type Member = {
 export type MemberInput = {
   readonly name: string;
   readonly expect: Expect;
-  readonly watch: boolean;
   readonly inputs: InputNeed;
   readonly on?: readonly Stretch[] | undefined;
   readonly onScroll?: readonly ScrollWindow[] | undefined;
@@ -78,7 +76,7 @@ export interface Stage {
   readonly scene: (context: SceneContext) => unknown;
   /** Which members show at `ms`, by name; one shared record per stretch of time. */
   readonly visibleAt: (ms: number) => Readonly<Record<string, boolean>>;
-  /** Equal for two stages that mount on the same elements: duration, names, kinds, nesting, watch, texts. */
+  /** Equal for two stages that mount on the same elements: duration, names, kinds, nesting, texts. */
   readonly signature: string;
 }
 
@@ -290,7 +288,6 @@ function compileMembers(
     const base = {
       name,
       expect: spec.expect,
-      watch: spec.watch,
       inputs: Object.freeze({ ...spec.inputs }),
       ...(node === undefined ? {} : { node }),
       ...(on === undefined ? {} : { on }),
@@ -349,12 +346,7 @@ function compileLimits(
 
 function signatureOf(durationMs: number, members: readonly Member[]): string {
   const serializedMembers = members.map((member) => {
-    const own = [
-      member.name,
-      member.kind,
-      member.watch,
-      ...(member.node === undefined ? [] : [member.node]),
-    ];
+    const own = [member.name, member.kind, ...(member.node === undefined ? [] : [member.node])];
     switch (member.kind) {
       case "actor":
         return member.media === true

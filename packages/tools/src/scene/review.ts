@@ -564,7 +564,7 @@ function stretchOf(beats: readonly Beat[], [from, to]: Window): { start: Beat; e
   return { start, end };
 }
 
-const WATCH_PROBE_EVENTS = ["enter", "down", "click", "focus"] as const;
+const PAGE_INTERACTION_VALUES = ["hovered", "pressed", "focused"] as const;
 
 /** Probes synthetic input samples for an unmoved settle member under its own reported driver. */
 function movedUnderDriver(
@@ -654,13 +654,10 @@ function movedUnderDriver(
           ])
         )
           return true;
-        for (const watched of stage.members) {
-          if (!watched.watch) continue;
-          for (const name of WATCH_PROBE_EVENTS)
+        for (const member of stage.members) {
+          for (const name of PAGE_INTERACTION_VALUES)
             if (
-              differs(liveAt(500), [
-                { kind: "trigger", name, at: 0, value: 1, target: watched.name },
-              ])
+              differs(liveAt(500), [{ kind: "value", name, at: 0, value: 1, target: member.name }])
             )
               return true;
         }
@@ -693,7 +690,7 @@ function stageMemberFindings(
 
     switch (member.expect) {
       case "settle":
-        if (reviewed.kind === "member" && !member.watch && unmoved) {
+        if (reviewed.kind === "member" && unmoved) {
           const drive = evaluated
             .find((sample) => sample.drives.has(member.name))
             ?.drives.get(member.name);
@@ -708,7 +705,7 @@ function stageMemberFindings(
         }
         break;
       case "ambient":
-        if (reviewed.kind === "member" && !member.watch && unmoved)
+        if (reviewed.kind === "member" && unmoved)
           found.push(
             `ambient member "${reviewed.name}" never moves; an ambient member keeps moving.`,
           );

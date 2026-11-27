@@ -4,6 +4,7 @@ import {
   inputs,
   liveAt,
   motion,
+  pageInputs,
   pointer,
   scroll,
   springTo,
@@ -217,7 +218,7 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
     Reflect.deleteProperty(globalThis, BINDER_CASTS);
   });
 
-  it("coalesces burst scroll and pointermove events to at most one sample per rAF tick", () => {
+  it("coalesces burst scroll events to at most one sample per rAF tick and attaches no pointer listener", () => {
     const tracker = new FakeNode("tracker");
     const scrollTarget = new FakeScrollTarget();
     const root = new FakeRoot([tracker], scrollTarget);
@@ -244,12 +245,12 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
     });
 
     expect(sceneRuns).toBe(1);
+    expect(root.listenerCount("pointermove")).toBe(0);
 
     for (let i = 1; i <= 20; i += 1) {
       ms = i;
       scrollTarget.scrollY = i * 15;
       scrollTarget.fireScroll();
-      root.fire("pointermove", { clientX: i * 40, clientY: 120 });
     }
 
     expect(sceneRuns).toBe(1);
@@ -259,55 +260,9 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
     expect(mounted.driver.input().filter((event) => event.name === INPUT_EVENTS.scroll)).toEqual([
       { kind: "value", name: INPUT_EVENTS.scroll, at: 20, value: 300 },
     ]);
-    expect(mounted.driver.input().filter((event) => event.name === INPUT_EVENTS.pointerX)).toEqual([
-      { kind: "value", name: INPUT_EVENTS.pointerX, at: 20, value: 0.8 },
-    ]);
-    expect(mounted.driver.input().filter((event) => event.name === INPUT_EVENTS.pointerY)).toEqual([
-      { kind: "value", name: INPUT_EVENTS.pointerY, at: 20, value: 0.15 },
-    ]);
-    expect(tracker.style.transform).toBe("translate3d(80px, 300px, 0px)");
+    expect(tracker.style.transform).toBe("translate3d(50px, 300px, 0px)");
 
     mounted.dispose();
-  });
-
-  it("attaches pointermove listener lazily only when the scene reads pointer", () => {
-    const a = new FakeNode("card");
-    const rootScroll = new FakeRoot([a]);
-    const scrollOnly = scene(
-      { length: 1000 },
-      box("card").moves(motion((t, ctx): Pose2d => ({ y: scroll.y(t, ctx?.events ?? []) }))),
-    );
-    const mScroll = mount(scrollOnly, {
-      root: rootScroll,
-      frames: fakeFrames(),
-      clock: "live",
-      now: () => 0,
-    });
-    expect(rootScroll.listenerCount("pointermove")).toBe(0);
-
-    const b = new FakeNode("card");
-    const rootPointer = new FakeRoot([b]);
-    const pointerPiece = scene(
-      { length: 1000 },
-      box("card").moves(motion((t, ctx): Pose2d => ({ x: pointer.x(t, ctx?.events ?? []) }))),
-    );
-    const mPointer = mount(pointerPiece, {
-      root: rootPointer,
-      frames: fakeFrames(),
-      clock: "live",
-      now: () => 0,
-    });
-    expect(rootPointer.listenerCount("pointermove")).toBe(1);
-
-    mPointer.replace(scrollOnly);
-    expect(rootPointer.listenerCount("pointermove")).toBe(0);
-
-    mPointer.replace(pointerPiece);
-    expect(rootPointer.listenerCount("pointermove")).toBe(1);
-
-    mPointer.dispose();
-    expect(rootPointer.listenerCount("pointermove")).toBe(0);
-    mScroll.dispose();
   });
 
   it("routes scroll, pointer, and discrete event ticks only to elements reading that channel", () => {
@@ -363,7 +318,7 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
     expect([sRuns, pRuns, eRuns]).toEqual([2, 1, 1]);
 
     ms = 32;
-    root.fire("pointermove", { clientX: 500, clientY: 100 });
+    mounted.set(pageInputs, INPUT_EVENTS.pointerX, 0.8);
     frames.tick(32);
     expect([sRuns, pRuns, eRuns]).toEqual([2, 2, 1]);
 
@@ -558,7 +513,7 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
     expect(afterCaller).toEqual(afterControl);
   });
 
-  it("tracks lazy 2D list part inputs for pointermove attachment and per-channel routing", () => {
+  it("tracks lazy 2D list part inputs for per-channel routing", () => {
     const part0 = new FakeNode("items");
     const part1 = new FakeNode("items");
     const scrollTarget = new FakeScrollTarget();
@@ -576,7 +531,7 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
       ),
     );
     const mounted = mount(piece, { root, scrollTarget, frames, clock: "live", now: () => ms });
-    expect(root.listenerCount("pointermove")).toBe(1);
+    expect(root.listenerCount("pointermove")).toBe(0);
 
     ms = 50;
     scrollTarget.scrollY = 45;
@@ -585,7 +540,7 @@ describe("Slice 4 foundation: @gerak/dom coalescing, routing, SVG placement, bin
     expect(part0.style.transform).toBe("translate3d(50px, 45px, 0px)");
 
     ms = 80;
-    root.fire("pointermove", { clientX: 800, clientY: 100 });
+    mounted.set(pageInputs, INPUT_EVENTS.pointerX, 0.8);
     frames.tick(ms);
     expect(part0.style.transform).toBe("translate3d(80px, 45px, 0px)");
     expect(part1.style.transform).toBe("translate3d(90px, 45px, 0px)");
