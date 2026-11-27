@@ -126,30 +126,39 @@ describe("useSignal", () => {
   });
 });
 
-describe("useWatch", () => {
-  it("logs the events of the element its ref lands on, and stops when the component leaves", async () => {
-    const { eventDriver } = await import("@gerak/dom");
-    const { useWatch } = await import("@gerak/react");
-    const driver = eventDriver({
-      clock: () => 0,
-      frames: { requestFrame: () => 1, cancelFrame: () => undefined },
-    });
-    const listeners = new Map<string, () => void>();
-    const node = {
-      addEventListener: (type: string, listener: () => void) => listeners.set(type, listener),
-      removeEventListener: (type: string) => listeners.delete(type),
+describe("usePlayer with liveClock", () => {
+  it("runs a liveClock driver and disposes it when the component leaves", async () => {
+    const { liveClock } = await import("@gerak/dom");
+    const queued = new Map<number, (time: number) => void>();
+    let next = 1;
+    let ms = 0;
+    const frames = {
+      requestFrame(listener: (time: number) => void) {
+        queued.set(next, listener);
+        return next++;
+      },
+      cancelFrame(handle: number) {
+        queued.delete(handle);
+      },
     };
-    const Card: FC = () => createElement("div", { ref: useWatch(driver, "card") });
+    const tap = inputs({ triggers: { ping: {} } });
+    const createClock = () => liveClock({ now: () => ms, frames, settleMs: 300 });
+    let captured: ReturnType<typeof createClock> | undefined;
+    const Card: FC = () => {
+      const playing = usePlayer(scene, createClock);
+      captured = playing?.driver;
+      return null;
+    };
     let renderer: ReturnType<typeof create> | undefined;
     await act(() => {
-      renderer = create(createElement(Card), { createNodeMock: () => node });
+      renderer = create(createElement(Card));
     });
-    listeners.get("pointerenter")?.();
-    expect(driver.input()).toEqual([
-      { kind: "trigger", name: "enter", at: 0, value: 1, target: "card" },
-    ]);
+    expect(captured).toBeDefined();
+    ms = 50;
+    captured?.trigger(tap, "ping");
+    expect(queued.size).toBe(1);
     await act(() => renderer?.unmount());
-    expect(listeners.size).toBe(0);
+    expect(queued.size).toBe(0);
   });
 });
 

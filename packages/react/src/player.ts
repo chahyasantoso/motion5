@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
   type RefCallback,
 } from "react";
-import { applyValue, type EventDriver, type RenderTarget } from "@gerak/dom";
+import { applyValue, type RenderTarget } from "@gerak/dom";
 import { NO_INPUT, elapsedOf, type Input, type Pose2d, type Signal } from "@gerak/core";
 import { play, type Driver, type Player } from "@gerak/player";
 
@@ -313,14 +313,4 @@ export function useSignal<T extends object, V>(
     getSnapshot,
     getSnapshot,
   );
-}
-
-/** Logs the events of the element the ref lands on to `driver` as `target`'s; put it on an element that stays still. */
-export function useWatch(driver: EventDriver | undefined, target: string): RefCallback<Element> {
-  const [element, setElement] = useState<Element | null>(null);
-  useEffect(() => {
-    if (driver === undefined || element === null) return undefined;
-    return driver.watch(target, element);
-  }, [driver, element, target]);
-  return useCallback((next: Element | null) => setElement(next), []);
 }

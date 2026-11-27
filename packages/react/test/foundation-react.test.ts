@@ -2,7 +2,14 @@ import { createElement, type FC, type RefObject } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { inputLog, inputs, motion, state, type Pose2d, type Time } from "@gerak/core";
-import { type FrameSource, type PageElement, type PageRoot, type PageStyle } from "@gerak/dom";
+import {
+  liveClock,
+  type FrameSource,
+  type LiveClock,
+  type PageElement,
+  type PageRoot,
+  type PageStyle,
+} from "@gerak/dom";
 import { manualDriver } from "@gerak/player";
 import { box, scene } from "@gerak/stage";
 import { Stage, useMount, usePlayer, useSignal } from "../src/index";
@@ -191,10 +198,49 @@ describe("Slice 3 foundation react contracts", () => {
     // Advance event log while detached, then re-attach same player.
     log.trigger(100, tapInputs, "tap");
     driver.seekMs(200);
-    await act(() => {
-      renderer?.update(createElement(Probe, { active: true }));
-    });
+    await act(() => renderer?.update(createElement(Probe, { active: true })));
     expect(seen.at(-1)).toBe(1);
     await act(() => renderer?.unmount());
+  });
+
+  it("useMount compares a handed liveClock by identity across re-renders", async () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
+    const clockA = liveClock({ frames: NO_FRAMES, now: () => 0 });
+    const clockB = liveClock({ frames: NO_FRAMES, now: () => 0 });
+    let mounts = 0;
+
+    const slid = (x: number) => scene(box("card").moves(motion((): Pose2d => ({ x }))));
+    const Probe: FC<{ readonly x: number; readonly clock: LiveClock }> = ({ x, clock }) => {
+      const ref: RefObject<FakeRoot | null> = { current: root };
+      useMount(ref, slid(x), {
+        clock: { kind: "driver", driver: clock },
+        onDriver: () => {
+          mounts += 1;
+        },
+      });
+      return null;
+    };
+
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(createElement(Probe, { x: 10, clock: clockA }));
+    });
+    expect(mounts).toBe(1);
+
+    await act(() => {
+      renderer?.update(createElement(Probe, { x: 30, clock: clockA }));
+    });
+    expect(mounts).toBe(1);
+    expect(card.style.transform).toBe("translate3d(30px, 0px, 0px)");
+
+    await act(() => {
+      renderer?.update(createElement(Probe, { x: 30, clock: clockB }));
+    });
+    expect(mounts).toBe(2);
+
+    await act(() => renderer?.unmount());
+    clockA.dispose();
+    clockB.dispose();
   });
 });

@@ -1,4 +1,4 @@
-import { eventDriver } from "@gerak/dom";
+import { liveClock } from "@gerak/dom";
 import { combine, span, state, unreachable, type Input, type Pose2d, type Time } from "@gerak/core";
 import { drop, follow } from "@gerak/moves";
 
@@ -58,4 +58,4 @@ export const scene = (time: Time, events: Input) => {
   };
 };
 
-export const clock = () => eventDriver({ introMs: durationMs });
+export const clock = () => liveClock({ introMs: durationMs });

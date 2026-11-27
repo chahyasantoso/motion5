@@ -7,7 +7,6 @@ export {
   useSignal,
   useTarget,
   useValue,
-  useWatch,
 } from "./player";
 export type { DriverKeeper, OwnedDriver, PlayerHost, Playing } from "./player";
 export { Stage, useMount } from "./stage";
