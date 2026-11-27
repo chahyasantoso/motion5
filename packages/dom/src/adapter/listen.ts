@@ -162,7 +162,12 @@ export function listen(port: Pick<Driver, "set">, options: ListenOptions = {}): 
           ) {
             return;
           }
-          const vp = readViewportOf({ viewport: options.viewport }, view, undefined, root);
+          const vp = readViewportOf(
+            options.viewport === undefined ? {} : { viewport: options.viewport },
+            view,
+            undefined,
+            root,
+          );
           if (!(vp.width > 0 && vp.height > 0)) return;
           pendingPointer = {
             x: clamp(event.clientX / vp.width, 0, 1),

@@ -8,6 +8,7 @@ import {
   matrixFromQuaternion,
   mix,
   motion,
+  pageInputs,
   rawTime,
   scroll,
   seeded,
@@ -17,6 +18,7 @@ import {
   stillMoving,
   transition,
   unreachable,
+  value,
   type Input,
   type Point3d,
   type Pose2d,
@@ -142,19 +144,15 @@ const {
 } = cast;
 const COOKIE_VIEW: ObjectView = { canvas: stageCanvas, lens: LENS };
 const builderJarRoot = object(cast.builderJarRoot.name, { view: COOKIE_VIEW });
-const builderSealBtn = box(cast.builderSealBtn.name, { watch: true });
+const builderSealBtn = box(cast.builderSealBtn.name);
 
 const builderEnter = beat("builderEnter", {
   scroll: [builderStage.top.minus(420), builderStage.top.minus(40)],
 });
 
-const sealBtnHovered = state(
-  false,
-  (hovered, event) => (event.name === "enter" ? true : event.name === "leave" ? false : hovered),
-  { target: builderSealBtn.name },
-);
+const sealBtnHovered = value(pageInputs, "hovered", builderSealBtn.name);
 const sealPeek = shared(
-  springTo(sealBtnHovered, (hovered) => (hovered ? 1 : 0), { stiffness: 220, damping: 20 }),
+  springTo(sealBtnHovered, (hovered) => hovered, { stiffness: 220, damping: 20 }),
 );
 
 type BuilderSlotAnimKind = "enter" | "shuffle";

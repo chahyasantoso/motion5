@@ -1,5 +1,5 @@
 import { clamp, ease, unreachable } from "@gerak/core";
-import { mount, ready } from "@gerak/dom";
+import { listen, mount, ready } from "@gerak/dom";
 import { listPose3d, restReader } from "@gerak/stage";
 import {
   BUILDER_CAPACITY,
@@ -294,7 +294,9 @@ async function bootstrap(): Promise<void> {
   const clearJar = (): void => applyJarUpdate(resetJar(jar));
   const toggleSealJar = (): void => applyJarUpdate(toggleSeal(jar));
 
-  const cleanupListeners: (() => void)[] = [];
+  const cleanupListeners: (() => void)[] = [
+    listen(mounted, { elements: ["heroCta", "builderSealBtn"], pointer: true }),
+  ];
   let scrollRafId: number | null = null;
   let cancelListenersOff: (() => void) | null = null;
 

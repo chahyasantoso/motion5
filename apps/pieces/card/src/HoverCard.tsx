@@ -1,16 +1,7 @@
 import React from "react";
-import { inputs } from "@gerak/core";
+import { pageInputs } from "@gerak/core";
 import { usePlayer, useTarget } from "@gerak/react";
 import { clock, scene } from "./card-scene";
-
-const cardTriggers = inputs({
-  triggers: {
-    enter: { targets: ["card"] },
-    leave: { targets: ["card"] },
-    down: { targets: ["card"] },
-    up: { targets: ["card"] },
-  },
-});
 
 /** The card's motion lives in `card-scene.ts`; the still hit area takes the pointer, so the lift never loses it. */
 export const HoverCard: React.FC = () => {
@@ -21,10 +12,13 @@ export const HoverCard: React.FC = () => {
     <div className="card-stage">
       <div
         className="card-hit"
-        onPointerEnter={() => playing?.driver.trigger(cardTriggers, "enter", 1, "card")}
-        onPointerLeave={() => playing?.driver.trigger(cardTriggers, "leave", 1, "card")}
-        onPointerDown={() => playing?.driver.trigger(cardTriggers, "down", 1, "card")}
-        onPointerUp={() => playing?.driver.trigger(cardTriggers, "up", 1, "card")}
+        onPointerEnter={() => playing?.driver.set(pageInputs, "hovered", 1, "card")}
+        onPointerLeave={() => {
+          playing?.driver.set(pageInputs, "hovered", 0, "card");
+          playing?.driver.set(pageInputs, "pressed", 0, "card");
+        }}
+        onPointerDown={() => playing?.driver.set(pageInputs, "pressed", 1, "card")}
+        onPointerUp={() => playing?.driver.set(pageInputs, "pressed", 0, "card")}
       >
         <div ref={shadow} className="card-shadow" />
         <div ref={card} className="card">

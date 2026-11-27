@@ -4,10 +4,11 @@ import {
   ease,
   mix,
   motion,
+  pageInputs,
   scroll,
   shared,
   springTo,
-  state,
+  value,
   type Point3d,
   type Pose2d,
   type Pose3d,
@@ -52,7 +53,7 @@ const {
   cookieHero,
 } = cast;
 const heroHeadline = text(cast.heroHeadline.name, { split: "words" });
-const heroCta = box(cast.heroCta.name, { watch: true });
+const heroCta = box(cast.heroCta.name);
 const COOKIE_VIEW: ObjectView = { canvas: stageCanvas, lens: LENS };
 
 const heroEnter = beat("heroEnter", 520);
@@ -74,14 +75,8 @@ const cookieLift = beat("cookieLift", {
   smooth: { stiffness: 115, damping: 22 },
 });
 
-const ctaHovered = state(
-  false,
-  (hovered, event) => (event.name === "enter" ? true : event.name === "leave" ? false : hovered),
-  { target: heroCta.name },
-);
-const ctaPeek = shared(
-  springTo(ctaHovered, (hovered) => (hovered ? 1 : 0), { stiffness: 220, damping: 20 }),
-);
+const ctaHovered = value(pageInputs, "hovered", heroCta.name);
+const ctaPeek = shared(springTo(ctaHovered, (hovered) => hovered, { stiffness: 220, damping: 20 }));
 
 const HERO_HIDDEN_POSE: Pose3d = { scale: 0 };
 

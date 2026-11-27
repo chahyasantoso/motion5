@@ -1,4 +1,5 @@
-import { mount } from "@gerak/dom";
+import { listen, mount } from "@gerak/dom";
 import scene from "./yuzu";
 
-mount(scene, { clock: "live" });
+const mounted = mount(scene, { clock: "live" });
+listen(mounted, { pointer: true });

@@ -6,7 +6,7 @@ import {
   Mesh,
   MeshStandardMaterial,
 } from "three";
-import { mount } from "@gerak/dom";
+import { listen, mount } from "@gerak/dom";
 import { compileScene, formatStageError } from "@gerak/stage";
 import { applyPose3d, createStage3d } from "@gerak/three";
 import piece, { lens } from "./yuzu-3d";
@@ -41,4 +41,5 @@ const stage3d = createStage3d(canvas, lens, {
   },
 });
 stage3d.world.add(new AmbientLight(0xffffff, 0.7), light, can);
-mount(stage, { clock: "live", binders: [stage3d.binder] });
+const mounted = mount(stage, { clock: "live", binders: [stage3d.binder] });
+listen(mounted, { pointer: true });
