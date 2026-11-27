@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -258,55 +259,56 @@ export function useValue<T extends object, K extends keyof T, V>(
   );
 }
 
+function readSignal<T extends object, V>(player: Player<T>, signal: Signal<V>): V | undefined {
+  let seeded: { readonly value: V } | undefined;
+  const stop = player.observe(signal, (value) => {
+    seeded = { value };
+  });
+  stop();
+  return seeded?.value;
+}
+
 /** Reads a signal over the player's time and events into a render, again only when it changes by `Object.is`.
  * Define the signal outside the component; `undefined` before the player exists. */
 export function useSignal<T extends object, V>(
   player: Player<T> | undefined,
   signal: Signal<V>,
 ): V | undefined {
-  const cache = useRef<
+  const committed = useRef<
     { readonly player: Player<T>; readonly signal: Signal<V>; readonly value: V } | undefined
   >(undefined);
+  const initial = useMemo(
+    () => (player === undefined ? undefined : readSignal(player, signal)),
+    [player, signal],
+  );
   const subscribe = useCallback(
     (onStoreChange: () => void): (() => void) => {
       if (player === undefined) return () => undefined;
       let subscribed = false;
+      let entry:
+        | { readonly player: Player<T>; readonly signal: Signal<V>; readonly value: V }
+        | undefined;
       const stop = player.observe(signal, (value) => {
-        const prev = cache.current;
-        cache.current = { player, signal, value };
-        if (
-          subscribed &&
-          (prev === undefined ||
-            prev.player !== player ||
-            prev.signal !== signal ||
-            !Object.is(prev.value, value))
-        ) {
+        const prev = entry;
+        entry = { player, signal, value };
+        committed.current = entry;
+        if (subscribed && (prev === undefined || !Object.is(prev.value, value))) {
           onStoreChange();
         }
       });
       subscribed = true;
       return () => {
         stop();
-        cache.current = undefined;
+        if (committed.current === entry) committed.current = undefined;
       };
     },
     [player, signal],
   );
   const getSnapshot = (): V | undefined => {
-    if (player === undefined) {
-      cache.current = undefined;
-      return undefined;
-    }
-    const held = cache.current;
+    if (player === undefined) return undefined;
+    const held = committed.current;
     if (held !== undefined && held.player === player && held.signal === signal) return held.value;
-    let seeded: { readonly value: V } | undefined;
-    const stop = player.observe(signal, (value) => {
-      seeded = { value };
-    });
-    stop();
-    if (seeded === undefined) return undefined;
-    cache.current = { player, signal, value: seeded.value };
-    return seeded.value;
+    return initial;
   };
   return useSyncExternalStore(
     player === undefined ? NO_SUBSCRIPTION : subscribe,

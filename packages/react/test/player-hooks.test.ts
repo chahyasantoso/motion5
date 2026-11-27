@@ -1,4 +1,4 @@
-import { createElement, type FC } from "react";
+import { StrictMode, Suspense, createElement, startTransition, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { clockDriver, type RenderTarget } from "@gerak/dom";
@@ -123,6 +123,96 @@ describe("useSignal", () => {
     expect(seen.at(-1)).toBe(1);
     await act(() => driver.seekMs(100));
     expect(seen.at(-1)).toBe(0);
+  });
+
+  it("renders a bounded number of times when changing the signal to one that returns a new object each call", async () => {
+    const driver = manualDriver({ durationMs: 1000 });
+    const createDriver = () => driver;
+    const sigA = () => ({ kind: "a" });
+    let bCalls = 0;
+    const sigB = () => {
+      bCalls += 1;
+      return { kind: "b", n: bCalls };
+    };
+    const seen: ({ readonly kind: string; readonly n?: number } | undefined)[] = [];
+    let renders = 0;
+    const Probe: FC<{ readonly signal: () => { readonly kind: string; readonly n?: number } }> = ({
+      signal,
+    }) => {
+      renders += 1;
+      const playing = usePlayer(scene, createDriver);
+      seen.push(useSignal(playing?.player, signal));
+      return null;
+    };
+
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(createElement(StrictMode, null, createElement(Probe, { signal: sigA })));
+    });
+    expect(seen.at(-1)).toEqual({ kind: "a" });
+    const beforeSwap = renders;
+
+    await act(() => {
+      renderer?.update(createElement(StrictMode, null, createElement(Probe, { signal: sigB })));
+    });
+    expect(seen.at(-1)?.kind).toBe("b");
+    expect(renders - beforeSwap).toBeLessThanOrEqual(4);
+
+    await act(() => renderer?.unmount());
+  });
+
+  it("does not let a render thrown away under startTransition change what the committed subscription returns", async () => {
+    const driver = manualDriver({ durationMs: 1000 });
+    const createDriver = () => driver;
+    let aCalls = 0;
+    const sigA = () => {
+      aCalls += 1;
+      return { kind: "a", call: aCalls };
+    };
+    const sigB = () => ({ kind: "b", call: 999 });
+    const never = new Promise<never>(() => undefined);
+
+    const seen: ({ readonly kind: string; readonly call: number } | undefined)[] = [];
+    const SuspendWhen: FC<{ readonly suspend: boolean }> = ({ suspend }) => {
+      if (suspend) throw never;
+      return null;
+    };
+    const Probe: FC<{ readonly useB: boolean; readonly tick: number }> = ({ useB }) => {
+      const playing = usePlayer(scene, createDriver);
+      seen.push(useSignal(playing?.player, useB ? sigB : sigA));
+      return createElement(SuspendWhen, { suspend: useB });
+    };
+
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(
+        createElement(Suspense, { fallback: null }, createElement(Probe, { useB: false, tick: 0 })),
+      );
+    });
+    const committedBefore = seen.at(-1);
+    expect(committedBefore?.kind).toBe("a");
+
+    // A transition rendering sigB suspends and is discarded; the committed sigA tree stays active.
+    await act(() => {
+      startTransition(() => {
+        renderer?.update(
+          createElement(
+            Suspense,
+            { fallback: null },
+            createElement(Probe, { useB: true, tick: 1 }),
+          ),
+        );
+      });
+    });
+
+    // Re-rendering the committed sigA tree must still return the committed subscription's snapshot.
+    await act(() => {
+      renderer?.update(
+        createElement(Suspense, { fallback: null }, createElement(Probe, { useB: false, tick: 2 })),
+      );
+    });
+    expect(seen.at(-1)).toBe(committedBefore);
+    await act(() => renderer?.unmount());
   });
 });
 
