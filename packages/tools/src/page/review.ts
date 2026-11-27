@@ -239,8 +239,11 @@ export async function reviewPage(request: ReviewRequest): Promise<ReviewResult> 
     };
     return request.full ? { ...base, full: true, motion } : { ...base, full: false };
   } finally {
-    if (ownBrowser !== undefined) await ownBrowser.close();
-    await site.close();
+    try {
+      if (ownBrowser !== undefined) await ownBrowser.close();
+    } finally {
+      await site.close();
+    }
   }
 }
 

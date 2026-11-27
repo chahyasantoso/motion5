@@ -498,9 +498,12 @@ export async function withPage<T>(
     const value = await visit(session);
     return { value, pageErrors };
   } finally {
-    if (target.browser === undefined) await browser.close();
-    else await closeQuietly(opened);
-    await site.close();
+    try {
+      if (target.browser === undefined) await browser.close();
+      else await closeQuietly(opened);
+    } finally {
+      await site.close();
+    }
   }
 }
 
@@ -552,13 +555,15 @@ export async function openSite(
         optimizeDeps: added.optimizeDeps,
         server: { ...added.server, port: 0 },
       });
-      await server.listen();
-      const base = server.resolvedUrls?.local[0];
-      if (base === undefined) {
-        await server.close();
-        throw new Error("The page server reported no local address.");
+      try {
+        await server.listen();
+        const base = server.resolvedUrls?.local[0];
+        if (base === undefined) throw new Error("The page server reported no local address.");
+        return { base, close: () => server.close() };
+      } catch (error) {
+        await server.close().catch(() => undefined);
+        throw error;
       }
-      return { base, close: () => server.close() };
     }
     default:
       return unreachable(source);
