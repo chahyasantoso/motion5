@@ -57,12 +57,14 @@ describe("state", () => {
       calls += 1;
       return current + 1;
     });
-    const events: MotionEvent[] = [click(10), click(20)];
-    counting(liveAt(100), events);
-    events.push(click(30));
-    expect(counting(liveAt(100), events)).toBe(3);
+    const log = eventLog();
+    log.add(click(10));
+    log.add(click(20));
+    counting(liveAt(100), log.events);
+    log.add(click(30));
+    expect(counting(liveAt(100), log.events)).toBe(3);
     expect(calls).toBe(3);
-    counting(liveAt(100), events);
+    counting(liveAt(100), log.events);
     expect(calls).toBe(3);
   });
 

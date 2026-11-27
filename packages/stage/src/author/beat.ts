@@ -284,7 +284,6 @@ type TriggerFold = (
 
 interface TriggerCell {
   readonly resetId: number | undefined;
-  readonly fallbackList: readonly unknown[] | undefined;
   limit: number;
   done: number;
   reached: boolean;
@@ -303,16 +302,11 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
     const meta = stepMetaOf(steps);
 
     const cell = cellSlot.own(
-      (existing) =>
-        threshold !== existing.limit ||
-        (meta !== undefined
-          ? meta.resetId !== existing.resetId
-          : steps !== existing.fallbackList || steps.length < existing.done),
+      (existing) => threshold !== existing.limit || meta?.resetId !== existing.resetId,
       () => {
         const initial = scroll.y.start >= threshold;
         return {
           resetId: meta?.resetId,
-          fallbackList: steps,
           limit: threshold,
           done: 0,
           reached: initial,
@@ -322,7 +316,7 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
           active: initial,
         };
       },
-      (existing) => ({ ...existing, fallbackList: steps }),
+      (existing) => ({ ...existing }),
     );
 
     for (; cell.done < steps.length; cell.done += 1) {

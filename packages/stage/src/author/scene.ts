@@ -8,6 +8,7 @@ import {
   combine,
   combine3d,
   elapsedOf,
+  generationOf,
   lanes,
   loop,
   mergeEvents,
@@ -246,9 +247,10 @@ const OBJECT_TRAVEL = new WeakMap<
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
 /** The scene time each shot time was made from. */
 const SCENE_TIMES = new WeakMap<Time, Time>();
-/** An event list moved to a shot's clock, and the version of the growing log it was moved from. */
+/** An event list moved to a shot's clock, and the version and generation it was moved from. */
 interface MovedEvents {
-  readonly version: number | undefined;
+  readonly version: number;
+  readonly generation: number;
   readonly events: Events;
 }
 /** Each event list moved to a shot's clock, by shot start, and the list each moved one came from. */
@@ -1736,17 +1738,17 @@ function shotTime(time: Time, clock: ShotClock | undefined, total: number | unde
 function shotEvents(events: Events, clock: ShotClock | undefined): Events {
   if (clock === undefined || clock.from === 0) return events;
   const version = versionOf(events);
-  const byStart = version === undefined ? undefined : SHOT_EVENTS.get(events);
+  const generation = generationOf(events);
+  const byStart = SHOT_EVENTS.get(events);
   const known = byStart?.get(clock.from);
-  if (known !== undefined && known.version === version) return known.events;
+  if (known !== undefined && known.version === version && known.generation === generation)
+    return known.events;
   const moved = events
     .filter((event) => event.at >= clock.from)
     .map((event) => ({ ...event, at: event.at - clock.from }));
-  if (version !== undefined) {
-    const nextByStart = byStart ?? new Map<number, MovedEvents>();
-    nextByStart.set(clock.from, { version, events: moved });
-    SHOT_EVENTS.set(events, nextByStart);
-  }
+  const nextByStart = byStart ?? new Map<number, MovedEvents>();
+  nextByStart.set(clock.from, { version, generation, events: moved });
+  SHOT_EVENTS.set(events, nextByStart);
   SCENE_EVENTS.set(moved, events);
   return moved;
 }

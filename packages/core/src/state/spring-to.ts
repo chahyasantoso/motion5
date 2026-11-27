@@ -19,7 +19,6 @@ export interface SpringToOptions {
 /** The spring just after the change before `index` set its goal at `since` ms. */
 interface Run {
   readonly changesResetId: number | undefined;
-  readonly fallbackList: readonly unknown[];
   index: number;
   goal: number;
   value: number;
@@ -53,20 +52,16 @@ export function springTo<S>(
     const meta = changeMetaOf(list);
 
     const kept = runSlot.own(
-      (existing) =>
-        meta !== undefined
-          ? meta.resetId !== existing.changesResetId
-          : existing.fallbackList !== list,
+      (existing) => meta?.resetId !== existing.changesResetId,
       () => ({
         changesResetId: meta?.resetId,
-        fallbackList: list,
         index: 0,
         goal: start,
         value: start,
         speed: 0,
         since: 0,
       }),
-      (existing) => ({ ...existing, fallbackList: list }),
+      (existing) => ({ ...existing }),
     );
 
     for (; kept.index < list.length; kept.index += 1) {

@@ -9,29 +9,44 @@ export interface EventLog {
   clear(): void;
 }
 
-const GENERATION = new WeakMap<Events, number>();
-const VERSION = new WeakMap<Events, number>();
-const SERIALS = new WeakMap<Events, readonly number[]>();
-const SOURCE_STREAM = new WeakMap<Events, object>();
+/** Metadata attached to an event list created by `eventLog` or `derivedEvents`. */
+interface EventRecord {
+  readonly version: number;
+  readonly generation: number;
+  readonly serials: readonly number[] | undefined;
+  readonly sourceStream: object | undefined;
+}
+
+const RECORDS = new WeakMap<Events, EventRecord>();
+const DEFAULT_RECORD: EventRecord = Object.freeze({
+  version: 0,
+  generation: 0,
+  serials: undefined,
+  sourceStream: undefined,
+});
+
+function recordOf(events: Events): EventRecord {
+  return RECORDS.get(events) ?? DEFAULT_RECORD;
+}
 
 /** Stream identity token preserved across `derivedEvents` time-window slicing of a single log. */
 export function sourceStreamOf(events: Events): object | undefined {
-  return SOURCE_STREAM.get(events);
+  return recordOf(events).sourceStream;
 }
 
-/** An `eventLog` list's count of every change, adding included, or undefined for any other list. */
-export function versionOf(events: Events): number | undefined {
-  return VERSION.get(events);
+/** An `eventLog` list's count of every change, adding included, or 0 for a plain array. */
+export function versionOf(events: Events): number {
+  return recordOf(events).version;
 }
 
-/** An `eventLog` list's count of changes other than adding at its end, or undefined for any other list. */
-export function generationOf(events: Events): number | undefined {
-  return GENERATION.get(events);
+/** An `eventLog` list's count of changes other than adding at its end, or 0 for a plain array. */
+export function generationOf(events: Events): number {
+  return recordOf(events).generation;
 }
 
 /** Monotonic insertion serials aligned with `events` when backed by an `eventLog`. */
 export function eventSerialsOf(events: Events): readonly number[] | undefined {
-  return SERIALS.get(events);
+  return recordOf(events).serials;
 }
 
 function upperBoundAt(list: Events, maxAt: number): number {
@@ -94,6 +109,8 @@ export interface DerivedEvents {
 export function derivedEvents(): DerivedEvents {
   const streamToken = {};
   let prevCues: Events | undefined;
+  let prevCuesVersion: number | undefined;
+  let prevCuesGeneration: number | undefined;
   let prevPage: Events | undefined;
   let prevPageVersion: number | undefined;
   let prevPageGeneration: number | undefined;
@@ -109,28 +126,26 @@ export function derivedEvents(): DerivedEvents {
     resolve(cues, page, maxAt) {
       const cuesEmpty = cues.length === 0;
       const pageEmpty = page.length === 0;
-      const pageVersion = VERSION.get(page);
-      const pageGen = GENERATION.get(page);
+      const cuesRecord = recordOf(cues);
+      const pageRecord = recordOf(page);
+      const pageOrdered = pageRecord.sourceStream !== undefined;
 
       if (cuesEmpty) {
         if (maxAt === undefined || pageEmpty) return page;
-        const pageOrdered = pageVersion !== undefined;
         if (pageOrdered && (page[page.length - 1]?.at ?? 0) <= maxAt) return page;
       }
       if (pageEmpty && cuesEmpty) return cues;
 
       const sameInputs =
         cues === prevCues &&
+        cuesRecord.version === prevCuesVersion &&
+        cuesRecord.generation === prevCuesGeneration &&
         page === prevPage &&
-        pageVersion === prevPageVersion &&
-        pageGen === prevPageGeneration &&
-        !(pageVersion === undefined && prevPage !== undefined) &&
-        !(VERSION.get(cues) === undefined && cues !== prevCues);
+        pageRecord.version === prevPageVersion &&
+        pageRecord.generation === prevPageGeneration;
 
-      const samePlainPage =
-        pageVersion === undefined && sameInputs && prevPage === page && prevCues === cues;
       if (
-        (pageVersion !== undefined ? sameInputs : samePlainPage) &&
+        sameInputs &&
         maxAt !== undefined &&
         prevMaxAt !== undefined &&
         maxAt >= prevMaxAt &&
@@ -144,32 +159,28 @@ export function derivedEvents(): DerivedEvents {
 
       const cuesLimit = maxAt === undefined ? cues.length : upperBoundAt(cues, maxAt);
       const pageLimit =
-        maxAt === undefined
-          ? page.length
-          : pageVersion !== undefined
-            ? upperBoundAt(page, maxAt)
-            : page.length;
+        maxAt === undefined ? page.length : pageOrdered ? upperBoundAt(page, maxAt) : page.length;
 
       const merged =
         cuesLimit === 0
-          ? pageVersion !== undefined
+          ? pageOrdered
             ? page.slice(0, pageLimit)
             : maxAt === undefined
               ? page.slice()
               : sortEvents(page.filter((e) => e.at <= maxAt))
           : pageLimit === 0
             ? cues.slice(0, cuesLimit)
-            : pageVersion !== undefined
+            : pageOrdered
               ? mergeTwoOrderedSlice(cues, 0, cuesLimit, page, pageLimit)
               : sortEvents([
                   ...cues.slice(0, cuesLimit),
                   ...(maxAt === undefined ? page : page.filter((e) => e.at <= maxAt)),
                 ]);
 
-      const cuesReset = cues !== prevCues;
+      const cuesReset = cues !== prevCues || cuesRecord.generation !== prevCuesGeneration;
       const pageSwappedOrReordered =
         page !== prevPage ||
-        pageGen !== prevPageGeneration ||
+        pageRecord.generation !== prevPageGeneration ||
         (prevMaxAt !== undefined && maxAt !== undefined && maxAt < prevMaxAt);
 
       const keep = cached.length;
@@ -188,14 +199,16 @@ export function derivedEvents(): DerivedEvents {
       version += 1;
       cached = merged;
       prevCues = cues;
+      prevCuesVersion = cuesRecord.version;
+      prevCuesGeneration = cuesRecord.generation;
       prevPage = page;
-      prevPageVersion = pageVersion;
-      prevPageGeneration = pageGen;
+      prevPageVersion = pageRecord.version;
+      prevPageGeneration = pageRecord.generation;
       prevMaxAt = maxAt;
 
       let hidden = nextAfter(cues, cuesLimit);
       if (maxAt !== undefined) {
-        if (pageVersion !== undefined) {
+        if (pageOrdered) {
           hidden = Math.min(hidden, nextAfter(page, pageLimit));
         } else {
           for (const e of page) {
@@ -205,16 +218,20 @@ export function derivedEvents(): DerivedEvents {
       }
       nextHiddenAt = hidden;
 
-      if (cuesEmpty && pageVersion !== undefined) {
-        const inheritedGen = pageGen ?? generation;
-        const pageStream = SOURCE_STREAM.get(page);
-        if (pageStream !== undefined) SOURCE_STREAM.set(cached, pageStream);
-        GENERATION.set(cached, inheritedGen);
-        VERSION.set(cached, version);
+      if (cuesEmpty && pageOrdered) {
+        RECORDS.set(cached, {
+          version,
+          generation: pageRecord.generation,
+          serials: pageRecord.serials?.slice(0, pageLimit),
+          sourceStream: pageRecord.sourceStream,
+        });
       } else {
-        SOURCE_STREAM.set(cached, streamToken);
-        GENERATION.set(cached, generation);
-        VERSION.set(cached, version);
+        RECORDS.set(cached, {
+          version,
+          generation,
+          serials: undefined,
+          sourceStream: streamToken,
+        });
       }
       return cached;
     },
@@ -230,18 +247,23 @@ export function eventLog(): EventLog {
   let version = 0;
   let nextSerial = 1;
 
-  SOURCE_STREAM.set(events, streamToken);
-  GENERATION.set(events, generation);
-  VERSION.set(events, version);
-  SERIALS.set(events, serials);
+  const syncRecord = (): void => {
+    RECORDS.set(events, {
+      version,
+      generation,
+      serials,
+      sourceStream: streamToken,
+    });
+  };
+  syncRecord();
 
   const bumped = (): void => {
     version += 1;
-    VERSION.set(events, version);
+    syncRecord();
   };
   const changed = (): void => {
     generation += 1;
-    GENERATION.set(events, generation);
+    syncRecord();
   };
 
   return {

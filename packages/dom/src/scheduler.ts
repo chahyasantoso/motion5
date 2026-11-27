@@ -1,9 +1,10 @@
 import {
   INPUT_EVENTS,
+  NO_EVENTS,
   clamp,
+  derivedEvents,
   elapsedOf,
   liveAt,
-  mergeEvents,
   type Events,
   type Signal,
   type Time,
@@ -306,9 +307,12 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     return names;
   };
 
+  const mergedEvents = derivedEvents();
   const sceneEvents = (): Events => {
-    const handed = given?.events?.() ?? [];
-    return handed.length === 0 ? recorder.log : mergeEvents(recorder.log, handed);
+    const handed = given?.events?.() ?? NO_EVENTS;
+    return handed.length === 0
+      ? recorder.log
+      : mergedEvents.resolve(recorder.log, handed, undefined);
   };
 
   const syncScrollPoll = (at: number): void => {

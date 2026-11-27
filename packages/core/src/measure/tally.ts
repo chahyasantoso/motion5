@@ -1,5 +1,5 @@
 import type { Events, MotionEvent } from "../events/event-list";
-import { buildState, stepMetaOf, type Step } from "../state/state";
+import { buildState, stepMetaOf } from "../state/state";
 import { storeCell } from "../state/store";
 import { atProgress, elapsedOf, type Time } from "../time/time";
 
@@ -30,7 +30,6 @@ interface Held {
 /** Counted events of one list: times, held values, and cumulative area before each. */
 interface Table {
   readonly sourceResetId: number | undefined;
-  readonly fallbackSource: readonly Step<Held>[];
   count: number;
   readonly times: number[];
   readonly values: number[];
@@ -60,13 +59,9 @@ export function tally(options: TallyOptions): Tally {
     const meta = stepMetaOf(steps);
 
     const kept = tableSlot.own(
-      (existing) =>
-        meta !== undefined
-          ? meta.resetId !== existing.sourceResetId
-          : existing.fallbackSource !== steps,
+      (existing) => meta?.resetId !== existing.sourceResetId,
       () => ({
         sourceResetId: meta?.resetId,
-        fallbackSource: steps,
         count: 0,
         times: [],
         values: [],
@@ -74,7 +69,6 @@ export function tally(options: TallyOptions): Tally {
       }),
       (existing) => ({
         ...existing,
-        fallbackSource: steps,
         times: existing.times.slice(),
         values: existing.values.slice(),
         areas: existing.areas.slice(),

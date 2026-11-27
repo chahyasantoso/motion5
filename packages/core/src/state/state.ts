@@ -42,12 +42,11 @@ interface StateCell<S> {
   resetId: number;
   current: S;
   steps: Step<S>[];
-  taken: MotionEvent[] | undefined;
   cursor: number;
   latest: number;
   seen: Events | undefined;
   seenStream: object | undefined;
-  seenGeneration: number | undefined;
+  seenGeneration: number;
 }
 
 function upperBoundStep<S>(steps: readonly Step<S>[], at: number): number {
@@ -97,20 +96,11 @@ export function buildState<S>(
       events === cell.seen || (stream !== undefined && stream === cell.seenStream);
 
     const canRewind = (cell: StateCell<S>, at: number): boolean =>
-      at < cell.latest &&
-      sameStream(cell) &&
-      generation !== undefined &&
-      generation === cell.seenGeneration;
+      at < cell.latest && sameStream(cell) && generation === cell.seenGeneration;
 
     const canResume = (cell: StateCell<S>): boolean => {
       if (now !== undefined && cell.latest > now) return false;
-      if (generation !== undefined) return sameStream(cell) && generation === cell.seenGeneration;
-      const prevTaken = cell.taken;
-      if (prevTaken === undefined || events.length < prevTaken.length) return false;
-      for (let index = 0; index < prevTaken.length; index += 1) {
-        if (events[index] !== prevTaken[index]) return false;
-      }
-      return true;
+      return sameStream(cell) && generation === cell.seenGeneration;
     };
 
     const work = cellSlot.own(
@@ -128,7 +118,6 @@ export function buildState<S>(
             resetId,
             current: cutStep > 0 ? (sliced[cutStep - 1]?.value ?? start) : start,
             steps: sliced,
-            taken: undefined,
             cursor: cutEvent,
             latest: latestAt,
             seen: events,
@@ -143,7 +132,6 @@ export function buildState<S>(
           resetId,
           current: start,
           steps,
-          taken: generation === undefined ? [] : undefined,
           cursor: 0,
           latest: -Infinity,
           seen: events,
@@ -157,7 +145,6 @@ export function buildState<S>(
         return {
           ...existing,
           steps: clonedSteps,
-          taken: existing.taken?.slice(),
         };
       },
     );
@@ -166,13 +153,11 @@ export function buildState<S>(
     work.seenStream = stream;
     work.seenGeneration = generation;
 
-    const startOffset = generation === undefined ? (work.taken?.length ?? 0) : work.cursor;
-    for (let offset = startOffset; offset < events.length; offset += 1) {
+    for (let offset = work.cursor; offset < events.length; offset += 1) {
       const event = events[offset];
       if (event === undefined) break;
       if (now !== undefined && event.at > now) break;
-      if (work.taken !== undefined) work.taken.push(event);
-      work.cursor = generation === undefined ? (work.taken?.length ?? offset + 1) : offset + 1;
+      work.cursor = offset + 1;
       work.latest = Math.max(work.latest, event.at);
       if (!accepts(event)) continue;
       const next = rule(work.current, event);

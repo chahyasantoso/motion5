@@ -29,7 +29,6 @@ export function changeMetaOf(list: readonly Change<unknown>[]): ChangeMeta | und
 interface ChangesCell<V> {
   resetId: number;
   seenStepResetId: number | undefined;
-  seenStepRef: readonly unknown[] | undefined;
   start: V;
   list: Change<V>[];
   counted: number;
@@ -49,10 +48,7 @@ export function changesOf<S, V = number>(
     const meta = stepMetaOf(now);
 
     const cell = cellSlot.own(
-      (existing) =>
-        meta !== undefined
-          ? meta.resetId !== existing.seenStepResetId
-          : now !== existing.seenStepRef || now.length < existing.counted,
+      (existing) => meta?.resetId !== existing.seenStepResetId,
       (existing) => {
         const start = pick(source.start);
         const resetId = (existing?.resetId ?? 0) + 1;
@@ -61,7 +57,6 @@ export function changesOf<S, V = number>(
         return {
           resetId,
           seenStepResetId: meta?.resetId,
-          seenStepRef: now,
           start,
           list,
           counted: 0,
@@ -71,10 +66,9 @@ export function changesOf<S, V = number>(
       (existing) => {
         const list = existing.list.slice();
         CHANGE_META.set(list, { resetId: existing.resetId });
-        return { ...existing, seenStepRef: now, list };
+        return { ...existing, list };
       },
     );
-    cell.seenStepRef = now;
 
     for (; cell.counted < now.length; cell.counted += 1) {
       const step = now[cell.counted];

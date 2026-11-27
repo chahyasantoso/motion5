@@ -11,8 +11,8 @@ An event is something that happened at a moment, such as a hover, a press or a l
 - **`derivedEvents`** `(): DerivedEvents`: Creates a cached `Events` merger/filter that avoids rebuilding unchanged windows across frames.
 - **`eventLog`** `(): EventLog`: A log of events that only grows.
 - **`eventSerialsOf`** `(events: Events): readonly number[] | undefined`: Monotonic insertion serials aligned with `events` when backed by an `eventLog`.
-- **`generationOf`** `(events: Events): number | undefined`: An `eventLog` list's count of changes other than adding at its end, or undefined for any other list.
+- **`generationOf`** `(events: Events): number`: An `eventLog` list's count of changes other than adding at its end, or 0 for a plain array.
 - **`sourceStreamOf`** `(events: Events): object | undefined`: Stream identity token preserved across `derivedEvents` time-window slicing of a single log.
-- **`versionOf`** `(events: Events): number | undefined`: An `eventLog` list's count of every change, adding included, or undefined for any other list.
+- **`versionOf`** `(events: Events): number`: An `eventLog` list's count of every change, adding included, or 0 for a plain array.
 - **`DerivedEvents`** `type DerivedEvents = { resolve: (cues: Events, page: Events, maxAt: number | undefined) => Events }`: Cached derived view over event lists filtered by elapsed ms while keeping monotonic metadata.
 - **`EventLog`** `type EventLog = { events: Events; add: (event: MotionEvent) => void; clear: () => void }`: A log that only grows: each event goes in at its time, after any at the same ms, and none is replaced.

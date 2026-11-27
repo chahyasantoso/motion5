@@ -197,9 +197,9 @@ describe("Slice 2 foundation stage contracts", () => {
     );
     const s2 = scene({ length: 500 }, badge.moves(bind({ x: (t, ev) => clicks(t, ev) * 10 })));
     const stg = compile(scene(shot(s1, { name: "one" }), shot(s2, { name: "two" })));
-    const events: MotionEvent[] = [{ name: "click", at: 600 }];
+    let events: MotionEvent[] = [{ name: "click", at: 600 }];
     expect(frame(stg, { time: liveAt(700), events }).targets["badge"]).toEqual({ x: 10 });
-    events.push({ name: "click", at: 650 });
+    events = [...events, { name: "click", at: 650 }];
     expect(frame(stg, { time: liveAt(700), events }).targets["badge"]).toEqual({ x: 20 });
   });
 

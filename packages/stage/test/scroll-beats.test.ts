@@ -510,9 +510,9 @@ describe("trigger beats over a long session", () => {
         seed = (seed * 16807) % 2147483647;
         return seed / 2147483647;
       };
-      const events: { name: string; at: number; value: number }[] = [];
+      let events: { name: string; at: number; value: number }[] = [];
       for (let at = 10; at < 6000; at += 10 + Math.floor(random() * 40)) {
-        events.push({ name: INPUT_EVENTS.scroll, at, value: Math.round(random() * 1000) });
+        events = [...events, { name: INPUT_EVENTS.scroll, at, value: Math.round(random() * 1000) }];
         const now = at + Math.floor(random() * 30);
         const x = poseOf(
           frame(stage, { time: { progress: 0, clock: { kind: "live", elapsed: now } }, events })

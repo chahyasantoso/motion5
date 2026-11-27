@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { UNTIMED, isMotionEvent, liveAt, tally, type Events, type MotionEvent } from "@gerak/core";
+import {
+  UNTIMED,
+  eventLog,
+  isMotionEvent,
+  liveAt,
+  tally,
+  type Events,
+  type MotionEvent,
+} from "@gerak/core";
 
 const samples: Events = [
   { name: "mouth", at: 100, value: 0.5 },
@@ -90,9 +98,12 @@ describe("tally", () => {
   it("extends its table when a live list grows by appending, rather than rebuilding it", () => {
     const sampler = tally({ start: 0, on: { mouth: "value" } });
     const { events, reads } = counted(stream(800));
-    sampler(liveAt(0), events.slice(0, 400));
+    const log = eventLog();
+    for (const event of events.slice(0, 400)) log.add(event);
+    sampler(liveAt(0), log.events);
     const before = reads();
-    expect(sampler(liveAt(30000), [...events])).toBeCloseTo(byHand(stream(800), 30000), 6);
+    for (const event of events.slice(400)) log.add(event);
+    expect(sampler(liveAt(30000), log.events)).toBeCloseTo(byHand(stream(800), 30000), 6);
     expect(reads() - before).toBeLessThanOrEqual(400 * 6);
     expect(reads() - before).toBeGreaterThan(0);
   });

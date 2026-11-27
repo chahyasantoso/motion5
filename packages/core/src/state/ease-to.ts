@@ -24,7 +24,6 @@ export interface EaseToOptions {
 /** The motion since the change before `index`, from `from` to `to` over `stretch`. */
 interface Run {
   readonly changesResetId: number | undefined;
-  readonly fallbackList: readonly unknown[];
   index: number;
   from: number;
   to: number;
@@ -60,19 +59,15 @@ export function easeTo<S>(
     const meta = changeMetaOf(list);
 
     const kept = runSlot.own(
-      (existing) =>
-        meta !== undefined
-          ? meta.resetId !== existing.changesResetId
-          : existing.fallbackList !== list,
+      (existing) => meta?.resetId !== existing.changesResetId,
       () => ({
         changesResetId: meta?.resetId,
-        fallbackList: list,
         index: 0,
         from: start,
         to: start,
         stretch: span(0, 1),
       }),
-      (existing) => ({ ...existing, fallbackList: list }),
+      (existing) => ({ ...existing }),
     );
 
     for (; kept.index < list.length; kept.index += 1) {

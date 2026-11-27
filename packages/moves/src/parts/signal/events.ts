@@ -7,7 +7,6 @@ import {
   state,
   stillMoving,
   unreachable,
-  versionOf,
   type Events,
   type Time,
 } from "@gerak/core";
@@ -112,25 +111,22 @@ export function react(options: ReactOptions): (time: Time, events: Events) => nu
     notifyInputUse("events");
     const now = elapsedOf(rawTime(time).clock);
     if (now === undefined) return 0;
-    const ordered = versionOf(events) !== undefined;
     const serials = eventSerialsOf(events);
-    const start = ordered ? firstAfter(events, now - quietMs) : 0;
+    const start = firstAfter(events, now - quietMs);
     let total = 0;
-    let index = 0;
     let moving = false;
     for (let i = start; i < events.length; i += 1) {
       const event = events[i];
       if (event === undefined) break;
-      if (ordered && event.at > now) break;
+      if (event.at > now) break;
       if (!options.on.includes(event.name)) continue;
       if (options.target !== undefined && event.target !== options.target) continue;
       const seconds = (now - event.at) / 1000;
-      const seed = ordered ? (serials !== undefined ? (serials[i] ?? i + 1) - 1 : i) : index;
+      const seed = serials !== undefined ? (serials[i] ?? i + 1) - 1 : i;
       if (seconds >= 0 && seconds < quiet) {
         total += options.amplitude * shape(options.kind, seconds, decay, frequency, seed);
         moving = true;
       }
-      index += 1;
     }
     if (moving) stillMoving();
     return total;

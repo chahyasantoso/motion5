@@ -82,11 +82,11 @@ describe("follow on a stream of samples", () => {
   });
 
   it("goes on from its last answer as the log grows, and starts again on another log", () => {
-    const log = [...stream(200)];
+    let log = [...stream(200)];
     const kept = fresh();
     for (let ms = 0; ms < 6600; ms += 16) {
       while (log.length < 400 && (log.at(-1)?.at ?? 0) < ms)
-        log.push({ name: "mouthOpen", at: (log.at(-1)?.at ?? 0) + 33, value: ms % 7 });
+        log = [...log, { name: "mouthOpen", at: (log.at(-1)?.at ?? 0) + 33, value: ms % 7 }];
       expect(kept(liveAt(ms), log)).toBe(fresh()(liveAt(ms), log));
     }
     const other = stream(50, 20);
@@ -102,8 +102,8 @@ describe("follow on a stream of samples", () => {
     expect(kept(liveAt(1100), down)).toBe(fresh()(liveAt(1100), down));
     const edited = [...up];
     kept(liveAt(1100), edited);
-    edited[0] = { name: "mouthOpen", at: 0, value: 2 };
-    expect(kept(liveAt(1100), edited)).toBe(fresh()(liveAt(1100), edited));
+    const replaced = [{ name: "mouthOpen", at: 0, value: 2 }, ...edited.slice(1)];
+    expect(kept(liveAt(1100), replaced)).toBe(fresh()(liveAt(1100), replaced));
   });
 
   it("over 10 000 samples costs a frame a small share of springing through them from the start", () => {
