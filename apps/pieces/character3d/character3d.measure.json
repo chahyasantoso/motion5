@@ -1,11 +1,18 @@
 {
  "page": "character3d.html",
- "digest": "c2255337e90c056e",
+ "digest": "544afc8d10c786cc",
  "frame": {
   "width": 1280,
   "height": 720
  },
  "rest": {},
  "lines": {},
- "parents": {}
+ "parents": {},
+ "objects": {
+  "ball": {
+   "width": 0.36000001430511475,
+   "height": 0.36000001430511475,
+   "depth": 0.36000001430511475
+  }
+ }
 }

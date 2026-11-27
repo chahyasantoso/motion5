@@ -42,7 +42,7 @@ Each is a value with a unique name, made once. Multi-file pieces can import `{ c
 
 A part is `<name>.<index>`. Setting `watch: true` streams pointer events to the scene. On a [page mount](../../dom/docs/page.md), an element binds `[data-cast="<name>"]` inside `root` (or the overrides in `options.nodes`).
 
-An element is bound once, in one scene: `scene` refuses an element bound twice, directly or through a sub-scene, while read-only geometry references (`view.canvas`, `travel.to`, edge points, `stayWith`) may be shared across sub-scenes. `RestReader.object(name)` reads measured `ObjectBounds3d` (`{ width, height, depth }`) alongside 2D rest boxes (`rest.get(name)`).
+An element is bound once per compiled scene: `scene` refuses an element bound twice within the same scene or across its merged sub-scenes, while sequential `shot(...)` sub-scenes and independent scenes can reuse element definitions and read-only geometry references (`view.canvas`, `travel.to`, edge points, `stayWith`) can be shared across sub-scenes. `RestReader.object(name)` reads measured `ObjectBounds3d` (`{ width, height, depth }`) alongside 2D rest boxes (`rest.get(name)`).
 
 ## Beats
 
@@ -62,9 +62,8 @@ Scenes can share beats, states and signals. A scene passed to `scene(...)` as an
 - an element with no motion, such as a slot or a section another motion reads;
 - another scene, merged onto this one's clock;
 - `shot(scene, { name?, length?, until?, overlap? })`: a scene written from 0 that plays after the shot before it. Its
-  beats become `<shot>.<beat>` on the scene's clock, its length is its last beat's end (or `length`, or `until` a scene
-  ms), and `overlap` starts it early. Inside it, time starts at 0 and it sees only the events from its start on (each `at` moved back by its start), and `context.read(x, { time })` takes a time
-  on the shot's clock; its members show only during it unless they show wider. A shot holds no scroll or trigger beats
+  beats become `<shot>.<beat>` on the scene's clock, its length is its `length`, `until`, or last beat's end, and `overlap` starts it early. Inside it, time starts at 0 and it sees only the events from its start on (each `at` and scene cue shifted back by its start), and `context.read(x, { time })` takes a time
+  on the shot's clock without mutating forward cursor state; its members show only during it unless they show wider. A shot holds no scroll or trigger beats
   and no shots; a scene holding shots may join another scene only before that one's shots. `stage.shots` lists each shot's `{ name, index, from, to, overlap }`.
 
 On an element, and on each binding it returns:

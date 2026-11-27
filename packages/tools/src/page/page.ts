@@ -163,16 +163,20 @@ function seedRandom(): void {
   };
 }
 
-/** Steps any held frame source and sets CSS and Web Animations on the document timeline to `ms`. */
+/** Steps held/hosted drivers and holds CSS and Web Animations on the document timeline at `ms`. */
 function stepAndHoldAnimations(ms: number): void {
+  const stepDriver: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/tool-step"));
+  if (typeof stepDriver === "function") Reflect.apply(stepDriver, undefined, [ms]);
   const step: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/held-step"));
   if (typeof step === "function") Reflect.apply(step, undefined, []);
   const seen: unknown = Reflect.get(window, "__motionBorn");
   const born = seen instanceof WeakMap ? seen : new WeakMap<Animation, number>();
   Reflect.set(window, "__motionBorn", born);
+  const triggerAnimation = Symbol.for("@gerak/dom/trigger-animation");
   for (const animation of document.getAnimations()) {
-    // An animation on a scroll timeline follows the scripted scroll, not the clock.
+    // Scroll-timeline and hosted trigger animations follow scripted scroll / step triggers directly.
     if (animation.timeline !== document.timeline) continue;
+    if (Reflect.get(animation, triggerAnimation) === true) continue;
     const start: unknown = born.get(animation);
     const from = typeof start === "number" ? start : ms;
     if (typeof start !== "number") born.set(animation, from);
@@ -257,9 +261,25 @@ async function openPageSession(
   const real = target.clock === "real";
   if (target.prepare !== undefined) await target.prepare(page);
   if (!real) {
-    // Tells a page mount the clock is held, so it draws every element itself.
+    // Hold timed/CSS clocks and install the live DRIVER_HOOK so compositor tracks stay active.
     await page.addInitScript(() => {
       Reflect.set(globalThis, Symbol.for("@gerak/dom/held-clock"), true);
+      let currentMs = 0;
+      const listeners = new Set<() => void>();
+      const sharedDriver = {
+        now: () => ({ progress: 0, clock: { kind: "live" as const, elapsed: currentMs } }),
+        subscribe(listener: () => void) {
+          listeners.add(listener);
+          return () => {
+            listeners.delete(listener);
+          };
+        },
+      };
+      Reflect.set(globalThis, Symbol.for("@gerak/dom/driver"), () => sharedDriver);
+      Reflect.set(globalThis, Symbol.for("@gerak/dom/tool-step"), (ms: number) => {
+        currentMs = ms;
+        for (const listener of [...listeners]) listener();
+      });
     });
     await page.clock.install({ time: 0 });
     // A pause a second ahead outruns a busy machine; story time counts from the first frame, not from here.
@@ -454,8 +474,8 @@ async function waitUntil(at: number): Promise<void> {
   if (left > 0) await new Promise<void>((done) => setTimeout(done, left));
 }
 
-/** A base address for the source, and how to release whatever was started for it. */
-async function openSite(
+/** Starts an ephemeral local server for `source` when serving, returning its `base` URL and `close`. */
+export async function openSite(
   source: PageSource,
 ): Promise<{ readonly base: string; close(): Promise<void> }> {
   switch (source.kind) {
@@ -470,7 +490,7 @@ async function openSite(
         appType: "mpa",
         plugins: added.plugins,
         optimizeDeps: added.optimizeDeps,
-        server: { ...added.server, port: 5280 },
+        server: { ...added.server, port: 0 },
       });
       await server.listen();
       const base = server.resolvedUrls?.local[0];

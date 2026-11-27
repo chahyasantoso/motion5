@@ -1,6 +1,6 @@
 {
  "page": "cookie.html",
- "digest": "b52a164333307fa1",
+ "digest": "ee84786bc8bf17c8",
  "frame": {
   "width": 1440,
   "height": 900
@@ -775,8 +775,8 @@
    }
   },
   "closingFlourish": {
-   "x": 129,
-   "y": 8.5,
+   "x": 221,
+   "y": 10282.328125,
    "width": 250,
    "height": 13,
    "placement": {

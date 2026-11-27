@@ -18,13 +18,13 @@ Time -> timing (span, lanes, loop) -> 0..1 progress -> curve (ease, envelope, pa
 
 ## Time
 
-- `span(from, to).of(time, ease?)` gives the time inside a window: `progress` 0 before, 1 after, eased inside; its clock is the window's own, `elapsed` ms from its start.
+- `span(from, to).of(time, ease?)` gives the time inside a window: `progress` 0 before, 1 after, eased inside; its clock is the window's own, `elapsed` ms from its start (honoring overtime past `length`).
 - `chain(lengths)` lays windows end to end; `lanes(lengths, stagger)` gives each item its own window (`.of(time, i)`); `loop(ms)` repeats; `reversed`, `repeated` reshape a time.
 - `sequence(time, [[span, fn], ...])` plays phases on one target; a finished phase holds its end.
-- `timeAt(time, ms)` and `withProgress(time, p)` sample another moment. Never loop from 0 to now.
-- `motion(fn)` makes a `Motion`: a function of time with `.in(window, ease?)` (plays over a span or a scroll/trigger window, holding its start before and its end after), `.loop(ms)`, `.take()` (replaces the fields it sets) and `.ambient()` (never settles). Every move returns one.
+- `timeAt(time, ms)` and `withProgress(time, p)` sample another moment (run off-time probes under `withProbeStore` when isolation from live cursors is needed). Never loop from 0 to now.
+- `motion(fn)` makes a `Motion`: a function of time with `.in(window, ease?)` (plays over a span or a scroll/trigger window, holding its start before and its end after), `.loop(ms)`, `.take()` (replaces the fields it sets) and `.ambient()` (never settles). Every move returns one; `.in()` and `.loop()` apply in the order called (`loopsForever` reports an outer `.loop()`).
 - **Inside `.in(span)`** a motion's `time` is the span's own: `progress` 0 to 1 across it, `elapsedOf` ms since it began.
-- `shared(signal)` computes once per frame however many readers ask.
+- `shared(signal)` computes once per frame per `RuntimeStore` however many readers ask.
 
 ## Poses
 
@@ -43,7 +43,7 @@ A pose is a record of optional fields; a field left out does nothing.
 
 - **Eases** reshape progress: `ease.*` (`In`, `Out`, `InOut` of sine, quad, cubic, quart, expo, back), `elasticOut`, bounces, and `backEase`, `springEase` built from settings. A `span` clamps progress, so an ease that overshoots goes on the value: `mix(a, b, ease.backOut(p))`.
 - **Envelopes** are amounts over progress: `arch` (0, 1, 0), `wave`, `attack`, `decay`, `taper`.
-- **Blends:** `mix`, `mixAngle` (short way round), `mixPoint`, `mixPose`, `keyframes`.
+- **Blends:** `mix`, `mixAngle` (short way round), `mixPoint`, `mixPose`, `keyframes` (works on timed and untimed clocks by clamping `progress` to `[0, 1]`).
 - **Paths:** shape makers (`circlePath`, `rectPath`, …) and `toCubics` give cubics. `along(cubics)(share)` answers a point in the path's own coordinates, not an offset from an element's rest. `ballistic` throws.
 - **Springs:** `spring(offset, speed, seconds, options)` steps one; `springMemory` says how long it rings.
 
@@ -67,10 +67,11 @@ Events are `{ name, at, target, value? }`, oldest first. A scene never stores wh
 
 - `state(start, rule, { target? })` folds events up to a time; `.steps` lists when it changed.
 - `scroll.y` folds `"scroll"` sample events in px (from 0); `pointer.x` and `pointer.y` fold `"pointer-x"` and `"pointer-y"` samples from 0 to 1 across the viewport (from 0.5). `INPUT_EVENTS` names the three sample events; `springTo(scroll.y, (y) => y)` gives a scroll position that trails the page (a scroll beat's `smooth` uses it), and a [page mount](../../dom/docs/page.md) streams both from the live page.
-- `eventLog()` keeps a log that only grows: `add` puts an event in at its time and nothing in it is replaced, so a state reading its `events` again checks only its last folded event; any other list is checked whole. A page mount's recorder keeps one.
+- `eventLog(options?)` keeps a log whose retention is governed by `RetentionPolicy` (`"all"`, `"live"`, or `"window"`): `add` inserts events in order, `onEvent` streams each new event synchronously, and live compaction advances a monotonic `baseIndex` while keeping continuous channel baselines (`scroll`, `pointer-x`, `pointer-y`) so folding stays O(1) without rescanning.
+- `createStore`, `withStore`, `withProbeStore`, `snapshot`, and `restore` isolate stateful cursors per `Player` (`RuntimeStore`) and keep backward probes from mutating forward state.
 - `transition(state, options)` and `transition(state, pick, options)` return a `Signal<Transition<S>>` (`{ current, previous, progress, active }`) with `ms: number | ((from, to) => number)` and optional `ease`, restarting from mid-change and settling on untimed clocks.
 - `springTo(state, pick)` springs and `easeTo(state, pick, { ms })` eases to what `pick` reads, from wherever the value is when the state changes.
-- `watchClock(onUse, run)` tells `onUse` when what `run` works out can change with the clock alone: `stillMoving()` says `time` (a spring, ease or transition on its way), and a `watchedTime` says `maybe` when its clock or progress is read. States, `transition`, `springTo` and `easeTo` read the clock through `rawTime` and report only while on their way.
+- `watchClock(onUse, run)` and `watchInputs(onInput, run)` tell a scheduler what a step depends on: `stillMoving()` says `time` (including unsettled springs, eases, transitions, `trail`, `trailTurn`, and `react`), `watchedTime` says `maybe` on clock/progress reads, and `scroll`/`pointer`/`events` record input channels. States, `transition`, `springTo` and `easeTo` read the clock through `rawTime` and report only while on their way.
 - `tally` integrates held values over time. `velocity(signal, time, events)` reads speed; pass the scene's time, not an eased one.
 - Random is `seeded(seed)`, never `Math.random()`.
 

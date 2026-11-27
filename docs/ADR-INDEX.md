@@ -212,3 +212,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-205 — The Studio canvas as its own package — Accepted, 2026-11-25
 - ADR-206 — The Studio command bus, follow mode and pins — Accepted and built, 2026-11-25.
 - ADR-207 — A mount runs on a driver it is handed — Accepted and built, 2026-11-26.
+- ADR-208 — Per-player runtime store, bounded live retention, and foundation consolidation — Accepted and built, 2026-11-27.

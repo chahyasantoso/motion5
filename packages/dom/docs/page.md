@@ -1,6 +1,6 @@
 # Mounting a page
 
-`mount(scene, { clock, frame?, root?, binders?, nodes? })` animates a page's HTML and CSS nodes without creating a shadow root. Site HTML and CSS own the look, layout, hierarchy and `transform-origin`; motion writes transforms, opacity and custom properties through [the DOM renderer](./drawing.md).
+`mount(scene, { clock, frame?, root?, binders?, nodes?, retention?, onEvent?, settleMs? })` animates a page's HTML and CSS nodes without creating a shadow root. Site HTML and CSS own the look, layout, hierarchy and `transform-origin`; motion writes transforms, opacity and custom properties through [the DOM renderer](./drawing.md).
 
 ## Binding nodes
 
@@ -17,8 +17,8 @@ const card = box("card");
 ```
 
 - `mount` matches `[data-cast="<name>"]` inside `root` (`document` by default) and throws, naming the element, if no node matches — and also refuses a non-parts `box(name)` matching multiple nodes (naming `parts: true`). Pass `nodes: { name: nodeOrList }` to override matching by name.
-- Pass `binders: [threeBinder(world, { objects, resize, draw })]` to draw, resize, report 3D `casts()`, count 3D list parts and measure `object` elements; `mount` publishes `Binder.casts()` via `BINDER_CASTS` before scene binding validates nodes and verifies every `object` in the scene is claimed by one binder. Async page setup calls `ready(promise)` from `@gerak/dom` so `window.__motionReady` is registered with one typed owner.
-- Plain `box`, `shape` and non-readout `text` leave CSS and HTML text intact (`shape` sets the `<path>`'s `d` attribute from its path); only a readout `text(name, (time) => string)` updates `textContent`.
+- Pass `binders: [threeBinder(world, { objects, resize, draw })]` to draw, resize, report 3D `casts()`, count 3D list parts and measure `object` elements; `mount` publishes `Binder.casts()` scoped per root via `BINDER_CASTS` (clearing on `dispose()` and rollback on failed mounts) before scene binding validates nodes and verifies every `object` in the scene is claimed by one binder. Async page setup calls `ready(promise)` from `@gerak/dom` so `window.__motionReady` is registered with one typed owner.
+- Plain `box`, `shape` and non-readout `text` leave CSS and HTML text intact (`shape` sets the `<path>`'s `d` attribute from its path while preserving `Box.placement` and container SVG offsets); only a readout `text(name, (time) => string)` updates `textContent`.
 - A `box(name, { media: true })` binds an `HTMLMediaElement` (`<video>` or `<audio>`), pauses it on bind and unmount, plays it at rate 1 (re-seeking on drift over 1/30 s) on a running clock, and pauses and seeks it on every frame when the clock is held or scrubbing; `mounted.settled()` waits until all media nodes have `readyState >= 2` and `seeking === false`, and `mounted.media()` reports each clip's duration and window bounds.
 - Calling `.dispose()` cancels listeners and the animation loop and clears inline values written by gerak.
 - Dispose on `pagehide` only when `event.persisted` is false, never on `beforeunload`: a page the browser keeps in its back/forward cache comes back without rerunning scripts, so a disposed mount stays motionless.
@@ -35,14 +35,14 @@ const card = box("card");
 
 A live mount runs one clock (`liveAt`) feeding scroll, pointer and watched element events into the scene:
 
-- Window or `scrollTarget` scrolling samples `INPUT_EVENTS.scroll` in px (`scroll.y`).
-- Pointer movement over the page samples normalized viewport coordinates `INPUT_EVENTS.pointerX` and `INPUT_EVENTS.pointerY` from 0 to 1 (`pointer.x`, `pointer.y`).
+- Window or `scrollTarget` scrolling samples `INPUT_EVENTS.scroll` in px (`scroll.y`), coalesced to at most one sample per animation frame.
+- Pointer movement over the page samples normalized viewport coordinates `INPUT_EVENTS.pointerX` and `INPUT_EVENTS.pointerY` from 0 to 1 (`pointer.x`, `pointer.y`), attached lazily only when the active scene reads pointer coordinates and coalesced to one sample per animation frame.
 - Elements with `watch: true` log `enter`, `leave`, `down`, `up`, `click`, `focus` and `blur`.
-- `mounted.send(name, value, target?)` logs a sample at the current clock time, and `mounted.events()` returns the recorded log.
+- `mounted.send(name, value, target?)` logs a sample at the current clock time, `onEvent` streams every recorded event synchronously, `retention` defaults on `"live"` mounts to `{ kind: "live", windowMs: Math.max(settleMs, 4000) }` (keeping bounded memory via monotonic compaction while retaining full history on `"timed"` or explicit `{ kind: "all" }`), and `mounted.events()` returns the retained log.
 - `mounted.player.observe(signal, listener)` calls `listener` with a `state(...)` or other signal now and after each step that changes it, before the page draws that step. Page UI outside the cast reads the scene's own state this way instead of keeping a copy; a seek back undoes later events.
 - The mount owns the inline `transform`, `opacity`, `z-index`, `transform-origin`, `transform-box`, `filter` and `clip-path` of every node it animates, setting each only when its text changes; it leaves `transform-origin` and `transform-box` untouched unless a pose specifies an `anchor`.
 - An input only logs its sample and asks for a frame; the scene runs and writes once per animation frame, however many inputs arrived in it.
-- A frame after an input runs the whole scene. A frame with no new input runs only the elements that move with time alone: a clock beat not ended, a running trigger, a `smooth` beat or `springTo` not yet settled, a loop; and, until `settleMs` after the last input or re-measure, a motion that read the clock, `carry` or another element.
+- A frame after an input runs only the engine elements whose tracked `InputNeed` depends on the channel that changed (`scroll`, `pointer`, or `events`, falling back to active elements on explicit seeks/rewinds). A frame with no new input runs only the elements that move with time alone: a clock beat not ended, a running trigger, a `smooth` beat or `springTo` not yet settled, a loop; and, until `settleMs` after the last input or re-measure, a motion that read the clock, `carry` or another element.
 - The mount never smooths the page's own scrolling.
 
 Headless tools advance scroll via `cues` or `npx gerak frames ... --action scroll:px@ms` (or `scroll:selector[±px]@ms`).
@@ -54,7 +54,7 @@ On a `"live"` `"page"` mount and on each remeasure, `mount` hands Chromium the e
 - **Scroll-driven:** every motion on the element plays in a scroll beat without `smooth`. It plays on one `ScrollTimeline` over the document's whole scroll range, sampled inside its active scroll intervals.
 - **Trigger-driven:** every motion on the element plays in one trigger beat, and its pose before the trigger fires equals its pose at the start. It plays on the document timeline; on each input the mount asks the beat which way it runs and how far it has come, so `reverse`, `stay` and `replay` stay the beat's to decide.
 - Either way the element sets only `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY` and `opacity` (with one fixed `anchor`), and its motions read nothing but their window's time and the measured boxes. A read of the clock, `events`, `carry` or another element, a `bind`, `travel`, `.loop`, `.modifies`, a timed or scroll `.shows`, or `.ambient()` keeps it in the engine, as does a `smooth` scroll beat.
-- Without `ScrollTimeline`, or with a `scrollTarget` other than the window, every element stays in the engine, and so it does while the page tools hold the clock.
+- Without `ScrollTimeline`, or with a `scrollTarget` other than the window, every element stays in the engine; a live mount driven by page tools via the host hook keeps Chromium compositor animations active.
 - `ResizeObserver` callbacks coalesce onto a single microtask, and a remeasure skips rebuilding compositor animations when `maxScroll`, `lines`, and the measured boxes read by handed tracks are unchanged.
 
 ## Sections and CSS layout
@@ -83,4 +83,4 @@ Every box element's `.top`, `.end`, `.pinStart` and `.pinEnd` are scroll points 
 
 ## Ownership
 
-An element is bound once, in one scene, which gives it `.moves()`, `.shows()` or `.limits()`; `scene` refuses an element bound twice, while read-only geometry references may be shared across sub-scenes. Scenes may share beats, states and signals; `scene(options, heroScene, storyScene)` merges several into the one a page mounts.
+An element is bound once per compiled scene, which gives it `.moves()`, `.shows()` or `.limits()`; `scene` refuses duplicate bindings inside one scene, while independent scenes or sequential shots can share elements and sub-scenes can share read-only geometry references. Scenes may share beats, states and signals; `scene(options, heroScene, storyScene)` merges several into the one a page mounts.

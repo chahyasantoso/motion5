@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { basename, dirname, extname, join, relative, resolve } from "node:path";
 
 /** How the page places a measured box: in flow, fixed to the viewport, or sticky between two scroll offsets. */
 export type MeasuredPlacement =
@@ -47,14 +47,171 @@ export function cachePathOf(page: string): string {
   return join(dirname(page), `${basename(page, ".html")}.measure.json`);
 }
 
-/** A digest of the page and every stylesheet beside it: what a measure depends on. */
+const SCRIPT_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".js", ".mjs"] as const;
+
+function stripQueryHash(spec: string): string {
+  return spec.split(/[?#]/, 1)[0] ?? "";
+}
+
+function isRemoteSpec(spec: string): boolean {
+  return spec === "" || /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(spec);
+}
+
+function isExistingFile(path: string): boolean {
+  try {
+    return existsSync(path) && statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function resolvePageAsset(pageDir: string, spec: string): string | undefined {
+  const clean = stripQueryHash(spec.trim());
+  if (isRemoteSpec(clean)) return undefined;
+  const rel = clean.startsWith("/") ? clean.slice(1) : clean;
+  const fromPage = resolve(pageDir, rel);
+  if (isExistingFile(fromPage)) return fromPage;
+  if (clean.startsWith("/")) {
+    const fromRoot = resolve(dirname(pageDir), rel);
+    if (isExistingFile(fromRoot)) return fromRoot;
+  }
+  return undefined;
+}
+
+function resolveScriptModule(fromDir: string, spec: string): string | undefined {
+  const clean = stripQueryHash(spec.trim());
+  if (!clean.startsWith("./") && !clean.startsWith("../")) return undefined;
+  const base = resolve(fromDir, clean);
+  if (isExistingFile(base)) return base;
+  const ext = extname(base);
+  if (ext === ".js" || ext === ".mjs") {
+    const stem = base.slice(0, -ext.length);
+    for (const tsExt of [".ts", ".tsx", ".mts"]) {
+      if (isExistingFile(`${stem}${tsExt}`)) return `${stem}${tsExt}`;
+    }
+  }
+  if (ext === "") {
+    for (const candidateExt of SCRIPT_EXTENSIONS) {
+      if (isExistingFile(`${base}${candidateExt}`)) return `${base}${candidateExt}`;
+    }
+    for (const candidateExt of SCRIPT_EXTENSIONS) {
+      const idx = resolve(base, `index${candidateExt}`);
+      if (isExistingFile(idx)) return idx;
+    }
+  }
+  return undefined;
+}
+
+function collectHtmlDeps(
+  html: string,
+  pageDir: string,
+): { readonly css: string[]; readonly scripts: string[]; readonly assets: string[] } {
+  const css: string[] = [];
+  const scripts: string[] = [];
+  const assets: string[] = [];
+  for (const match of html.matchAll(/<link\b([^>]*)>/gi)) {
+    const attrs = match[1] ?? "";
+    const hrefMatch = /\bhref=["']([^"']+)["']/i.exec(attrs);
+    const href = hrefMatch?.[1];
+    if (href === undefined) continue;
+    const relMatch = /\brel=["']([^"']+)["']/i.exec(attrs);
+    const isStylesheet =
+      relMatch?.[1]?.toLowerCase().split(/\s+/).includes("stylesheet") ||
+      stripQueryHash(href).toLowerCase().endsWith(".css");
+    if (!isStylesheet) continue;
+    const found = resolvePageAsset(pageDir, href);
+    if (found !== undefined) css.push(found);
+  }
+  for (const match of html.matchAll(/<script\b([^>]*)>/gi)) {
+    const attrs = match[1] ?? "";
+    const srcMatch = /\bsrc=["']([^"']+)["']/i.exec(attrs);
+    const src = srcMatch?.[1];
+    if (src === undefined) continue;
+    const found = resolvePageAsset(pageDir, src);
+    if (found !== undefined) scripts.push(found);
+  }
+  for (const match of html.matchAll(/["']([^"']+\.(?:glb|gltf)(?:[?#][^"']*)?)["']/gi)) {
+    const spec = match[1];
+    if (spec === undefined) continue;
+    const found = resolvePageAsset(pageDir, spec);
+    if (found !== undefined) assets.push(found);
+  }
+  return { css, scripts, assets };
+}
+
+/** A digest of the page and its linked styles, bootstrap scripts, local imports, and glTF assets. */
 export function pageDigest(page: string): string {
-  const hash = createHash("sha256").update(readFileSync(page));
-  const folder = dirname(page);
+  const htmlText = readFileSync(page, "utf8");
+  const hash = createHash("sha256").update(htmlText);
+  const folder = resolve(dirname(page));
+  const stem = basename(page, ".html");
+  const visitedFiles = new Set<string>([
+    resolve(page),
+    resolve(folder, "src", `${stem}.ts`),
+    resolve(folder, "src", `${stem}.tsx`),
+    resolve(folder, "src", `${stem}-scene.ts`),
+    resolve(folder, "src", `${stem}-scene.tsx`),
+  ]);
+  const assets = new Set<string>();
+
   for (const name of readdirSync(folder)
     .filter((file) => file.endsWith(".css"))
-    .sort())
-    hash.update(name).update(readFileSync(join(folder, name)));
+    .sort()) {
+    const cssPath = resolve(folder, name);
+    visitedFiles.add(cssPath);
+    hash.update(name).update(readFileSync(cssPath));
+  }
+
+  const { css, scripts, assets: htmlAssets } = collectHtmlDeps(htmlText, folder);
+  for (const asset of htmlAssets) assets.add(asset);
+
+  const cssQueue = [...css].sort();
+  while (cssQueue.length > 0) {
+    const cssPath = cssQueue.shift();
+    if (cssPath === undefined || visitedFiles.has(cssPath)) continue;
+    visitedFiles.add(cssPath);
+    const cssText = readFileSync(cssPath, "utf8");
+    hash.update(relative(folder, cssPath).replaceAll("\\", "/")).update(cssText);
+    const cssDir = dirname(cssPath);
+    for (const match of cssText.matchAll(/@import\s+(?:url\()?["']([^"']+)["']/g)) {
+      const target = match[1];
+      if (target === undefined) continue;
+      const imported = resolvePageAsset(cssDir, target);
+      if (imported !== undefined && !visitedFiles.has(imported)) cssQueue.push(imported);
+    }
+  }
+
+  const scriptQueue = [...scripts].sort();
+  while (scriptQueue.length > 0) {
+    const scriptPath = scriptQueue.shift();
+    if (scriptPath === undefined || visitedFiles.has(scriptPath)) continue;
+    visitedFiles.add(scriptPath);
+    const code = readFileSync(scriptPath, "utf8");
+    hash.update(relative(folder, scriptPath).replaceAll("\\", "/")).update(code);
+    const scriptDir = dirname(scriptPath);
+    for (const match of code.matchAll(/(?:\bfrom|\bimport)\s*\(?["'](\.[^"']+)["']/g)) {
+      const spec = match[1];
+      if (spec === undefined) continue;
+      const dep = resolveScriptModule(scriptDir, spec);
+      if (dep !== undefined && !visitedFiles.has(dep)) scriptQueue.push(dep);
+    }
+    for (const match of code.matchAll(/["']([^"']+\.(?:glb|gltf)(?:[?#][^"']*)?)["']/gi)) {
+      const spec = match[1];
+      if (spec === undefined) continue;
+      const clean = stripQueryHash(spec);
+      if (isRemoteSpec(clean)) continue;
+      const fromScript = resolve(scriptDir, clean.startsWith("/") ? clean.slice(1) : clean);
+      if (isExistingFile(fromScript)) assets.add(fromScript);
+      else {
+        const fromHtml = resolvePageAsset(folder, spec);
+        if (fromHtml !== undefined) assets.add(fromHtml);
+      }
+    }
+  }
+
+  for (const assetPath of [...assets].sort()) {
+    hash.update(relative(folder, assetPath).replaceAll("\\", "/")).update(readFileSync(assetPath));
+  }
   return hash.digest("hex").slice(0, 16);
 }
 

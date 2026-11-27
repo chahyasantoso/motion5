@@ -1,6 +1,7 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { Browser } from "playwright-core";
 import { parseNumbers } from "./args";
 import { SAFE_ZONE_USAGE, parseSafeZone, safeZone, type SafeZoneName } from "./safe-zone";
 import { DEFAULT_LIMITS, describeFinding, sampleMotion } from "./check";
@@ -9,6 +10,8 @@ import { pickFrames, type PickReason } from "./pick";
 import {
   formatSize,
   fromCaller,
+  launchBrowser,
+  openSite,
   parseSizes,
   readPageArgs,
   type PageTarget,
@@ -175,55 +178,70 @@ async function reviewSingleViewport(
   return { ...base, full: true, motion };
 }
 
-/** Checks and photographs the page in one call; reads the moves back too only when `full`. */
+/** Checks and photographs the page in one shared browser/server session; adds moves when `full`. */
 export async function reviewPage(request: ReviewRequest): Promise<ReviewResult> {
-  if (request.sizes === undefined) return reviewSingleViewport(request);
-  const { sizes, out, ...rest } = request;
-  const baseOut = out ?? mkdtempSync(join(tmpdir(), "motion-review-"));
-  const viewports: ViewportReview[] = [];
-  const sheets: Record<string, string> = {};
-  const findings: string[] = [];
-  const frames: string[] = [];
-  const pageErrors: string[] = [];
-  const motion: string[] = [];
+  const site = await openSite(request.source);
+  let ownBrowser: Browser | undefined;
+  let browser: Browser;
+  try {
+    browser =
+      request.browser ?? (ownBrowser = await launchBrowser({ headless: request.show !== true }));
+    const shared: ReviewRequest = {
+      ...request,
+      source: { kind: "url", base: site.base },
+      browser,
+    };
+    if (shared.sizes === undefined) return await reviewSingleViewport(shared);
+    const { sizes, out, ...rest } = shared;
+    const baseOut = out ?? mkdtempSync(join(tmpdir(), "motion-review-"));
+    const viewports: ViewportReview[] = [];
+    const sheets: Record<string, string> = {};
+    const findings: string[] = [];
+    const frames: string[] = [];
+    const pageErrors: string[] = [];
+    const motion: string[] = [];
 
-  for (const size of sizes) {
-    const label = formatSize(size);
-    const single = await reviewSingleViewport(
-      {
-        ...rest,
+    for (const size of sizes) {
+      const label = formatSize(size);
+      const single = await reviewSingleViewport(
+        {
+          ...rest,
+          width: size.width,
+          height: size.height,
+          out: join(baseOut, label),
+        },
+        { sheetPath: join(baseOut, `sheet-${label}.png`), sheetLabel: label },
+      );
+      viewports.push({
+        size: label,
         width: size.width,
         height: size.height,
-        out: join(baseOut, label),
-      },
-      { sheetPath: join(baseOut, `sheet-${label}.png`), sheetLabel: label },
-    );
-    viewports.push({
-      size: label,
-      width: size.width,
-      height: size.height,
-      findings: single.findings,
-      frames: single.frames,
-      sheet: single.sheet,
-      pageErrors: single.pageErrors,
-    });
-    sheets[label] = single.sheet;
-    findings.push(...single.findings.map((finding) => `[${label}] ${finding}`));
-    frames.push(...single.frames.map((frame) => `[${label}] ${frame}`));
-    pageErrors.push(...single.pageErrors.map((error) => `[${label}] ${error}`));
-    if (single.full) motion.push(...single.motion.map((line) => `[${label}] ${line}`));
-  }
+        findings: single.findings,
+        frames: single.frames,
+        sheet: single.sheet,
+        pageErrors: single.pageErrors,
+      });
+      sheets[label] = single.sheet;
+      findings.push(...single.findings.map((finding) => `[${label}] ${finding}`));
+      frames.push(...single.frames.map((frame) => `[${label}] ${frame}`));
+      pageErrors.push(...single.pageErrors.map((error) => `[${label}] ${error}`));
+      if (single.full) motion.push(...single.motion.map((line) => `[${label}] ${line}`));
+    }
 
-  const base: ReviewBase = {
-    kind: "reviewed",
-    findings,
-    frames,
-    sheet: viewports[0]?.sheet ?? "",
-    sheets,
-    viewports,
-    pageErrors,
-  };
-  return request.full ? { ...base, full: true, motion } : { ...base, full: false };
+    const base: ReviewBase = {
+      kind: "reviewed",
+      findings,
+      frames,
+      sheet: viewports[0]?.sheet ?? "",
+      sheets,
+      viewports,
+      pageErrors,
+    };
+    return request.full ? { ...base, full: true, motion } : { ...base, full: false };
+  } finally {
+    if (ownBrowser !== undefined) await ownBrowser.close();
+    await site.close();
+  }
 }
 
 /** The review as a reader wants it: findings, then the sheet, then the moves when they were read. */

@@ -30,8 +30,9 @@ if (title !== null) player.subscribe("title", (pose) => applyValue(title, pose))
 ## In React
 
 ```tsx
+import { useRef } from "react";
 import { clockDriver } from "@gerak/dom";
-import { usePlayer, useTarget } from "@gerak/react";
+import { useMount, usePlayer, useTarget } from "@gerak/react";
 
 const clock = () => clockDriver({ duration: durationMs });
 
@@ -40,10 +41,16 @@ export function Title() {
   const title = useTarget(playing?.player, "title");
   return <h1 ref={title}>Hello</h1>;
 }
+
+export function PieceFrame() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useMount(rootRef, stageScene, { clock: "live" });
+  return <div ref={rootRef}><h1 data-cast="title">Hello</h1></div>;
+}
 ```
 
 Define `scene` and `clock` outside the component, or `usePlayer` restarts. `useTarget` writes the pose every frame
-with no render.
+with no render, `useSignal` follows scene state synchronously, and `useMount` / `<Stage>` mount compiled stage scenes onto a React ref with zero wrapper nodes.
 
 ## Seeking by hand
 

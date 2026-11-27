@@ -48,7 +48,12 @@ export async function talkPage(pieces: ModuleGlob, components: ModuleGlob): Prom
     saveButton.hidden = true;
     return;
   }
-  const stage = mount(loaded.stage, { clock: "timed", frame: "fit", root: frame });
+  const stage = mount(loaded.stage, {
+    clock: "live",
+    retention: { kind: "all" },
+    frame: "fit",
+    root: frame,
+  });
 
   saveButton.addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(stage.events(), null, 1)], { type: "application/json" });

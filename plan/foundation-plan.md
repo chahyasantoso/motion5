@@ -4,7 +4,7 @@
 
 People and agents building always-on web pages, interactive 3D scenes, React views, and rendered reels get flat O(1) memory and CPU on live pages, opt-in event recording and server streaming when needed, and predictable behavior across multiple mounts, shots, live edits, and browser checks — without changing how a scene is written. The code moves hidden closure caches into a per-player `RuntimeStore` with snapshot/restore support, bounds live event and layout history, deletes dead `defineStage` and `gerak live` remnants, modularizes `mount`, fixes 3D rest/opacity and React mount ergonomics, and unifies `tools` around handed drivers and shared browser sessions.
 
-Status: in progress, 2026-11-26 (`feat/foundation`). Five pull requests in order. Studio contracts are not preserved where the foundation moves (`packages/studio` receives only minimal compile fixes to keep repo gates green before its planned revamp).
+Status: Slices 1–5 implemented, 2026-11-27 (`feat/foundation`). Five slices in order. Studio source was left untouched and `packages/studio/test` was removed per user instruction ahead of a separate Studio revamp.
 
 Read `AGENTS.md` first. Every rule there applies.
 

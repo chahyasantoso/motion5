@@ -64,12 +64,12 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | Named moves, couplings and signal parts | `@gerak/moves` |
 | Bones, chains, FK, IK and frames, 2D and 3D | `@gerak/rig`, bound to Three.js skeletons by `@gerak/rig-three` |
 | Bodies, contacts and a seekable simulation | `@gerak/physics`, backed by `@gerak/rapier` |
-| Which moment is shown, and who hears a value or a cue | `@gerak/player` |
-| Where time comes from on a page: a clock, scroll, events | the drivers in `@gerak/dom` |
+| Which moment is shown, its `RuntimeStore`, and who hears a value or a cue | `@gerak/player` |
+| Where time comes from on a page: a clock, scroll, bounded retention, events | the drivers in `@gerak/dom` |
 | The CSS a pose becomes | `@gerak/dom` |
 | A pose on a Three.js object and opt-in `createStage3d` rig | `@gerak/three` |
-| Binding a player to React | `@gerak/react` (and `@gerak/three/react`) |
-| Reading, checking, editing live and photographing motion | `@gerak/tools` |
+| Binding a player or compiled stage to React | `@gerak/react` (and `@gerak/three/react`) |
+| Reading, checking, measuring, live-reloading and photographing motion | `@gerak/tools` |
 
 One owner per question. A second place that answers one of these is the defect to fix, not a convenience to keep.
 

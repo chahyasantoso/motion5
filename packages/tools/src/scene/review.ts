@@ -9,6 +9,7 @@ import {
   quaternionFromEuler3d,
   unreachable,
   valueField,
+  withProbeStore,
   type Events,
   type Time,
 } from "@gerak/core";
@@ -38,7 +39,6 @@ import {
   loadSceneFile,
   measuredInput,
   parseEvents,
-  sampleScene,
   writtenOut,
   type Beat,
   type SceneModule,
@@ -432,13 +432,13 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-/** Runs the stage at each requested ms, as a player plays it. */
+/** Runs the stage at each requested ms, collecting samples and per-step evaluation timings. */
 function sampleStageFrames(
   stage: Stage,
   input: Pick<FrameInput, "counts" | "lines" | "rest">,
   ms: readonly number[],
   events: Events = NO_EVENTS,
-): readonly EvaluatedSample[] {
+): { readonly evaluated: readonly EvaluatedSample[]; readonly costs: readonly number[] } {
   let latest: EvaluatedSample | undefined;
   const driver = manualDriver({ durationMs: stage.durationMs });
   let at = 0;
@@ -450,11 +450,15 @@ function sampleStageFrames(
     driver,
     { cues: mergeEvents(stage.cues, events) },
   );
-  return ms.map((next, index) => {
+  const costs: number[] = [];
+  const evaluated = ms.map((next, index) => {
     at = next;
+    const start = performance.now();
     if (!(index === 0 && next === 0 && latest !== undefined)) driver.seekMs(next);
+    costs.push(performance.now() - start);
     return latest ?? evaluate(stage, input, driver.now(), NO_EVENTS, next);
   });
+  return { evaluated, costs };
 }
 
 /** A member's value in written-out targets: its own, or one item of its list. */
@@ -564,89 +568,91 @@ function movedUnderDriver(
   input: Pick<FrameInput, "counts" | "lines" | "rest">,
   baseline: string,
 ): boolean {
-  const rest = input.rest ?? NO_REST;
-  const differs = (time: Time, events: Events): boolean => {
-    try {
-      const out = frame(stage, {
-        time,
-        events,
-        ...input,
-        only: new Set([reviewed.member.name]),
-      });
-      const targets = writtenOut(stage, out.targets, input.counts);
-      return fingerprint(valueOfReview(targets, reviewed)) !== baseline;
-    } catch {
-      return false;
-    }
-  };
-  switch (drive.kind) {
-    case "scroll":
-      for (const item of drive.beats) {
-        const from = item.from.at(rest);
-        const to = item.to.at(rest);
-        const probes = to > from ? [from, (from + to) / 2, to] : [from, from + 1];
-        for (const y of probes) {
-          if (differs(liveAt(0), [{ name: INPUT_EVENTS.scroll, at: 0, value: y }])) return true;
+  return withProbeStore(() => {
+    const rest = input.rest ?? NO_REST;
+    const differs = (time: Time, events: Events): boolean => {
+      try {
+        const out = frame(stage, {
+          time,
+          events,
+          ...input,
+          only: new Set([reviewed.member.name]),
+        });
+        const targets = writtenOut(stage, out.targets, input.counts);
+        return fingerprint(valueOfReview(targets, reviewed)) !== baseline;
+      } catch {
+        return false;
+      }
+    };
+    switch (drive.kind) {
+      case "scroll":
+        for (const item of drive.beats) {
+          const from = item.from.at(rest);
+          const to = item.to.at(rest);
+          const probes = to > from ? [from, (from + to) / 2, to] : [from, from + 1];
+          for (const y of probes) {
+            if (differs(liveAt(0), [{ name: INPUT_EVENTS.scroll, at: 0, value: y }])) return true;
+          }
         }
+        return false;
+      case "trigger": {
+        const threshold = drive.beat.when.point.at(rest);
+        if (threshold > 0 && differs(liveAt(0), NO_EVENTS)) return true;
+        const crossed: Events = [{ name: INPUT_EVENTS.scroll, at: 0, value: threshold }];
+        return (
+          differs(liveAt(0), crossed) ||
+          differs(liveAt(drive.beat.ms / 2), crossed) ||
+          differs(liveAt(drive.beat.ms), crossed)
+        );
       }
-      return false;
-    case "trigger": {
-      const threshold = drive.beat.when.point.at(rest);
-      if (threshold > 0 && differs(liveAt(0), NO_EVENTS)) return true;
-      const crossed: Events = [{ name: INPUT_EVENTS.scroll, at: 0, value: threshold }];
-      return (
-        differs(liveAt(0), crossed) ||
-        differs(liveAt(drive.beat.ms / 2), crossed) ||
-        differs(liveAt(drive.beat.ms), crossed)
-      );
-    }
-    case "more": {
-      const maxBottom = Math.max(
-        1000,
-        ...rest.keys().map((key) => {
-          const box = rest.get(key);
-          return box.y + box.height / 2;
-        }),
-      );
-      const scrollProbes = new Set<number>();
-      const steps = Math.max(16, Math.min(64, Math.ceil(maxBottom / 250)));
-      for (let k = 1; k <= steps; k += 1) scrollProbes.add((maxBottom * k) / steps);
-      for (const key of rest.keys()) {
-        const placement = placementOf(rest.get(key));
-        switch (placement.kind) {
-          case "sticky":
-            scrollProbes.add(placement.minY);
-            scrollProbes.add(placement.maxY);
-            for (const f of [0.125, 0.375, 0.625, 0.875])
-              scrollProbes.add(placement.minY + (placement.maxY - placement.minY) * f);
-            break;
-          case "flow":
-          case "fixed":
-            break;
-          default:
-            unreachable(placement);
+      case "more": {
+        const maxBottom = Math.max(
+          1000,
+          ...rest.keys().map((key) => {
+            const box = rest.get(key);
+            return box.y + box.height / 2;
+          }),
+        );
+        const scrollProbes = new Set<number>();
+        const steps = Math.max(16, Math.min(64, Math.ceil(maxBottom / 250)));
+        for (let k = 1; k <= steps; k += 1) scrollProbes.add((maxBottom * k) / steps);
+        for (const key of rest.keys()) {
+          const placement = placementOf(rest.get(key));
+          switch (placement.kind) {
+            case "sticky":
+              scrollProbes.add(placement.minY);
+              scrollProbes.add(placement.maxY);
+              for (const f of [0.125, 0.375, 0.625, 0.875])
+                scrollProbes.add(placement.minY + (placement.maxY - placement.minY) * f);
+              break;
+            case "flow":
+            case "fixed":
+              break;
+            default:
+              unreachable(placement);
+          }
         }
+        for (const y of scrollProbes) {
+          if (differs(liveAt(1000), [{ name: INPUT_EVENTS.scroll, at: 0, value: y }])) return true;
+        }
+        if (
+          differs(liveAt(500), [
+            { name: INPUT_EVENTS.pointerX, at: 0, value: 0.9 },
+            { name: INPUT_EVENTS.pointerY, at: 0, value: 0.9 },
+          ])
+        )
+          return true;
+        for (const watched of stage.members) {
+          if (!watched.watch) continue;
+          for (const name of WATCH_PROBE_EVENTS)
+            if (differs(liveAt(500), [{ name, at: 0, target: watched.name }])) return true;
+        }
+        return false;
       }
-      for (const y of scrollProbes) {
-        if (differs(liveAt(1000), [{ name: INPUT_EVENTS.scroll, at: 0, value: y }])) return true;
-      }
-      if (
-        differs(liveAt(500), [
-          { name: INPUT_EVENTS.pointerX, at: 0, value: 0.9 },
-          { name: INPUT_EVENTS.pointerY, at: 0, value: 0.9 },
-        ])
-      )
-        return true;
-      for (const watched of stage.members) {
-        if (!watched.watch) continue;
-        for (const name of WATCH_PROBE_EVENTS)
-          if (differs(liveAt(500), [{ name, at: 0, target: watched.name }])) return true;
-      }
-      return false;
+      default:
+        return unreachable(drive);
     }
-    default:
-      return unreachable(drive);
-  }
+  });
 }
 
 /** Checks expectations (`"settle"`, `"ambient"`, `"static"`), shapes on non-morphs, and changes outside stretches. */
@@ -819,21 +825,9 @@ function soughtOrder(ms: readonly number[]): readonly number[] {
   return order;
 }
 
-/** One finding per target whose value at some ms differs when sought out of order from when played to in
- * order: the scene keeps state between frames, so scrubbing shows what playing never did. */
-function seekFindings(
-  module: SceneModule,
-  played: Samples,
-  events: Events = NO_EVENTS,
-): readonly string[] {
+/** One finding per target whose value at some ms differs when sought out of order from when played. */
+function seekFindingsFrom(played: Samples, sought: Samples): readonly string[] {
   const byMs = new Map(played.map((sample) => [sample.at, sample.targets] as const));
-  const sought = sampleScene(
-    module,
-    { kind: "time", ms: soughtOrder(played.map(({ at }) => at)) },
-    undefined,
-    undefined,
-    events,
-  );
   const found = new Map<string, number>();
   for (const { at, targets } of sought) {
     const reached = byMs.get(at);
@@ -859,6 +853,26 @@ function lateCueFindings(module: SceneModule): readonly string[] {
   ];
 }
 
+/** Evaluates `ms` in order on one fresh player, returning both samples and per-step elapsed ms. */
+function timedScenePass(
+  module: SceneModule,
+  ms: readonly number[],
+  events: Events = NO_EVENTS,
+): { readonly samples: Samples; readonly costs: readonly number[] } {
+  const driver = manualDriver({ durationMs: module.durationMs });
+  const player = play(module.scene, driver, { cues: mergeEvents(module.cues, events) });
+  const samples: { readonly at: number; readonly targets: Readonly<Record<string, unknown>> }[] =
+    [];
+  const costs: number[] = [];
+  for (const at of ms) {
+    const start = performance.now();
+    driver.seekMs(at);
+    costs.push(performance.now() - start);
+    samples.push({ at, targets: Object.fromEntries(Object.entries(player.values)) });
+  }
+  return { samples, costs };
+}
+
 /** The ms each of `ms` costs: a seek, which runs the scene once, on one fresh player, in the order given. */
 function timedSteps(
   module: SceneModule,
@@ -872,11 +886,6 @@ function timedSteps(
     driver.seekMs(at);
     return performance.now() - start;
   });
-}
-
-function median(values: readonly number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)] ?? 0;
 }
 
 function mean(values: readonly number[]): number {
@@ -915,24 +924,46 @@ function budgetFindings(
   ];
 }
 
-/** Times the scene: each in-order step as the median of three runs on fresh players, each seek of the
- * shuffled pass once. */
-function costFindings(
+function verifyOverBudgetSeeks(
   module: SceneModule,
-  ms: readonly number[],
+  order: readonly number[],
+  seeks: readonly number[],
   budget: number,
-  events: Events = NO_EVENTS,
+  events: Events,
+): readonly number[] {
+  if (!seeks.some((cost) => cost > budget)) return seeks;
+  const checkDriver = manualDriver({ durationMs: module.durationMs });
+  play(module.scene, checkDriver, { cues: mergeEvents(module.cues, events) });
+  return seeks.map((cost, index) => {
+    if (cost <= budget) return cost;
+    const at = order[index];
+    if (at === undefined) return cost;
+    const start = performance.now();
+    checkDriver.seekMs(at);
+    return Math.min(cost, performance.now() - start);
+  });
+}
+
+function costFindingsFrom(
+  module: SceneModule,
+  events: Events,
+  inOrder: readonly number[],
+  ms: readonly number[],
+  seeks: readonly number[],
+  order: readonly number[],
+  budget: number,
 ): readonly string[] {
-  const runs = [0, 1, 2].map(() => timedSteps(module, ms, events));
-  const inOrder = ms.map((_, index) => median(runs.map((run) => run[index] ?? 0)));
-  const order = soughtOrder(ms);
-  const seeks = timedSteps(module, order, events);
+  const verifiedSeeks = verifyOverBudgetSeeks(module, order, seeks, budget, events);
   return [
     ...growthFindings(inOrder, ms),
     ...budgetFindings(
       [
         ...ms.map((at, index) => ({ at, cost: inOrder[index] ?? 0, seek: false })),
-        ...order.map((at, index) => ({ at, cost: seeks[index] ?? 0, seek: true })),
+        ...order.map((at, index) => ({
+          at,
+          cost: verifiedSeeks[index] ?? 0,
+          seek: true,
+        })),
       ],
       budget,
     ),
@@ -943,7 +974,7 @@ function costFindings(
 export function measureSamples(module: SceneModule): Samples {
   const ms: number[] = [];
   for (let at = 0; at <= module.durationMs; at += STEP_MS) ms.push(at);
-  return sampleScene(module, { kind: "time", ms });
+  return timedScenePass(module, ms).samples;
 }
 
 export function reviewSceneModule(
@@ -952,28 +983,33 @@ export function reviewSceneModule(
 ): SceneReviewResult {
   const end = request.to ?? module.durationMs;
   const extraEvents = request.events ?? NO_EVENTS;
+  const budget = request.budget ?? DEFAULT_BUDGET_MS;
   const ms: number[] = [];
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);
   const stage = module.stage;
   if (stage === undefined) {
-    const samples = sampleScene(module, { kind: "time", ms }, undefined, undefined, extraEvents);
+    const pass1 = timedScenePass(module, ms, extraEvents);
+    const pass2Costs = timedSteps(module, ms, extraEvents);
+    const inOrder = ms.map((_, index) => Math.min(pass1.costs[index] ?? 0, pass2Costs[index] ?? 0));
+    const order = soughtOrder(ms);
+    const pass3 = timedScenePass(module, order, extraEvents);
     const findings = [
       ...reviewValues(
-        samples,
+        pass1.samples,
         request,
         () => false,
         () => false,
         module.limits,
       ),
-      ...seekFindings(module, samples, extraEvents),
+      ...seekFindingsFrom(pass1.samples, pass3.samples),
       ...lateCueFindings(module),
-      ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS, extraEvents),
+      ...costFindingsFrom(module, extraEvents, inOrder, ms, pass3.costs, order, budget),
     ];
     return { kind: "reviewed", findings };
   }
 
   const input = measuredInput(stage, module.measured);
-  const evaluated = sampleStageFrames(stage, input, ms, extraEvents);
+  const { evaluated, costs: pass1Costs } = sampleStageFrames(stage, input, ms, extraEvents);
   const samples: Samples = evaluated.map(({ at, targets }) => ({ at, targets }));
   const byAt = new Map(evaluated.map((sample) => [sample.at, sample] as const));
   const byName = new Map(
@@ -1010,13 +1046,21 @@ export function reviewSceneModule(
     }
   };
   const allFramesOk = evaluated.every((sample) => sample.errors.length === 0);
+  let seekAndCost: readonly string[] = [];
+  if (allFramesOk) {
+    const pass2Costs = timedSteps(module, ms, extraEvents);
+    const inOrder = ms.map((_, index) => Math.min(pass1Costs[index] ?? 0, pass2Costs[index] ?? 0));
+    const order = soughtOrder(ms);
+    const pass3 = timedScenePass(module, order, extraEvents);
+    seekAndCost = [
+      ...seekFindingsFrom(samples, pass3.samples),
+      ...costFindingsFrom(module, extraEvents, inOrder, ms, pass3.costs, order, budget),
+    ];
+  }
   const valueFindings = [
     ...reviewValues(samples, request, hidden, ongoing, stage.limits),
-    ...(allFramesOk ? seekFindings(module, samples, extraEvents) : []),
     ...lateCueFindings(module),
-    ...(allFramesOk
-      ? costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS, extraEvents)
-      : []),
+    ...seekAndCost,
   ];
   const rest = input.rest ?? NO_REST;
 

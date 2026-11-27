@@ -1,9 +1,8 @@
 # gerak commands
 
-Run from your project's folder. A page is a path inside the site with no leading `/`, and a page the server does not have is an error; the site is the pieces folder,
+Run from your project's folder. A page is a path inside the site with no leading `/`, and a page the server does not have is an error; the site is the pieces folder (served on an ephemeral localhost port `0`),
 `--root <dir>` or else the `gerak.pieces` folder of the nearest `package.json` naming one, unless
-`--url <address>` names a running server; `--root` and `--out` are read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
-and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. A held clock draws one frame at each requested ms. Each takes `--size WxH` (default
+`--url <address>` names a running server; `--root` and `--out` are read from the folder you run in. Page tools open the page in Chrome or Edge, driving live mounts through the host driver hook so Chromium compositor animations stay active (while holding timed clocks and Web Animations otherwise), seed `Math.random`, print JSON, and exit `1` on page errors. A held clock draws one frame at each requested ms. Each takes `--size WxH` (default
 `1280x720`, landscape; a portrait piece wants a portrait size such as `540x960`) and
 `--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px|sel[±px]@ms` (resolving `sel`'s document top `+ ±px` in the active viewport; negative offsets follow `]`, `)`, or space), with
 `(x,y)` after the ms for a point on the element; repeatable `--action` flags join in order, and a selector the page lacks fails at once.
@@ -17,12 +16,12 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   is the name unless `--in` names another; open as `<brief>/<name>.html`); `--three` writes `<brief>/<name>.html`, `<brief>/src/<name>-main.ts`, which builds the world with `createStage3d` and mounts the piece with `mount`, and `<brief>/src/<name>-scene.ts`, a
   `scene` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
   is static and the piece imports no move.
-- **`gerak review <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--safe-zone tiktok|reels|shorts|youtube] [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
+- **`gerak review <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--safe-zone tiktok|reels|shorts|youtube] [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once across one shared server and browser session:
   takes `check`'s `--safe-zone` and reports its findings; prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
   With `--sizes`, runs each viewport in turn, prefixes findings, frames and errors with `[WIDTHxHEIGHT]`, and writes labelled `sheet-<WIDTHxHEIGHT>.png` files.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
-- **`gerak review <scene.ts> [--to ms] [--events list|@preset] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms] [--measure]`**: no page: samples
-  every field of every target each 16 ms and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
+- **`gerak review <scene.ts> [--to ms] [--events list|@preset] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms] [--measure]`**: no page, isolated from caller `RuntimeStore` cursors: samples
+  every field of every target each 16 ms in 3 consolidated passes and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
   `--events` injects synthetic `name=value@ms` or `name:target@ms` events alongside `cues`; `--events @<name>` reads the recorded preset `<pieces>/.gerak/presets/<piece>/<name>.json`, where the piece is the scene file's name without `.ts` and `-scene`.
@@ -65,7 +64,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   the frame, each cast element's rest box and placement, each split's lines, each element's cast parent, and optional
   3D `objects` bounds (`{ width, height, depth }`) and 3D list `counts`, as its mounts measured them (`<name>.cast.ts` is also synced from static HTML + `Binder.casts()` even when a stale scene throws during `mount`). `sample`, `timeline` and `review` of a
   builder scene `<brief>/src/<name>.ts` read `.measure.json` with no
-  browser, and refuse the scene while its page has no cache or has changed since, stylesheets beside it included (pass `--measure` to `review` or `sample` to refresh a missing or stale cache or missing `.cast.ts` on demand).
+  browser, and refuse the scene while its page HTML, linked stylesheets, bootstrap scripts/local imports, or `.glb`/`.gltf` assets have changed since (pure scene files are excluded so editing motion keeps the fast headless loop; pass `--measure` to `review` or `sample` to refresh a missing or stale cache or missing `.cast.ts` on demand).
 - **`gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events list] [--measure]`**: exact
   values with no browser (`--watch` prints a dotted field's trajectory); reads the module's `cues`. `--measure` refreshes a missing or stale measure cache before sampling.
 - **`gerak timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest, under a bar per shot
