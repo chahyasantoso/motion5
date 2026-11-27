@@ -1,27 +1,47 @@
 import { eventDriver } from "@gerak/dom";
-import { combine, span, type Input, type Pose2d, type Time } from "@gerak/core";
+import { combine, span, state, unreachable, type Input, type Pose2d, type Time } from "@gerak/core";
 import { drop, follow } from "@gerak/moves";
 
 /** How long the intro runs, in ms; the tools sample this much, and the card answers the pointer after it too. */
 export const durationMs = 900;
 
 const intro = span(0, 700);
+const liftGoal = state(
+  0,
+  (current, entry) => {
+    switch (entry.kind) {
+      case "trigger":
+        return entry.name === "enter" ? -14 : entry.name === "leave" ? 0 : current;
+      case "value":
+        return current;
+      default:
+        return unreachable(entry.kind);
+    }
+  },
+  { target: "card" },
+);
 /** Up on hover and back down on leave, from wherever it is when the pointer changes its mind. */
-const lift = follow({
-  start: 0,
-  on: { enter: -14, leave: 0 },
-  target: "card",
-  stiffness: 260,
-  damping: 20,
-});
+const lift = follow(liftGoal, { stiffness: 260, damping: 20 });
+const pressGoal = state(
+  1,
+  (current, entry) => {
+    switch (entry.kind) {
+      case "trigger":
+        return entry.name === "down"
+          ? 0.95
+          : entry.name === "up" || entry.name === "leave"
+            ? 1
+            : current;
+      case "value":
+        return current;
+      default:
+        return unreachable(entry.kind);
+    }
+  },
+  { target: "card" },
+);
 /** A quick sink while pressed. */
-const press = follow({
-  start: 1,
-  on: { down: 0.95, up: 1, leave: 1 },
-  target: "card",
-  stiffness: 600,
-  damping: 28,
-});
+const press = follow(pressGoal, { stiffness: 600, damping: 28 });
 
 export const scene = (time: Time, events: Input) => {
   const y = lift(time, events);

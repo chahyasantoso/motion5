@@ -2,13 +2,23 @@ import { describe, expect, it } from "vitest";
 import {
   UNTIMED,
   elapsedOf,
+  inputs,
   liveAt,
   spring,
+  state,
+  value,
   type Input,
   type InputEntry,
+  type State,
   type Time,
 } from "@gerak/core";
 import { follow, type FollowOptions } from "@gerak/moves";
+
+interface OldFollowOptions extends FollowOptions {
+  readonly start: number;
+  readonly on: Readonly<Record<string, number | "value">>;
+  readonly target?: string;
+}
 
 interface Kept {
   readonly index: number;
@@ -19,7 +29,7 @@ interface Kept {
 }
 
 /** A frozen copy of the replaying follow this one must keep matching. */
-function oldFollow(options: FollowOptions): (time: Time, events: Input) => number {
+function oldFollow(options: OldFollowOptions): (time: Time, events: Input) => number {
   const stiffness = options.stiffness ?? 170;
   const damping = options.damping ?? 26;
   const rest = options.rest ?? 0.001;
@@ -85,10 +95,34 @@ function oldFollow(options: FollowOptions): (time: Time, events: Input) => numbe
 
 const TIMES = Array.from({ length: 190 }, (_, index) => index * 16);
 
+const mouthContract = inputs({ values: { mouth: {} } });
+
+function sourceOf(options: OldFollowOptions): State<number> {
+  if (
+    Object.keys(options.on).length === 1 &&
+    options.on["mouth"] === "value" &&
+    options.start === 0
+  ) {
+    return value(mouthContract, "mouth");
+  }
+  return state(
+    options.start,
+    (current, entry) => {
+      const next = options.on[entry.name];
+      return (next === "value" ? entry.value : next) ?? current;
+    },
+    options.target === undefined ? {} : { target: options.target },
+  );
+}
+
 /** Both followers read at the same times, in order, over the same lists; their values must agree. */
-function agree(options: FollowOptions, lists: readonly Input[], times: readonly number[] = TIMES) {
+function agree(
+  options: OldFollowOptions,
+  lists: readonly Input[],
+  times: readonly number[] = TIMES,
+) {
   const before = oldFollow(options);
-  const now = follow(options);
+  const now = follow(sourceOf(options), options);
   for (const events of lists)
     for (const ms of times)
       expect(now(liveAt(ms), events), `${ms} ms`).toBeCloseTo(before(liveAt(ms), events), 9);
@@ -131,25 +165,27 @@ describe("follow keeps the values it had", () => {
   });
 
   it("matches after a jump back in time and a jump forward again", () => {
-    const options: FollowOptions = { start: 0, on: { enter: -8, leave: 0 }, target: "card" };
+    const options: OldFollowOptions = { start: 0, on: { enter: -8, leave: 0 }, target: "card" };
     const before = oldFollow(options);
-    const now = follow(options);
+    const now = follow(sourceOf(options), options);
     for (const ms of [0, 400, 1000, 1200, 2000, 500, 100, 950, 2900, 1050, 0, 2800]) {
       expect(now(liveAt(ms), hover), `${ms} ms`).toBeCloseTo(before(liveAt(ms), hover), 9);
     }
   });
 
   it("matches on an untimed clock", () => {
-    const options: FollowOptions = { start: 3, on: { enter: -8, leave: 0 }, target: "card" };
+    const options: OldFollowOptions = { start: 3, on: { enter: -8, leave: 0 }, target: "card" };
     const untimed: Time = { progress: 0, clock: UNTIMED };
-    expect(follow(options)(untimed, hover)).toBe(oldFollow(options)(untimed, hover));
-    expect(follow(options)(untimed, [])).toBe(3);
+    expect(follow(sourceOf(options), options)(untimed, hover)).toBe(
+      oldFollow(options)(untimed, hover),
+    );
+    expect(follow(sourceOf(options), options)(untimed, [])).toBe(3);
   });
 
   it("matches while a list grows by appending, and when it is replaced", () => {
-    const options: FollowOptions = { start: 0, on: { enter: -8, leave: 0 } };
+    const options: OldFollowOptions = { start: 0, on: { enter: -8, leave: 0 } };
     const before = oldFollow(options);
-    const now = follow(options);
+    const now = follow(sourceOf(options), options);
     const all: Input = [
       { kind: "trigger", name: "enter", at: 200, value: 1 },
       { kind: "trigger", name: "leave", at: 600, value: 1 },

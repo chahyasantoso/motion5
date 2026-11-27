@@ -1,8 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { UNTIMED, liveAt, mergeInput, span, type Input } from "@gerak/core";
+import {
+  UNTIMED,
+  inputs,
+  liveAt,
+  mergeInput,
+  span,
+  state,
+  triggers,
+  unreachable,
+  value,
+  type Input,
+} from "@gerak/core";
 import { follow, react } from "@gerak/moves";
 
-const lift = follow({ start: 0, on: { enter: -8, leave: 0 }, target: "card" });
+const liftGoal = state(
+  0,
+  (current, entry) => {
+    switch (entry.kind) {
+      case "trigger":
+        return entry.name === "enter" ? -8 : entry.name === "leave" ? 0 : current;
+      case "value":
+        return current;
+      default:
+        return unreachable(entry.kind);
+    }
+  },
+  { target: "card" },
+);
+const lift = follow(liftGoal);
 const hover = (enter: number, leave?: number): Input => [
   { kind: "trigger", name: "enter", at: enter, value: 1, target: "card" },
   ...(leave === undefined
@@ -42,22 +67,42 @@ describe("follow", () => {
 
   it("settles at once without a clock, and refuses a spring with no pull", () => {
     expect(lift({ progress: 0, clock: UNTIMED }, hover(1000))).toBe(-8);
-    expect(() => follow({ start: 0, on: {}, stiffness: 0 })).toThrow(/follow: stiffness/);
+    expect(() => follow(liftGoal, { stiffness: 0 })).toThrow(/follow: stiffness/);
   });
 
   it("overdamped and critically damped springs settle without passing the goal", () => {
+    const go = state(0, (current, entry) => (entry.name === "go" ? 10 : current));
     for (const damping of [2 * Math.sqrt(170), 60]) {
-      const slow = follow({ start: 0, on: { go: 10 }, damping });
+      const slow = follow(go, { damping });
       const path = [50, 200, 600, 5000].map((ms) =>
         slow(liveAt(ms), [{ kind: "trigger", name: "go", at: 0, value: 1 }]),
       );
-      for (const value of path) expect(value).toBeLessThanOrEqual(10 + 1e-9);
+      for (const item of path) expect(item).toBeLessThanOrEqual(10 + 1e-9);
       expect(path.at(-1)).toBeCloseTo(10, 2);
     }
+  });
+
+  it("follows a declared value and ignores values of another target", () => {
+    const contract = inputs({ values: { level: { targets: ["card", "other"] } } });
+    const follower = follow(value(contract, "level", "card"));
+    expect(
+      follower(liveAt(4000), [
+        { kind: "value", name: "level", at: 100, value: 12, target: "other" },
+      ]),
+    ).toBe(0);
+    const input: Input = [
+      { kind: "value", name: "level", at: 100, value: 12, target: "card" },
+      { kind: "value", name: "level", at: 200, value: 99, target: "other" },
+    ];
+    expect(follower(liveAt(50), input)).toBe(0);
+    expect(follower(liveAt(150), input)).toBeGreaterThan(0);
+    expect(follower(liveAt(150), input)).toBeLessThan(12);
+    expect(follower(liveAt(4000), input)).toBeCloseTo(12, 4);
   });
 });
 
 describe("follow on a stream of samples", () => {
+  const mouthContract = inputs({ values: { mouthOpen: {} } });
   const stream = (count: number, step = 33): Input =>
     Array.from({ length: count }, (_, index) => ({
       kind: "value",
@@ -65,7 +110,7 @@ describe("follow on a stream of samples", () => {
       at: index * step,
       value: (Math.sin(index * 0.7) + 1) / 2,
     }));
-  const fresh = () => follow({ start: 0, on: { mouthOpen: "value" } });
+  const fresh = () => follow(value(mouthContract, "mouthOpen"));
 
   it("springs to each sample's own value, and ignores unset streams", () => {
     const mouth = fresh();
@@ -154,9 +199,10 @@ describe("a live clock", () => {
 
 describe("a spring at rest", () => {
   it("stops exactly on its goal once it is that close and that slow", () => {
-    const lift = follow({ start: 0, on: { enter: -8 } });
+    const enter = state(0, (current, entry) => (entry.name === "enter" ? -8 : current));
+    const liftSpring = follow(enter);
     const at = (ms: number) =>
-      lift(liveAt(ms), [{ kind: "trigger", name: "enter", at: 0, value: 1 }]);
+      liftSpring(liveAt(ms), [{ kind: "trigger", name: "enter", at: 0, value: 1 }]);
     expect(at(3000)).toBe(-8);
     expect(at(3016)).toBe(-8);
     expect(at(100)).not.toBe(-8);
@@ -164,6 +210,12 @@ describe("a spring at rest", () => {
 });
 
 describe("react", () => {
+  const hits = inputs({
+    triggers: {
+      land: { targets: ["ball", "cup"] },
+      jump: { targets: ["ball"] },
+    },
+  });
   const land = (...at: number[]): Input =>
     at.map((ms) => ({ kind: "trigger", name: "land", at: ms, value: 1, target: "ball" }));
   const at = (ms: number) => ({
@@ -172,7 +224,7 @@ describe("react", () => {
   });
 
   it("is exactly 0 before its event and once the response has died", () => {
-    const recoil = react({ on: ["land"], kind: "recoil", amplitude: 10 });
+    const recoil = react(triggers(hits, "land"), { kind: "recoil", amplitude: 10 });
     expect(recoil(at(999), land(1000))).toBe(0);
     expect(recoil(at(1000), land(1000))).toBeCloseTo(10, 9);
     expect(recoil(at(4000), land(1000))).toBe(0);
@@ -180,15 +232,15 @@ describe("react", () => {
 
   it("starts each kind where it should: recoil full, wobble and shake at rest, flash full and fading", () => {
     const start = (kind: "recoil" | "wobble" | "flash" | "shake") =>
-      react({ on: ["land"], kind, amplitude: 1 })(at(1000), land(1000));
+      react(triggers(hits, "land"), { kind, amplitude: 1 })(at(1000), land(1000));
     expect([start("recoil"), start("wobble"), start("flash")]).toEqual([1, 0, 1]);
     expect(Math.abs(start("shake"))).toBeLessThan(1);
-    const flash = react({ on: ["land"], kind: "flash", amplitude: 1 });
+    const flash = react(triggers(hits, "land"), { kind: "flash", amplitude: 1 });
     expect(flash(at(1100), land(1000))).toBeLessThan(flash(at(1050), land(1000)));
   });
 
-  it("adds the responses to several events, and answers only its names and target", () => {
-    const wobble = react({ on: ["land"], target: "ball", kind: "wobble", amplitude: 1 });
+  it("adds the responses to several events, and ignores triggers of another name or target", () => {
+    const wobble = react(triggers(hits, "land", "ball"), { kind: "wobble", amplitude: 1 });
     const one = wobble(at(1100), land(1000));
     const other = wobble(at(1100), land(1050));
     expect(wobble(at(1100), mergeInput(land(1050), land(1000)))).toBeCloseTo(one + other, 9);

@@ -2,11 +2,13 @@ import { clockDriver } from "@gerak/dom";
 import {
   aim,
   ease,
+  inputs,
   mix,
   motion,
   orbit,
   project3d,
   span,
+  value,
   type Input,
   type Lens3d,
   type Pose3d,
@@ -63,7 +65,8 @@ const turn = span(0, 4400);
 const lean = span(500, 3300);
 const curl = span(900, 4000);
 
-const revealed = follow({ start: 0, on: { words: "value" }, stiffness: 170, damping: 26 });
+const captionInputs = inputs({ values: { words: {} } });
+const revealed = follow(value(captionInputs, "words"), { stiffness: 170, damping: 26 });
 
 /** How many caption words show for a `words` number from the scene. */
 export function wordsShown(value: number): number {

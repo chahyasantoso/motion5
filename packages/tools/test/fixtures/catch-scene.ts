@@ -2,9 +2,11 @@ import { clockDriver } from "@gerak/dom";
 import {
   combine,
   ease,
+  inputs,
   lanes,
   mixPoint,
   span,
+  triggers,
   type Input,
   type Pose2d,
   type Time,
@@ -25,12 +27,19 @@ const flight = span(400, 2400);
 /** The scene ms of the ball's last landing, where the hand meets it. */
 export const LAND_MS = flight.at(hopLandings(BOUNCE).lastLanding);
 
+const catchInputs = inputs({ triggers: { catch: { targets: ["ball"] } } });
+
 /** The scene's own events: the catch, at the ball's last landing. */
 export const cues: Input = [
   { kind: "trigger", name: "catch", at: LAND_MS, value: 1, target: "ball" },
 ];
 /** The hand gives under the ball's weight and springs back, starting from rest. */
-const give = react({ on: ["catch"], kind: "wobble", amplitude: 26, decay: 7, frequency: 2.2 });
+const give = react(triggers(catchInputs, "catch", "ball"), {
+  kind: "wobble",
+  amplitude: 26,
+  decay: 7,
+  frequency: 2.2,
+});
 
 const raise = span(200, 1100);
 const lunge = span(1450, LAND_MS);

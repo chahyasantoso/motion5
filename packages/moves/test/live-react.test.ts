@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inputLog, inputs, liveAt, watchClock, watchedTime } from "@gerak/core";
+import { inputLog, inputs, liveAt, triggers, watchClock, watchedTime } from "@gerak/core";
 import { noise1d, react } from "../src/index";
 
 const hits = inputs({
@@ -14,7 +14,7 @@ describe("react stillMoving and stateless noise1d", () => {
       log.trigger(i * 10, hits, "noise");
     }
     log.trigger(100_050, hits, "land");
-    const recoil = react({ on: ["land"], kind: "recoil", amplitude: 10 });
+    const recoil = react(triggers(hits, "land"), { kind: "recoil", amplitude: 10 });
 
     const during: string[] = [];
     const mid = watchClock(
@@ -46,7 +46,7 @@ describe("react stillMoving and stateless noise1d", () => {
   it("unwraps watchedTime when settled and preserves shake phase across window aging", () => {
     const log = inputLog();
     log.trigger(100, hits, "hit");
-    const shake = react({ on: ["hit"], kind: "shake", amplitude: 10, decay: 6 });
+    const shake = react(triggers(hits, "hit"), { kind: "shake", amplitude: 10, decay: 6 });
 
     const settledUses: string[] = [];
     watchClock(
@@ -59,7 +59,12 @@ describe("react stillMoving and stateless noise1d", () => {
     const shakeLog = inputLog();
     shakeLog.trigger(0, hits, "hit");
     shakeLog.trigger(1000, hits, "hit");
-    const s = react({ on: ["hit"], kind: "shake", amplitude: 10, decay: 6, frequency: 4 });
+    const s = react(triggers(hits, "hit"), {
+      kind: "shake",
+      amplitude: 10,
+      decay: 6,
+      frequency: 4,
+    });
     const justBeforeExpire = s(liveAt(1150), shakeLog.input);
     const justAfterExpire = s(liveAt(1155), shakeLog.input);
     // Contribution from expiring hit#0 at t=1150 is < 0.015; phase snap of hit#1 from seed=1 to seed=0 would jump > 1.
@@ -69,7 +74,12 @@ describe("react stillMoving and stateless noise1d", () => {
   it("loses no motion for triggers inside the window when an inputLog drops older entries", () => {
     const dropping = inputLog({ windowMs: 4000 });
     const full = inputLog();
-    const shake = react({ on: ["hit"], kind: "shake", amplitude: 10, decay: 6, frequency: 4 });
+    const shake = react(triggers(hits, "hit"), {
+      kind: "shake",
+      amplitude: 10,
+      decay: 6,
+      frequency: 4,
+    });
 
     for (let frame = 0; frame <= 20 * 60; frame += 1) {
       const at = Math.round((frame * 1000) / 60);

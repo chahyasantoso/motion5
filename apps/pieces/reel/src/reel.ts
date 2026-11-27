@@ -2,6 +2,7 @@ import {
   aim,
   ease,
   easeTo,
+  inputs,
   isInputEntry,
   mergeInput,
   mix,
@@ -9,6 +10,7 @@ import {
   orbit,
   span,
   state,
+  triggers,
   type Lens3d,
   type Pose2d,
   type Pose3d,
@@ -55,13 +57,19 @@ const wordRise = motion(
   }),
 );
 
+const reelInputs = inputs({ triggers: { beat: {} } });
+
 // Shot 1: kinetic title hook (0..2500 ms).
 const hookEnter = beat("enter", 520, { at: 0 });
 const hookWords = beat("words", 900, { at: 60 });
 const hookRuleIn = beat("ruleIn", 540, { at: 260 });
 const hookRingIn = beat("ringIn", 480, { at: 320 });
 const hookDissolve = beat("dissolve", 400, { at: 2100 });
-const hookBeatScale = react({ on: ["beat"], kind: "recoil", amplitude: 0.14, decay: 10 });
+const hookBeatScale = react(triggers(reelInputs, "beat"), {
+  kind: "recoil",
+  amplitude: 0.14,
+  decay: 10,
+});
 
 const hookScene = scene(
   { name: "hook" },
@@ -174,7 +182,11 @@ const wordReveals = captionWords.map((_, index) =>
     ease: ease.cubicOut,
   }),
 );
-const barPulse = react({ on: ["beat"], kind: "recoil", amplitude: 0.55, decay: 11 });
+const barPulse = react(triggers(reelInputs, "beat"), {
+  kind: "recoil",
+  amplitude: 0.55,
+  decay: 11,
+});
 
 const proofScene = scene(
   { name: "proof" },
