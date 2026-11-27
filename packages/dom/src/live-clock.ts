@@ -43,6 +43,7 @@ export interface LiveClockParticipant {
 }
 
 export interface LiveClockControl {
+  disposed(): boolean;
   scrollSeq(): number;
   pointerSeq(): number;
   eventsSeq(): number;
@@ -196,6 +197,7 @@ export function liveClock(options: LiveClockOptions = {}): LiveClock {
       if (!inTick) schedule();
     },
     subscribe(listener) {
+      if (disposed) return () => undefined;
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
@@ -209,11 +211,11 @@ export function liveClock(options: LiveClockOptions = {}): LiveClock {
       listeners.clear();
       participants.clear();
       scrollBuckets.clear();
-      CONTROLS.delete(driver);
     },
   };
 
   CONTROLS.set(driver, {
+    disposed: () => disposed,
     scrollSeq: () => scrollSeq,
     pointerSeq: () => pointerSeq,
     eventsSeq: () => eventsSeq,
@@ -223,12 +225,14 @@ export function liveClock(options: LiveClockOptions = {}): LiveClock {
       if (!inTick) schedule();
     },
     addParticipant(participant) {
+      if (disposed) return () => undefined;
       participants.add(participant);
       return () => {
         participants.delete(participant);
       };
     },
     addScrollSource(source) {
+      if (disposed) return () => undefined;
       const bucket = getBucket(source.key);
       bucket.sources.add(source);
       return () => {
@@ -237,6 +241,7 @@ export function liveClock(options: LiveClockOptions = {}): LiveClock {
       };
     },
     seedScroll(source) {
+      if (disposed) return;
       const bucket = getBucket(source.key);
       const y = source.read();
       if (y !== bucket.lastY) {
@@ -245,6 +250,7 @@ export function liveClock(options: LiveClockOptions = {}): LiveClock {
       }
     },
     syncScroll(source) {
+      if (disposed) return;
       const bucket = getBucket(source.key);
       const y = source.read();
       if (y !== bucket.lastY) {

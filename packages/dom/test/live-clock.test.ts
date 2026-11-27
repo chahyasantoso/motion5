@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { inputs, motion, scroll, state, type Pose2d } from "@gerak/core";
 import { clockDriver, liveClock, mount, type FrameSource } from "@gerak/dom";
+import { liveClockControl } from "../src/live-clock";
 import { bind, box, scene } from "@gerak/stage";
 import { FakeNode, FakeRoot, FakeScrollTarget, fakeFrames } from "./fake-page";
 
@@ -253,5 +254,70 @@ describe("liveClock", () => {
     timedA.dispose();
     timedB.dispose();
     timed.dispose();
+  });
+
+  it("treats control hooks as no-ops after dispose and refuses mount on a disposed clock", () => {
+    const ms = 0;
+    const f = fakeFrames();
+    const view = new FakeScrollTarget();
+    const clock = liveClock({ now: () => ms, frames: f });
+    const ctrl = liveClockControl(clock);
+    expect(ctrl).toBeDefined();
+    if (ctrl === undefined) return;
+
+    clock.dispose();
+
+    let reads = 0;
+    let ticks = 0;
+    const stopParticipant = ctrl.addParticipant({
+      beforeTick: () => {
+        ticks += 1;
+      },
+      onTick: () => {
+        ticks += 1;
+      },
+      needsFrame: () => true,
+    });
+    const stopScroll = ctrl.addScrollSource({
+      key: view,
+      target: undefined,
+      read: () => {
+        reads += 1;
+        return 50;
+      },
+      readsScroll: () => true,
+    });
+    ctrl.seedScroll({
+      key: view,
+      target: undefined,
+      read: () => {
+        reads += 1;
+        return 50;
+      },
+      readsScroll: () => true,
+    });
+    ctrl.syncScroll({
+      key: view,
+      target: undefined,
+      read: () => {
+        reads += 1;
+        return 80;
+      },
+      readsScroll: () => true,
+    });
+
+    expect(reads).toBe(0);
+    expect(ticks).toBe(0);
+    expect(clock.input()).toEqual([]);
+    expect(f.pending).toBe(0);
+    stopParticipant();
+    stopScroll();
+
+    expect(() =>
+      mount(scene(box("a").moves(bind({ y: scroll.y }))), {
+        root: new FakeRoot([new FakeNode("a")], view),
+        clock: { kind: "driver", driver: clock },
+      }),
+    ).toThrow(/disposed.*liveClock/i);
   });
 });

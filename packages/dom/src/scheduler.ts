@@ -185,6 +185,9 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   }
 
   const liveCtrl = liveClockControl(driver);
+  if (liveCtrl?.disposed() === true) {
+    throw new Error("mount: cannot mount on a disposed liveClock.");
+  }
   const clockMs = (): number => elapsedOf(driver.now().clock) ?? 0;
 
   const introBounds = (targetStage: Stage): number => {
