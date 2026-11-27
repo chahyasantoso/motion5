@@ -1,21 +1,14 @@
 import {
   NO_EVENTS,
   atProgress,
-  attachOnEvent,
-  compactEvents,
   createStore,
   derivedEvents,
   elapsedOf,
   eventSerialsOf,
   generationOf,
-  restore as restoreStore,
-  snapshot as snapshotStore,
-  unreachable,
   withStore,
   type Events,
   type MotionEvent,
-  type RetentionPolicy,
-  type RuntimeSnapshot,
   type RuntimeStore,
   type Signal,
   type Time,
@@ -28,11 +21,6 @@ export interface Driver {
   subscribe(listener: () => void): () => void;
   /** The options it was made with, so a host can tell a changed driver from the same one. */
   readonly options?: object;
-}
-
-/** Immutable point-in-time capture of a player's clock time, store cells, and event state. */
-export interface PlayerSnapshot {
-  readonly kind: "player-snapshot";
 }
 
 /** A scene's values by target, rerun whole on each step of its driver. */
@@ -50,58 +38,13 @@ export interface Player<T extends object> {
   replace(next: Signal<T>, cues?: Events): void;
   /** Calls `listener` each time forward play reaches an event of that name, a cue or the page's; a seek back calls nothing. */
   on(name: string, listener: (event: MotionEvent) => void): () => void;
-  /** Captures the current player clock, store cells, and cursors as an immutable snapshot. */
-  snapshot(): PlayerSnapshot;
-  /** Restores player state and notifies subscribers/observers from `snap`. */
-  restore(snap: PlayerSnapshot): void;
   dispose(): void;
 }
 
-/** Options of `play`: `cues`, event `retention` policy, `onEvent` stream callback, and `settleMs`. */
+/** Options of `play`: `cues`. */
 export interface PlayOptions {
   /** The scene's own events at known ms, such as a landing; the scene gets them merged with the page's. */
   readonly cues?: Events;
-  /** Event history policy: `"all"` (default), `"live"` bounded sliding window, or `"window"` bounded rewind. */
-  readonly retention?: RetentionPolicy;
-  /** Synchronous callback notified for every incoming page event. */
-  readonly onEvent?: (event: MotionEvent) => void;
-  /** Live settle floor used to size the default `"live"` retention window (`Math.max(settleMs, 4000)`). */
-  readonly settleMs?: number;
-}
-
-interface SnapshotRecord<T extends object> {
-  readonly playerToken: object;
-  readonly time: Time;
-  readonly values: T;
-  readonly reached: number | undefined;
-  readonly pageWatermark: number;
-  readonly deferredSerials: readonly number[];
-  readonly store: RuntimeSnapshot;
-}
-
-const PLAYER_SNAPSHOTS = new WeakMap<PlayerSnapshot, SnapshotRecord<object>>();
-
-interface WindowCheckpoint {
-  readonly atMs: number;
-  readonly snap: PlayerSnapshot;
-}
-
-function thinCheckpoints(list: WindowCheckpoint[], max: number): void {
-  while (list.length > max) {
-    const keepLast = list[list.length - 1];
-    const next: WindowCheckpoint[] = [];
-    for (let i = 0; i < list.length - 1; i += 2) {
-      const item = list[i];
-      if (item !== undefined) next.push(item);
-    }
-    if (keepLast !== undefined) next.push(keepLast);
-    if (next.length >= list.length) {
-      list.splice(1, 1);
-    } else {
-      list.length = 0;
-      list.push(...next);
-    }
-  }
 }
 
 /** Runs `scene` against `driver`, telling each target's subscribers its value on every step. */
@@ -110,32 +53,16 @@ export function play<T extends object>(
   driver: Driver,
   options: PlayOptions = {},
 ): Player<T> {
-  const playerToken = {};
   const store: RuntimeStore = createStore();
   const eventCache = derivedEvents();
-  const retention: RetentionPolicy = options.retention ?? { kind: "all" };
   let cues = options.cues ?? NO_EVENTS;
   let time = driver.now();
 
-  let attachedPage: Events | undefined;
-  let detachOnEvent: (() => void) | undefined;
-  const syncOnEventAttachment = (page: Events | undefined): void => {
-    if (options.onEvent === undefined || page === attachedPage) return;
-    detachOnEvent?.();
-    detachOnEvent = undefined;
-    attachedPage = page;
-    if (page !== undefined) detachOnEvent = attachOnEvent(page, options.onEvent);
-  };
-
-  const resolveEvents = (targetTime: Time = time): Events => {
-    const page = driver.events?.() ?? NO_EVENTS;
-    syncOnEventAttachment(page);
-    return eventCache.resolve(cues, page, elapsedOf(targetTime.clock));
-  };
+  const resolveEvents = (targetTime: Time = time): Events =>
+    eventCache.resolve(cues, driver.events?.() ?? NO_EVENTS, elapsedOf(targetTime.clock));
 
   let current = scene;
   const initialPage = driver.events?.() ?? NO_EVENTS;
-  syncOnEventAttachment(initialPage);
   let values = withStore(store, () => current(time, resolveEvents()));
   let reached = elapsedOf(time.clock);
 
@@ -164,11 +91,11 @@ export function play<T extends object>(
     for (const handler of [...set]) handler(event);
   };
 
-  const announce = (now: number | undefined, page: Events, forcedSeekBack = false): void => {
+  const announce = (now: number | undefined, page: Events): void => {
     const from = reached;
     reached = now;
     if (now === undefined) return;
-    const seekBack = forcedSeekBack || (from !== undefined && now < from);
+    const seekBack = from !== undefined && now < from;
 
     if (!seekBack && from !== undefined && now > from && handlers.size > 0) {
       for (const cue of cues) {
@@ -230,98 +157,9 @@ export function play<T extends object>(
     }
   };
 
-  const captureSnapshot = (): PlayerSnapshot => {
-    const snap: PlayerSnapshot = Object.freeze({ kind: "player-snapshot" });
-    PLAYER_SNAPSHOTS.set(snap, {
-      playerToken,
-      time,
-      values,
-      reached,
-      pageWatermark,
-      deferredSerials: [...deferredSerials],
-      store: snapshotStore(store),
-    });
-    return snap;
-  };
-
-  const applySnapshot = (snap: PlayerSnapshot): void => {
-    if (snap.kind !== "player-snapshot") unreachable(snap.kind);
-    const data = PLAYER_SNAPSHOTS.get(snap);
-    if (data === undefined || data.playerToken !== playerToken) {
-      throw new TypeError("Invalid PlayerSnapshot for this Player.");
-    }
-    time = data.time;
-    reached = data.reached;
-    pageWatermark = data.pageWatermark;
-    deferredSerials.clear();
-    for (const s of data.deferredSerials) deferredSerials.add(s);
-    restoreStore(store, data.store);
-  };
-
-  const checkpoints: WindowCheckpoint[] = [];
-  if (retention.kind === "window") {
-    const startMs = elapsedOf(time.clock);
-    if (startMs !== undefined) checkpoints.push({ atMs: startMs, snap: captureSnapshot() });
-  }
-
-  const runRetention = (now: number | undefined, page: Events): void => {
-    if (now === undefined) return;
-    switch (retention.kind) {
-      case "all":
-        break;
-      case "live": {
-        const windowMs = retention.windowMs ?? Math.max(options.settleMs ?? 0, 4000);
-        const beforeMs = now - windowMs;
-        if (beforeMs > 0) compactEvents(page, beforeMs);
-        break;
-      }
-      case "window": {
-        const maxCp = Math.max(2, retention.maxCheckpoints ?? 32);
-        const interval = Math.max(1, Math.floor(retention.windowMs / Math.max(1, maxCp - 1)));
-        const lastCp = checkpoints[checkpoints.length - 1];
-        if (lastCp === undefined || now - lastCp.atMs >= interval) {
-          checkpoints.push({ atMs: now, snap: captureSnapshot() });
-          if (checkpoints.length > maxCp) thinCheckpoints(checkpoints, maxCp);
-        }
-        const floor = now - retention.windowMs;
-        let anchorIdx = -1;
-        for (let i = 0; i < checkpoints.length; i += 1) {
-          const cp = checkpoints[i];
-          if (cp !== undefined && cp.atMs <= floor) anchorIdx = i;
-          else break;
-        }
-        if (anchorIdx >= 0) {
-          const anchor = checkpoints[anchorIdx];
-          if (anchorIdx > 0) checkpoints.splice(0, anchorIdx);
-          if (anchor !== undefined && anchor.atMs > 0) compactEvents(page, anchor.atMs);
-        }
-        break;
-      }
-      default:
-        unreachable(retention);
-    }
-  };
-
   const step = (): void => {
-    const prevNow = elapsedOf(time.clock);
     const nextTime = driver.now();
     const nextNow = elapsedOf(nextTime.clock);
-    const isSeekBack = nextNow !== undefined && prevNow !== undefined && nextNow < prevNow;
-
-    if (retention.kind === "window" && isSeekBack && checkpoints.length > 0) {
-      let pickIdx = 0;
-      for (let i = 0; i < checkpoints.length; i += 1) {
-        const cp = checkpoints[i];
-        if (cp !== undefined && cp.atMs <= nextNow) pickIdx = i;
-        else break;
-      }
-      const chosen = checkpoints[pickIdx];
-      if (chosen !== undefined) {
-        applySnapshot(chosen.snap);
-        checkpoints.length = pickIdx + 1;
-      }
-    }
-
     time = nextTime;
     const page = driver.events?.() ?? NO_EVENTS;
     const all = resolveEvents(time);
@@ -341,8 +179,7 @@ export function play<T extends object>(
         for (const notify of [...listeners]) notify();
       }
     });
-    announce(nextNow, page, isSeekBack);
-    runRetention(nextNow, page);
+    announce(nextNow, page);
   };
 
   const leave = driver.subscribe(step);
@@ -395,19 +232,8 @@ export function play<T extends object>(
         set.delete(listener);
       };
     },
-    snapshot: captureSnapshot,
-    restore(snap) {
-      applySnapshot(snap);
-      const all = resolveEvents(time);
-      withStore(store, () => {
-        values = current(time, all);
-        for (const observer of [...observers]) observer(all);
-        for (const notify of [...listeners]) notify();
-      });
-    },
     dispose() {
       leave();
-      detachOnEvent?.();
       listeners.clear();
       observers.clear();
       handlers.clear();
