@@ -451,16 +451,41 @@ async function openPageSession(
   return { session, pageErrors };
 }
 
+/** A started or pending local dev server returned by `createServer`. */
+export interface SiteServer {
+  readonly resolvedUrls: { readonly local: readonly string[] } | null;
+  listen(): Promise<unknown>;
+  close(): Promise<void>;
+}
+
+/** Factory creating a local dev server for `openSite`. */
+export type SiteServerFactory = (config: import("vite").InlineConfig) => Promise<SiteServer>;
+
+/** A reachable site with its base URL and cleanup hook. */
+export interface PageSite {
+  readonly base: string;
+  close(): Promise<void>;
+}
+
+/** Optional dependencies for `withPage` tests. */
+export interface WithPageDeps {
+  readonly openSite?: (source: PageSource) => Promise<PageSite>;
+  readonly launchBrowser?: (options: { readonly headless: boolean }) => Promise<Browser>;
+}
+
 /** Serves or reaches the page's site, opens the page under a paused fake clock, and hands it to `visit`. */
 export async function withPage<T>(
   target: PageTarget,
   visit: (session: PageSession) => Promise<T>,
+  deps?: WithPageDeps,
 ): Promise<{ readonly value: T; readonly pageErrors: readonly string[] }> {
-  const site = await openSite(target.source);
+  const site = await (deps?.openSite ?? openSite)(target.source);
   const base = site.base;
   let browser: Browser;
   try {
-    browser = target.browser ?? (await launchBrowser({ headless: target.show !== true }));
+    browser =
+      target.browser ??
+      (await (deps?.launchBrowser ?? launchBrowser)({ headless: target.show !== true }));
   } catch (error) {
     await site.close();
     throw error;
@@ -480,7 +505,7 @@ export async function withPage<T>(
 }
 
 /** Closes `page` if there is one, ignoring a page that is already gone. */
-async function closeQuietly(page: Page | undefined): Promise<void> {
+export async function closeQuietly(page: Page | undefined): Promise<void> {
   if (page === undefined) return;
   await page.close().catch(() => undefined);
 }
@@ -511,14 +536,15 @@ async function waitUntil(at: number): Promise<void> {
 /** Starts an ephemeral local server for `source` when serving, returning its `base` URL and `close`. */
 export async function openSite(
   source: PageSource,
-): Promise<{ readonly base: string; close(): Promise<void> }> {
+  createServer?: SiteServerFactory,
+): Promise<PageSite> {
   switch (source.kind) {
     case "url":
       return { base: source.base, close: async () => undefined };
     case "serve": {
-      const { createServer } = await import("vite");
+      const makeServer = createServer ?? (await import("vite")).createServer;
       const added = await pageServerConfig(source.root);
-      const server = await createServer({
+      const server = await makeServer({
         root: source.root,
         logLevel: "silent",
         appType: "mpa",

@@ -2,7 +2,14 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Page } from "playwright-core";
-import { captureFrame, fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
+import {
+  captureFrame,
+  closeQuietly,
+  fromCaller,
+  readPageArgs,
+  withPage,
+  type PageTarget,
+} from "./page";
 import { parseNumbers } from "./args";
 import { decodePng } from "./png";
 
@@ -277,25 +284,34 @@ export async function captureFrames(request: FramesRequest): Promise<FramesResul
     const frames: { at: number; path: string }[] = [];
     const zoom = request.zoom ?? 1;
     const scaler = request.crop !== undefined && zoom > 1 ? await browser.newPage() : undefined;
-    for (const at of request.at) {
-      await advanceTo(at);
-      const path = join(out, `frame-${String(at).padStart(6, "0")}.png`);
-      if (request.crop === undefined) writeFileSync(path, await captureFrame(page));
-      else {
-        const clip = await page.screenshot({ clip: request.crop });
-        writeFileSync(path, scaler === undefined ? clip : await enlarge(scaler, clip, zoom));
+    try {
+      for (const at of request.at) {
+        await advanceTo(at);
+        const path = join(out, `frame-${String(at).padStart(6, "0")}.png`);
+        if (request.crop === undefined) writeFileSync(path, await captureFrame(page));
+        else {
+          const clip = await page.screenshot({ clip: request.crop });
+          writeFileSync(path, scaler === undefined ? clip : await enlarge(scaler, clip, zoom));
+        }
+        frames.push({ at, path });
       }
-      frames.push({ at, path });
+    } finally {
+      await closeQuietly(scaler);
     }
-    await scaler?.close();
     const sheetPage = await browser.newPage({
       viewport: { width: SHEET_COLUMNS * (SHEET_CELL_WIDTH + 4), height: 100 },
     });
-    await sheetPage.setContent(sheetHtml(frames, request.labels ?? [], request.sheetLabel), {
-      waitUntil: "load",
-    });
+    let sheetPng: Buffer;
+    try {
+      await sheetPage.setContent(sheetHtml(frames, request.labels ?? [], request.sheetLabel), {
+        waitUntil: "load",
+      });
+      sheetPng = await sheetPage.screenshot({ fullPage: true });
+    } finally {
+      await closeQuietly(sheetPage);
+    }
     const sheet = request.sheetPath ?? join(out, "sheet.png");
-    writeFileSync(sheet, await sheetPage.screenshot({ fullPage: true }));
+    writeFileSync(sheet, sheetPng);
     return { frames, sheet };
   });
   const compared = request.compare === undefined ? undefined : compareSafely(out, request.compare);
@@ -398,49 +414,55 @@ export async function captureOnion(request: OnionRequest): Promise<OnionResult> 
     const canvasPage = await browser.newPage({
       viewport: { width: request.width, height: request.height },
     });
-    await canvasPage.setContent(
-      `<canvas id="c" width="${request.width}" height="${request.height}">`,
-    );
-    const png = await canvasPage.evaluate(
-      async ({ base, steps }) => {
-        const load = async (src: string) => {
-          const image = new Image();
-          image.src = src;
-          await image.decode();
-          return image;
-        };
-        const canvas = document.getElementById("c");
-        if (!(canvas instanceof HTMLCanvasElement)) throw new Error("The onion canvas is missing.");
-        const context = canvas.getContext("2d");
-        if (context === null) throw new Error("The onion canvas has no 2D context.");
-        context.globalAlpha = 0.35;
-        context.drawImage(await load(base), 0, 0);
-        context.globalAlpha = 0.55;
-        for (const step of steps)
-          for (const clip of step.clips) context.drawImage(await load(clip.src), clip.x, clip.y);
-        context.globalAlpha = 1;
-        context.strokeStyle = "#00e5ff";
-        context.fillStyle = "#00e5ff";
-        context.lineWidth = 2;
-        context.beginPath();
-        steps.forEach((step, index) => {
-          const box = step.boxes[0];
-          if (box === undefined) return;
-          const x = box.x + box.width / 2;
-          const y = box.y + box.height / 2;
-          if (index === 0) context.moveTo(x, y);
-          else context.lineTo(x, y);
-        });
-        context.stroke();
-        for (const step of steps) {
-          const box = step.boxes[0];
-          if (box === undefined) continue;
-          context.fillRect(box.x + box.width / 2 - 2, box.y + box.height / 2 - 2, 4, 4);
-        }
-        return canvas.toDataURL("image/png");
-      },
-      { base: `data:image/png;base64,${base.toString("base64")}`, steps },
-    );
+    let png: string;
+    try {
+      await canvasPage.setContent(
+        `<canvas id="c" width="${request.width}" height="${request.height}">`,
+      );
+      png = await canvasPage.evaluate(
+        async ({ base, steps }) => {
+          const load = async (src: string) => {
+            const image = new Image();
+            image.src = src;
+            await image.decode();
+            return image;
+          };
+          const canvas = document.getElementById("c");
+          if (!(canvas instanceof HTMLCanvasElement))
+            throw new Error("The onion canvas is missing.");
+          const context = canvas.getContext("2d");
+          if (context === null) throw new Error("The onion canvas has no 2D context.");
+          context.globalAlpha = 0.35;
+          context.drawImage(await load(base), 0, 0);
+          context.globalAlpha = 0.55;
+          for (const step of steps)
+            for (const clip of step.clips) context.drawImage(await load(clip.src), clip.x, clip.y);
+          context.globalAlpha = 1;
+          context.strokeStyle = "#00e5ff";
+          context.fillStyle = "#00e5ff";
+          context.lineWidth = 2;
+          context.beginPath();
+          steps.forEach((step, index) => {
+            const box = step.boxes[0];
+            if (box === undefined) return;
+            const x = box.x + box.width / 2;
+            const y = box.y + box.height / 2;
+            if (index === 0) context.moveTo(x, y);
+            else context.lineTo(x, y);
+          });
+          context.stroke();
+          for (const step of steps) {
+            const box = step.boxes[0];
+            if (box === undefined) continue;
+            context.fillRect(box.x + box.width / 2 - 2, box.y + box.height / 2 - 2, 4, 4);
+          }
+          return canvas.toDataURL("image/png");
+        },
+        { base: `data:image/png;base64,${base.toString("base64")}`, steps },
+      );
+    } finally {
+      await closeQuietly(canvasPage);
+    }
     const path = join(out, "onion.png");
     writeFileSync(path, Buffer.from(png.split(",")[1] ?? "", "base64"));
     return { path, steps: steps.map(({ at, boxes }) => ({ at, boxes })) };

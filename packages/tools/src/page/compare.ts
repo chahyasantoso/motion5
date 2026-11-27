@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
+import { closeQuietly, fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
 import type { Box } from "./frames";
 import { decodePng, encodePng, type Picture } from "./png";
 
@@ -310,19 +310,24 @@ export async function comparePage(request: CompareRequest): Promise<CompareResul
         }),
       );
       const sheet = await browser.newPage({ viewport: size });
-      await sheet.setContent(referenceHtml(svg, size.width, size.height), { waitUntil: "load" });
-      const decoded = await sheet.evaluate(() => {
-        const image = document.getElementById("r");
-        return image instanceof HTMLImageElement
-          ? image.decode().then(
-              () => true,
-              () => false,
-            )
-          : false;
-      });
-      if (!decoded)
-        return usage(`The reference ${request.reference} did not load as an image. ${USAGE}`);
-      const reference = decodePng(await sheet.screenshot());
+      let reference: Picture;
+      try {
+        await sheet.setContent(referenceHtml(svg, size.width, size.height), { waitUntil: "load" });
+        const decoded = await sheet.evaluate(() => {
+          const image = document.getElementById("r");
+          return image instanceof HTMLImageElement
+            ? image.decode().then(
+                () => true,
+                () => false,
+              )
+            : false;
+        });
+        if (!decoded)
+          return usage(`The reference ${request.reference} did not load as an image. ${USAGE}`);
+        reference = decodePng(await sheet.screenshot());
+      } finally {
+        await closeQuietly(sheet);
+      }
       return { piece, reference, stage, size };
     });
   } catch (error) {
