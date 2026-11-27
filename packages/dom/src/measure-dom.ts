@@ -1,10 +1,10 @@
+import { unreachable } from "@gerak/core";
 import {
   formatStageError,
   restReader,
   type Box,
   type ObjectBounds3d,
   type Rest,
-  type RestAt,
   type RestReader,
   type Stage,
 } from "@gerak/stage";
@@ -22,7 +22,6 @@ import {
   isObjectRecord,
   isPageElement,
   parentNodeOf,
-  unreachable,
   type Binder,
   type BoundTarget,
   type MeasuredBox,
@@ -200,7 +199,7 @@ function boxForNode(
   return withPlacement(flowBox, { kind: "flow" });
 }
 
-export function samePlacement(a: BoxPlacement, b: BoxPlacement): boolean {
+function samePlacement(a: BoxPlacement, b: BoxPlacement): boolean {
   switch (a.kind) {
     case "flow":
     case "fixed":

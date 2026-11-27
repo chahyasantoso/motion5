@@ -1,4 +1,11 @@
-import { INPUT_EVENTS, elapsedOf, pageInputs, type Signal, type Time } from "@gerak/core";
+import {
+  INPUT_EVENTS,
+  elapsedOf,
+  pageInputs,
+  unreachable,
+  type Signal,
+  type Time,
+} from "@gerak/core";
 import { play, type Driver, type Player } from "@gerak/player";
 import {
   check,
@@ -7,9 +14,7 @@ import {
   type FrameOutput,
   type InputNeed,
   type Moves,
-  type Rest,
   type RestAt,
-  type RestReader,
   type Stage,
 } from "@gerak/stage";
 import { withFrameVisible } from "@gerak/stage/render";
@@ -23,7 +28,6 @@ import {
   isObjectRecord,
   readMaxScrollOf,
   readScrollYOf,
-  unreachable,
   type BoundTarget,
   type MediaState,
   type MountClock,
@@ -40,7 +44,7 @@ import {
   type LiveClock,
   type LiveClockScrollSource,
 } from "./live-clock";
-import { sameRest } from "./measure-dom";
+import { sameRest, type MeasuredLayout } from "./measure-dom";
 
 const ROOT_TARGETS = new WeakMap<object, string>();
 let nextRootTargetId = 0;
@@ -92,16 +96,8 @@ export interface MountRuntimeConfig {
   readonly mediaStates: ReadonlyMap<BoundTarget, MediaState>;
   readonly writer: DomWriter;
   readonly handoff: HandoffState;
-  readonly initialRest: Rest;
-  readonly initialReader: RestReader;
-  readonly initialLines: Readonly<Record<string, readonly number[]>>;
-  readonly initialCounts: Readonly<Record<string, number>>;
-  readonly runMeasure: () => {
-    readonly rest: Rest;
-    readonly reader: RestReader;
-    readonly lines: Readonly<Record<string, readonly number[]>>;
-    readonly counts: Readonly<Record<string, number>>;
-  };
+  readonly initialMeasured: MeasuredLayout;
+  readonly runMeasure: () => MeasuredLayout;
   readonly onDisposeCleanup: () => void;
 }
 
@@ -109,9 +105,7 @@ export interface MountRuntime {
   readonly player: Player<StageValues>;
   readonly driver: Driver;
   readonly durationMs: number | undefined;
-  readonly currentCounts: () => Readonly<Record<string, number>>;
-  getRest(): Rest;
-  getLines(): Readonly<Record<string, readonly number[]>>;
+  getMeasured(): MeasuredLayout;
   remeasure(forceHandOff?: boolean): void;
   replace(nextStage: Stage, rebind: () => void): void;
   dispose(allNodes: readonly PageElement[]): void;
@@ -135,11 +129,8 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     runMeasure,
   } = config;
 
-  let currentRest = config.initialRest;
-  let currentReader = config.initialReader;
-  let currentLines = config.initialLines;
-  let currentCounts = config.initialCounts;
-  const measures: RestAt[] = [{ at: 0, rest: currentReader }];
+  let currentMeasured = config.initialMeasured;
+  const measures: RestAt[] = [{ at: 0, rest: currentMeasured.reader }];
 
   const frames: FrameSource = options.frames ?? pageFrames();
   const settleMs = options.settleMs ?? stage.settleMs ?? 2000;
@@ -344,10 +335,10 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     const ran = frameOf(stage, {
       time,
       events,
-      rest: currentReader,
+      rest: currentMeasured.reader,
       measures,
-      counts: currentCounts,
-      lines: currentLines,
+      counts: currentMeasured.counts,
+      lines: currentMeasured.lines,
       moves,
       inputs: inputsMap,
       ...(only === undefined ? {} : { only }),
@@ -373,7 +364,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       }
     }
     if (options.checks === true) {
-      const errors = check(stage, out.targets, currentCounts);
+      const errors = check(stage, out.targets, currentMeasured.counts);
       if (errors.length > 0)
         throw new TypeError(`mount: ${errors.map(formatStageError).join(" ")}`);
     }
@@ -417,13 +408,13 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
           fresh = false;
           const heldTriggers = hostedLive || Reflect.get(globalThis, HELD_CLOCK) === true;
           if (whole) {
-            handoff.syncTriggers(nowMs, driver.input(), currentReader, heldTriggers);
+            handoff.syncTriggers(nowMs, driver.input(), currentMeasured.reader, heldTriggers);
             runOnly = handoff.engineOnly;
             playerStep?.();
             runOnly = undefined;
           } else {
             if (scrollChanged || eventsChanged) {
-              handoff.syncTriggers(nowMs, driver.input(), currentReader, heldTriggers);
+              handoff.syncTriggers(nowMs, driver.input(), currentMeasured.reader, heldTriggers);
             }
             const names = movingNow(maybeNext);
             for (const member of stage.members) {
@@ -478,7 +469,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
             REENTERED_GIVEN.set(given, reentered);
           }
           reentered.add(mountToken);
-          handoff.syncTriggers(clockMs(), given.input(), currentReader, hostedLive);
+          handoff.syncTriggers(clockMs(), given.input(), currentMeasured.reader, hostedLive);
           playerStep?.();
           return;
         }
@@ -501,7 +492,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
           }
           if (reentered.has(mountToken)) return;
         }
-        handoff.syncTriggers(clockMs(), given.input(), currentReader, hostedLive);
+        handoff.syncTriggers(clockMs(), given.input(), currentMeasured.reader, hostedLive);
         playerStep?.();
       }),
     );
@@ -545,10 +536,10 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       isTimed: timed !== undefined,
       isGiven: given !== undefined,
       hostedLive,
-      counts: currentCounts,
-      lines: currentLines,
-      rest: currentRest,
-      reader: currentReader,
+      counts: currentMeasured.counts,
+      lines: currentMeasured.lines,
+      rest: currentMeasured.rest,
+      reader: currentMeasured.reader,
       readMaxScroll: () => readMaxScrollOf(doc),
       readScrollY: () => readScrollYOf(scrollTarget, root),
       clockMs,
@@ -561,27 +552,24 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
   const remeasure = (forceHandOff = false): void => {
     if (!live) return;
     cancelRemeasure();
-    const prevRest = currentRest;
+    const prevRest = currentMeasured.rest;
     if (forceHandOff) handoff.release();
-    const measured = runMeasure();
-    currentRest = measured.rest;
-    currentReader = measured.reader;
-    currentLines = measured.lines;
-    currentCounts = measured.counts;
+    currentMeasured = runMeasure();
     const at = clockMs();
-    if (!sameRest(prevRest, currentRest)) {
+    if (!sameRest(prevRest, currentMeasured.rest)) {
       const lastMeasure = measures[measures.length - 1];
       if (lastMeasure !== undefined && lastMeasure.at === at) {
-        measures[measures.length - 1] = { at, rest: currentReader };
+        measures[measures.length - 1] = { at, rest: currentMeasured.reader };
       } else {
-        measures.push({ at, rest: currentReader });
+        measures.push({ at, rest: currentMeasured.reader });
       }
       activeUntil = Math.max(activeUntil, at + settleMs);
       maybeNext = true;
       fresh = true;
     }
     const depsOk =
-      !forceHandOff && handoff.depsUnchanged(readMaxScrollOf(doc), currentLines, currentRest);
+      !forceHandOff &&
+      handoff.depsUnchanged(readMaxScrollOf(doc), currentMeasured.lines, currentMeasured.rest);
     if (liveCtrl !== undefined) {
       if (readsScroll()) liveCtrl.syncScroll(scrollSource);
       seenScrollSeq = liveCtrl.scrollSeq();
@@ -595,7 +583,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
       handoff.syncTriggers(
         at,
         driver.input(),
-        currentReader,
+        currentMeasured.reader,
         hostedLive || Reflect.get(globalThis, HELD_CLOCK) === true,
       );
     }
@@ -647,9 +635,7 @@ export function createMountRuntime(config: MountRuntimeConfig): MountRuntime {
     player,
     driver,
     durationMs,
-    currentCounts: () => currentCounts,
-    getRest: () => currentRest,
-    getLines: () => currentLines,
+    getMeasured: () => currentMeasured,
     remeasure,
     replace(nextStage, onRebind) {
       if (nextStage.signature !== stage.signature)

@@ -1,10 +1,4 @@
-import {
-  unreachable,
-  type Contract,
-  type InputSpec,
-  type Pose2d,
-  type TargetOf,
-} from "@gerak/core";
+import { type Contract, type InputSpec, type TargetOf } from "@gerak/core";
 import type { Driver, Player } from "@gerak/player";
 import {
   compileScene,
@@ -15,7 +9,6 @@ import {
   type Member,
   type ObjectBounds3d,
   type Rest,
-  type RestReader,
   type Scene,
   type Stage,
   type TriggerBeat,
@@ -536,7 +529,3 @@ export function scaleFittedRoot(
   const scale = Math.min(box.width / frame.width, box.height / frame.height);
   fitted.style.transform = Number.isFinite(scale) && scale !== 1 ? `scale(${scale})` : "";
 }
-
-/** Exhaustive guard re-exported for sibling DOM modules. */
-export { unreachable };
-export type { BoxPlacement, Pose2d, RestReader };

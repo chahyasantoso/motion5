@@ -1,4 +1,4 @@
-import { clamp, type Pose2d } from "@gerak/core";
+import { clamp, unreachable, type Pose2d } from "@gerak/core";
 import { listPose, mediaMs, poseOf, type Content, type Stage } from "@gerak/stage";
 import { morphAt } from "@gerak/stage/render";
 import { HELD_CLOCK } from "./frames";
@@ -8,7 +8,6 @@ import {
   isMediaElement,
   isPageElement,
   needElement,
-  unreachable,
   type Binder,
   type BoundTarget,
   type DrawnMember,

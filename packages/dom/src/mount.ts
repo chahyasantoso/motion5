@@ -1,4 +1,4 @@
-import type { ObjectBounds3d } from "@gerak/stage";
+import { unreachable } from "@gerak/core";
 import { mediaBounds, waitForMedia } from "./media";
 import { bindTargets, createDomWriter, readObjectCounts } from "./bind-dom";
 import { createHandoff } from "./handoff";
@@ -17,7 +17,6 @@ import {
   resolvePageStage,
   scaleFittedRoot,
   scrollTargetFor,
-  unreachable,
   viewOfRoot,
   type Binder,
   type BinderCastKind,
@@ -114,15 +113,13 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const writer = createDomWriter(targets, mediaStates, now);
   const handoff = createHandoff();
   let currentStage = stage;
-  let currentObjects: Readonly<Record<string, ObjectBounds3d>> = {};
-  let currentObjectCounts: Readonly<Record<string, number>> = {};
 
   const resizeBinders = (): void => {
     for (const binder of binders) binder.resize?.();
   };
   const runMeasure = () => {
     resizeBinders();
-    const measured = measureLayout({
+    return measureLayout({
       stage: currentStage,
       targets,
       allNodes,
@@ -137,9 +134,6 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       readObjectCounts: () => readObjectCounts(objectListNames, binders),
       boundCounts,
     });
-    currentObjects = measured.objects;
-    currentObjectCounts = measured.objectCounts;
-    return measured;
   };
   const initialMeasured = runMeasure();
   const disposeListeners = new Set<() => void>();
@@ -161,10 +155,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     mediaStates,
     writer,
     handoff,
-    initialRest: initialMeasured.rest,
-    initialReader: initialMeasured.reader,
-    initialLines: initialMeasured.lines,
-    initialCounts: initialMeasured.counts,
+    initialMeasured,
     runMeasure,
     onDisposeCleanup: () => {
       for (const listener of [...disposeListeners]) listener();
@@ -177,22 +168,24 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     driver: runtime.driver,
     durationMs: runtime.durationMs,
     get rest() {
-      return runtime.getRest();
+      return runtime.getMeasured().rest;
     },
     get lines() {
-      return runtime.getLines();
+      return runtime.getMeasured().lines;
     },
     remeasure: () => runtime.remeasure(),
-    measure: () =>
-      buildMeasurement(
+    measure: () => {
+      const measured = runtime.getMeasured();
+      return buildMeasurement(
         targets,
-        runtime.getRest(),
-        runtime.getLines(),
-        currentObjects,
-        currentObjectCounts,
+        measured.rest,
+        measured.lines,
+        measured.objects,
+        measured.objectCounts,
         fitted,
         readViewport,
-      ),
+      );
+    },
     replace(next) {
       const nextStage = resolvePageStage(next);
       currentStage = nextStage;
