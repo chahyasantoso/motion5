@@ -142,7 +142,6 @@ export function changesOf<S, V = number>(
 
     if (!cell.returned) {
       CHANGE_META.set(cell.list, { resetId: cell.resetId, base: cell.listBase });
-      Object.freeze(cell.list);
       cell.returned = true;
     }
 
