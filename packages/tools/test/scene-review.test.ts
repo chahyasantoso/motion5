@@ -3,13 +3,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
+  clamp,
   elapsedOf,
+  inputs,
   motion,
   pageInputs,
   pointer,
   scroll,
+  springTo,
   state,
   transition,
+  triggers,
   value,
   type Input,
   type Pose2d,
@@ -688,5 +692,91 @@ describe("driver probing and --events in gerak review", () => {
       ],
     });
     expect(parseSceneReviewArgs(["s.ts", "--events", "bad-event"]).kind).toBe("usage");
+  });
+
+  it("exempts a member that moves only on a contract value", () => {
+    const quiz = inputs({ values: { progress: {} } });
+    const progress = value(quiz, "progress");
+
+    const valueDriven = scene(
+      { length: 400 },
+      box("bar").moves((_t, ctx) => ({ scaleX: progress(ctx.time, ctx.events) })),
+      box("springBar").moves(bind({ scaleX: springTo(progress, (v) => v) })),
+    );
+    expect(motionFindings(review(valueDriven))).toEqual([]);
+
+    const onlyMovesFromOne = scene(
+      { length: 400 },
+      box("stepped").moves((_t, ctx) => ({
+        y: progress(ctx.time, ctx.events) === 1 ? 0 : 12,
+      })),
+    );
+    expect(
+      motionFindings(
+        review(onlyMovesFromOne, {
+          events: [{ kind: "value", name: "progress", at: 0, value: 1 }],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("exempts a member that moves only on a contract trigger over 600 ms", () => {
+    const quiz = inputs({ triggers: { finish: {} } });
+    const finish = triggers(quiz, "finish");
+
+    const triggerDriven = scene(
+      { length: 400 },
+      box("card").moves((_t, ctx) => {
+        const last = finish(ctx.time, ctx.events).at(-1);
+        if (last === undefined) return { opacity: 0, y: 20 };
+        const elapsed = (elapsedOf(ctx.time.clock) ?? 0) - last.at;
+        const p = clamp(elapsed / 600, 0, 1);
+        return { opacity: p, y: 20 * (1 - p) };
+      }),
+    );
+    expect(motionFindings(review(triggerDriven))).toEqual([]);
+  });
+
+  it("reports a member that reads a contract value or trigger and ignores it, naming what it read", () => {
+    const quiz = inputs({
+      values: { progress: {}, score: { targets: ["p1", "p2"] } },
+      triggers: { finish: {} },
+    });
+    const progress = value(quiz, "progress");
+    const p1Score = value(quiz, "score", "p1");
+    const finish = triggers(quiz, "finish");
+
+    const ignoredValue = scene(
+      { length: 400 },
+      box("bar").moves((_t, ctx) => {
+        progress(ctx.time, ctx.events);
+        return { scaleX: 1 };
+      }),
+    );
+    expect(review(ignoredValue).findings).toContain(
+      'cast member "bar" never moved, even when its inputs changed (value progress); move it, or mark it .static().',
+    );
+
+    const ignoredBoth = scene(
+      { length: 400 },
+      box("panel").moves((_t, ctx) => {
+        p1Score(ctx.time, ctx.events);
+        finish(ctx.time, ctx.events);
+        return { opacity: 1 };
+      }),
+    );
+    expect(review(ignoredBoth).findings).toContain(
+      'cast member "panel" never moved, even when its inputs changed (value score:p1, trigger finish); move it, or mark it .static().',
+    );
+  });
+
+  it("keeps today's never-moved message when a member reads no app input", () => {
+    const readsNothing = scene(
+      { length: 400 },
+      box("plain").moves(() => ({ x: 0 })),
+    );
+    expect(review(readsNothing).findings).toContain(
+      'cast member "plain" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
+    );
   });
 });
