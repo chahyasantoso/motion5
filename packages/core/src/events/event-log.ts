@@ -1,3 +1,4 @@
+import { unreachable } from "../utility/unreachable";
 import type { Contract, InputSpec, TargetOf } from "./contract";
 import type { Input, InputEntry } from "./event-list";
 
@@ -465,16 +466,23 @@ export function inputLog(options?: { readonly windowMs?: number }): InputLog {
       input.splice(index, 0, entry);
       serials.splice(index, 0, serial);
     }
-    if (entry.kind === "value") {
-      let byTarget = latestValueByName.get(entry.name);
-      if (byTarget === undefined) {
-        byTarget = new Map();
-        latestValueByName.set(entry.name, byTarget);
+    switch (entry.kind) {
+      case "value": {
+        let byTarget = latestValueByName.get(entry.name);
+        if (byTarget === undefined) {
+          byTarget = new Map();
+          latestValueByName.set(entry.name, byTarget);
+        }
+        const prev = byTarget.get(entry.target);
+        if (prev === undefined || entry.at >= prev.at) {
+          byTarget.set(entry.target, { at: entry.at, value: entry.value });
+        }
+        break;
       }
-      const prev = byTarget.get(entry.target);
-      if (prev === undefined || entry.at >= prev.at) {
-        byTarget.set(entry.target, { at: entry.at, value: entry.value });
-      }
+      case "trigger":
+        break;
+      default:
+        return unreachable(entry.kind);
     }
     if (windowMs !== undefined) {
       let byTarget = latestByName.get(entry.name);

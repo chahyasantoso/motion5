@@ -199,4 +199,10 @@ describe("derivedInput records and caching", () => {
     const t3 = triggers(testInputs, "tap")(liveAt(5700), m3);
     expect(t3[0]?.serial).toBe(tapSerial1);
   });
+
+  it("rejects an unknown entry kind in inputLog.add via exhaustive switch", () => {
+    const log = inputLog();
+    const bogus: unknown = JSON.parse('{"kind":"bogus","name":"x","at":0,"value":1}');
+    expect(() => Reflect.apply(log.add, log, [bogus])).toThrow(TypeError);
+  });
 });
