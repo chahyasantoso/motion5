@@ -1,20 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { eventLog, liveAt, watchClock, watchedTime } from "@gerak/core";
+import { inputLog, inputs, liveAt, watchClock, watchedTime } from "@gerak/core";
 import { noise1d, react } from "../src/index";
+
+const hits = inputs({
+  values: { noise: {} },
+  triggers: { land: {}, hit: {}, noise: {} },
+});
 
 describe("react stillMoving and stateless noise1d", () => {
   it("keeps calling stillMoving until reaction settles and handles large logs via binary search", () => {
-    const log = eventLog();
+    const log = inputLog();
     for (let i = 0; i < 10_000; i += 1) {
-      log.add({ name: "noise", at: i * 10 });
+      log.trigger(i * 10, hits, "noise");
     }
-    log.add({ name: "land", at: 100_050 });
+    log.trigger(100_050, hits, "land");
     const recoil = react({ on: ["land"], kind: "recoil", amplitude: 10 });
 
     const during: string[] = [];
     const mid = watchClock(
       (u) => during.push(u),
-      () => recoil(liveAt(100_100), log.events),
+      () => recoil(liveAt(100_100), log.input),
     );
     expect(mid).not.toBe(0);
     expect(during).toEqual(["time"]);
@@ -22,7 +27,7 @@ describe("react stillMoving and stateless noise1d", () => {
     const settled: string[] = [];
     const done = watchClock(
       (u) => settled.push(u),
-      () => recoil(liveAt(102_000), log.events),
+      () => recoil(liveAt(102_000), log.input),
     );
     expect(done).toBe(0);
     expect(settled).toEqual([]);
@@ -39,47 +44,45 @@ describe("react stillMoving and stateless noise1d", () => {
   });
 
   it("unwraps watchedTime when settled and preserves shake phase across window aging", () => {
-    const log = eventLog();
-    log.add({ name: "hit", at: 100 });
+    const log = inputLog();
+    log.trigger(100, hits, "hit");
     const shake = react({ on: ["hit"], kind: "shake", amplitude: 10, decay: 6 });
 
     const settledUses: string[] = [];
     watchClock(
       (u) => settledUses.push(u),
-      () => shake(watchedTime(liveAt(5000)), log.events),
+      () => shake(watchedTime(liveAt(5000)), log.input),
     );
     expect(settledUses).toEqual([]);
 
     // Two close hits: when hit #0 ages past quietMs (~1151ms), hit #1 must keep its phase seed instead of snapping.
-    const shakeLog = eventLog();
-    shakeLog.add({ name: "hit", at: 0 });
-    shakeLog.add({ name: "hit", at: 1000 });
+    const shakeLog = inputLog();
+    shakeLog.trigger(0, hits, "hit");
+    shakeLog.trigger(1000, hits, "hit");
     const s = react({ on: ["hit"], kind: "shake", amplitude: 10, decay: 6, frequency: 4 });
-    const justBeforeExpire = s(liveAt(1150), shakeLog.events);
-    const justAfterExpire = s(liveAt(1155), shakeLog.events);
+    const justBeforeExpire = s(liveAt(1150), shakeLog.input);
+    const justAfterExpire = s(liveAt(1155), shakeLog.input);
     // Contribution from expiring hit#0 at t=1150 is < 0.015; phase snap of hit#1 from seed=1 to seed=0 would jump > 1.
     expect(Math.abs(justAfterExpire - justBeforeExpire)).toBeLessThan(0.5);
   });
 
-  it("loses no motion for triggers inside the window when an eventLog drops older entries", () => {
-    const dropping = eventLog({ windowMs: 4000 });
-    const full = eventLog();
+  it("loses no motion for triggers inside the window when an inputLog drops older entries", () => {
+    const dropping = inputLog({ windowMs: 4000 });
+    const full = inputLog();
     const shake = react({ on: ["hit"], kind: "shake", amplitude: 10, decay: 6, frequency: 4 });
 
     for (let frame = 0; frame <= 20 * 60; frame += 1) {
       const at = Math.round((frame * 1000) / 60);
-      const sample = { name: "noise", at, value: frame };
-      dropping.add(sample);
-      full.add(sample);
+      dropping.set(at, hits, "noise", frame);
+      full.set(at, hits, "noise", frame);
       if (frame % 60 === 0 && frame > 0) {
-        const hit = { name: "hit", at };
-        dropping.add(hit);
-        full.add(hit);
+        dropping.trigger(at, hits, "hit");
+        full.trigger(at, hits, "hit");
       }
       if (at >= 16_000) {
-        expect(shake(liveAt(at), dropping.events)).toBeCloseTo(shake(liveAt(at), full.events), 9);
+        expect(shake(liveAt(at), dropping.input)).toBeCloseTo(shake(liveAt(at), full.input), 9);
       }
     }
-    expect(dropping.events.length).toBeLessThan(full.events.length);
+    expect(dropping.input.length).toBeLessThan(full.input.length);
   });
 });

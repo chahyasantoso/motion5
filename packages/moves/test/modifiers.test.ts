@@ -6,7 +6,7 @@ import {
   type Pose2d,
   type Time,
   anticipation,
-  NO_EVENTS,
+  NO_INPUT,
 } from "@gerak/core";
 import { overshoot, wipe } from "../src";
 
@@ -31,23 +31,23 @@ describe("modifiers", () => {
   });
 
   it("anticipate goes the other way mid wind-up and ends on the input's end", () => {
+    expect(anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(0), NO_INPUT).x).toBeCloseTo(
+      0,
+    );
     expect(
-      anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(0), NO_EVENTS).x,
-    ).toBeCloseTo(0);
-    expect(
-      anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(0.1), NO_EVENTS).x,
+      anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(0.1), NO_INPUT).x,
     ).toBeCloseTo(-0.15);
     expect(
-      anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(0.2), NO_EVENTS).x,
+      anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(0.2), NO_INPUT).x,
     ).toBeCloseTo(0);
-    expect(anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(1), NO_EVENTS).x).toBe(1);
+    expect(anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(1), NO_INPUT).x).toBe(1);
   });
 
   it("anticipate with share 0 is the input unchanged", () => {
     for (const p of [0, 0.3, 1])
-      expect(
-        anticipation({ share: 0, amount: 0.15 })(ramp)(atProgress(p), NO_EVENTS).x,
-      ).toBeCloseTo(p);
+      expect(anticipation({ share: 0, amount: 0.15 })(ramp)(atProgress(p), NO_INPUT).x).toBeCloseTo(
+        p,
+      );
   });
 
   it("overshoot passes the end during the settle and lands exactly on it", () => {
@@ -86,11 +86,9 @@ describe("modifiers", () => {
 
   it("anticipate leaves a number that multiplies as the input gave it", () => {
     const grow = (time: Time): Pose2d => ({ scale: 1 + time.progress });
-    expect(anticipation({ share: 0.2, amount: 0.15 })(grow)(atProgress(0.1), NO_EVENTS).scale).toBe(
+    expect(anticipation({ share: 0.2, amount: 0.15 })(grow)(atProgress(0.1), NO_INPUT).scale).toBe(
       1,
     );
-    expect(anticipation({ share: 0.2, amount: 0.15 })(grow)(atProgress(1), NO_EVENTS).scale).toBe(
-      2,
-    );
+    expect(anticipation({ share: 0.2, amount: 0.15 })(grow)(atProgress(1), NO_INPUT).scale).toBe(2);
   });
 });

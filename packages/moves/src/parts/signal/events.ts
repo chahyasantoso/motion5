@@ -1,13 +1,13 @@
 import {
   elapsedOf,
-  eventSerialsOf,
+  inputSerialsOf,
   notifyInputUse,
   rawTime,
   springTo,
   state,
   stillMoving,
   unreachable,
-  type Events,
+  type Input,
   type Time,
 } from "@gerak/core";
 
@@ -17,7 +17,7 @@ export interface FollowOptions {
   /** The value before any event. */
   readonly start: number;
   /** The goal each event's name sends the spring towards, or `"value"` for the event's own value; events
-   * not named here, and `"value"` events with no value, are ignored. */
+   * not named here are ignored. */
   readonly on: Readonly<Record<string, number | "value">>;
   /** Only events with this target count; with none, events count whatever their target. */
   readonly target?: string;
@@ -30,8 +30,8 @@ export interface FollowOptions {
 }
 
 /** A spring each named event sends towards its goal, or a sample's own with `"value"`, turning back with
- * no jump; pure in time and events, a later call goes on from the last. */
-export function follow(options: FollowOptions): (time: Time, events: Events) => number {
+ * no jump; pure in time and input, a later call goes on from the last. */
+export function follow(options: FollowOptions): (time: Time, input: Input) => number {
   const { stiffness, damping } = options;
   if ((stiffness !== undefined && !(stiffness > 0)) || (damping !== undefined && !(damping >= 0)))
     throw new RangeError("follow: stiffness must be above 0 and damping at least 0.");
@@ -88,7 +88,7 @@ function shape(
   }
 }
 
-function firstAfter(events: Events, minAt: number): number {
+function firstAfter(events: Input, minAt: number): number {
   let low = 0;
   let high = events.length;
   while (low < high) {
@@ -101,7 +101,7 @@ function firstAfter(events: Events, minAt: number): number {
 
 /** A damped answer to each past event by `kind` (`recoil`, `wobble`, `flash` or `shake`); 0 before the
  * first and once all have died. */
-export function react(options: ReactOptions): (time: Time, events: Events) => number {
+export function react(options: ReactOptions): (time: Time, input: Input) => number {
   const decay = options.decay ?? 6;
   const frequency = options.frequency ?? 4;
   if (!(decay > 0)) throw new RangeError("react: decay must be above 0.");
@@ -111,7 +111,7 @@ export function react(options: ReactOptions): (time: Time, events: Events) => nu
     notifyInputUse("events");
     const now = elapsedOf(rawTime(time).clock);
     if (now === undefined) return 0;
-    const serials = eventSerialsOf(events);
+    const serials = inputSerialsOf(events);
     const start = firstAfter(events, now - quietMs);
     let total = 0;
     let moving = false;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, type Events, type MotionEvent } from "@gerak/core";
+import { liveAt, type Input, type InputEntry } from "@gerak/core";
 import { simulate, type PhysicsWorld, type Spawner } from "@gerak/physics";
 
 const G = 2000;
@@ -221,13 +221,13 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
 
     it("spawns bodies on events, the same however time and events arrive", () => {
       const options = {
-        spawn: (event: MotionEvent, world: Spawner) => {
+        spawn: (event: InputEntry, world: Spawner) => {
           if (event.name === "drop")
             world.addBody({
               id: `ball@${event.at}`,
               shape: { kind: "circle", radius: 15 },
-              x: event.x ?? 0,
-              y: event.y ?? 0,
+              x: event.point?.x ?? 0,
+              y: event.point?.y ?? 0,
               restitution: 0.3,
             });
         },
@@ -236,9 +236,9 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
         world.setGravity(0, G);
         world.addCollider("floor", { kind: "floor", y: FLOOR });
       };
-      const drops: Events = [
-        { name: "drop", at: 500, x: 300, y: 100 },
-        { name: "drop", at: 900, x: 700, y: 100 },
+      const drops: Input = [
+        { kind: "trigger", name: "drop", at: 500, value: 1, point: { x: 300, y: 100 } },
+        { kind: "trigger", name: "drop", at: 900, value: 1, point: { x: 700, y: 100 } },
       ];
       const sim = simulate(create(), build, options);
       expect(sim.bodies(liveAt(400), drops)).toEqual([]);
@@ -255,7 +255,10 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
       ]);
       sim.at(liveAt(700), drops);
       expect(sim.at(liveAt(2500), drops)).toEqual(settled);
-      const earlier: Events = [{ name: "drop", at: 300, x: 500, y: 100 }, ...drops];
+      const earlier: Input = [
+        { kind: "trigger", name: "drop", at: 300, value: 1, point: { x: 500, y: 100 } },
+        ...drops,
+      ];
       const fresh = simulate(create(), build, options);
       expect(sim.at(liveAt(2500), earlier)).toEqual(fresh.at(liveAt(2500), earlier));
       expect(sim.events(liveAt(2500), earlier)).toEqual(fresh.events(liveAt(2500), earlier));
@@ -318,13 +321,13 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
 
     it("fast-forwards a late spawn at 120 s to match a 0 ms spawn and rewinds cleanly", () => {
       const options = {
-        spawn: (event: MotionEvent, world: Spawner) => {
+        spawn: (event: InputEntry, world: Spawner) => {
           if (event.name === "drop")
             world.addBody({
               id: `ball@${event.at}`,
               shape: { kind: "circle", radius: 20 },
-              x: event.x ?? 640,
-              y: event.y ?? 380,
+              x: event.point?.x ?? 640,
+              y: event.point?.y ?? 380,
               restitution: 0.4,
             });
         },
@@ -333,12 +336,14 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
         world.setGravity(0, G);
         world.addCollider("floor", { kind: "floor", y: FLOOR });
       };
-      const late: Events = [
-        { name: "scroll", at: 10_000, value: 200 },
-        { name: "scroll", at: 50_000, value: 600 },
-        { name: "drop", at: 120_000, x: 640, y: 380 },
+      const late: Input = [
+        { kind: "value", name: "scroll", at: 10_000, value: 200 },
+        { kind: "value", name: "scroll", at: 50_000, value: 600 },
+        { kind: "trigger", name: "drop", at: 120_000, value: 1, point: { x: 640, y: 380 } },
       ];
-      const zero: Events = [{ name: "drop", at: 0, x: 640, y: 380 }];
+      const zero: Input = [
+        { kind: "trigger", name: "drop", at: 0, value: 1, point: { x: 640, y: 380 } },
+      ];
       const sim = simulate(create(), build, options);
       const zeroSim = simulate(create(), build, options);
 
@@ -366,7 +371,10 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
         zeroSim.at(liveAt(100), zero)["ball@0"],
       );
       expect(sim.at(liveAt(121_500), late)).toEqual(at1500);
-      const earlier: Events = [{ name: "drop", at: 60_000, x: 400, y: 380 }, ...late];
+      const earlier: Input = [
+        { kind: "trigger", name: "drop", at: 60_000, value: 1, point: { x: 400, y: 380 } },
+        ...late,
+      ];
       const fresh = simulate(create(), build, options);
       expect(sim.at(liveAt(121_500), earlier)).toEqual(fresh.at(liveAt(121_500), earlier));
       expect(sim.events(liveAt(121_500), earlier)).toEqual(fresh.events(liveAt(121_500), earlier));

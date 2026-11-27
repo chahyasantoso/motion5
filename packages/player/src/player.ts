@@ -1,23 +1,23 @@
 import {
-  NO_EVENTS,
+  NO_INPUT,
   atProgress,
   createStore,
-  derivedEvents,
+  derivedInput,
   elapsedOf,
-  eventSerialsOf,
+  inputSerialsOf,
   generationOf,
   withStore,
-  type Events,
-  type MotionEvent,
+  type Input,
+  type InputEntry,
   type RuntimeStore,
   type Signal,
   type Time,
 } from "@gerak/core";
 
-/** What drives a scene: the time now, the events so far when it watches any, and a signal each time it moves. */
+/** What drives a scene: the time now, the input so far when it watches any, and a signal each time it moves. */
 export interface Driver {
   now(): Time;
-  events?(): Events;
+  events?(): Input;
   subscribe(listener: () => void): () => void;
   /** The options it was made with, so a host can tell a changed driver from the same one. */
   readonly options?: object;
@@ -30,21 +30,21 @@ export interface Player<T extends object> {
   /** Calls `listener` with the target's initial value and after each step where `Object.is` changed it. */
   subscribe<K extends keyof T>(target: K, listener: (value: T[K]) => void): () => void;
   /** Calls `listener` with `signal`'s value now and after each step that changes it, before targets' subscribers.
-   * It reads the scene's time and events, so a seek back undoes later events. */
+   * It reads the scene's time and input, so a seek back undoes later entries. */
   observe<V>(signal: Signal<V>, listener: (value: V) => void): () => void;
   /** Reruns the scene at the current time, for inputs it reads from outside such as a measured layout. */
   refresh(): void;
   /** Swaps the scene, and the cues when given, then reruns at the current time; the driver and listeners stay. */
-  replace(next: Signal<T>, cues?: Events): void;
-  /** Calls `listener` each time forward play reaches an event of that name, a cue or the page's; a seek back calls nothing. */
-  on(name: string, listener: (event: MotionEvent) => void): () => void;
+  replace(next: Signal<T>, cues?: Input): void;
+  /** Calls `listener` each time forward play reaches an entry of that name, a cue or the page's; a seek back calls nothing. */
+  on(name: string, listener: (event: InputEntry) => void): () => void;
   dispose(): void;
 }
 
 /** Options of `play`: `cues`. */
 export interface PlayOptions {
-  /** The scene's own events at known ms, such as a landing; the scene gets them merged with the page's. */
-  readonly cues?: Events;
+  /** The scene's own entries at known ms, such as a landing; the scene gets them merged with the page's. */
+  readonly cues?: Input;
 }
 
 /** Runs `scene` against `driver`, telling each target's subscribers its value on every step. */
@@ -54,23 +54,23 @@ export function play<T extends object>(
   options: PlayOptions = {},
 ): Player<T> {
   const store: RuntimeStore = createStore();
-  const eventCache = derivedEvents();
-  let cues = options.cues ?? NO_EVENTS;
+  const eventCache = derivedInput();
+  let cues = options.cues ?? NO_INPUT;
   let time = driver.now();
 
-  const resolveEvents = (targetTime: Time = time): Events =>
-    eventCache.resolve(cues, driver.events?.() ?? NO_EVENTS, elapsedOf(targetTime.clock));
+  const resolveEvents = (targetTime: Time = time): Input =>
+    eventCache.resolve(cues, driver.events?.() ?? NO_INPUT, elapsedOf(targetTime.clock));
 
   let current = scene;
-  const initialPage = driver.events?.() ?? NO_EVENTS;
+  const initialPage = driver.events?.() ?? NO_INPUT;
   let values = withStore(store, () => current(time, resolveEvents()));
   let reached = elapsedOf(time.clock);
 
-  let seenPage: Events | undefined = initialPage;
+  let seenPage: Input | undefined = initialPage;
   let seenPageGen: number | undefined = generationOf(initialPage);
   let pageWatermark = 0;
   const deferredSerials = new Set<number>();
-  const initialSerials = eventSerialsOf(initialPage);
+  const initialSerials = inputSerialsOf(initialPage);
   if (initialSerials !== undefined) {
     for (let i = 0; i < initialPage.length; i += 1) {
       const event = initialPage[i];
@@ -82,16 +82,16 @@ export function play<T extends object>(
   }
 
   const listeners = new Set<() => void>();
-  const observers = new Set<(all: Events) => void>();
-  const handlers = new Map<string, Set<(event: MotionEvent) => void>>();
+  const observers = new Set<(all: Input) => void>();
+  const handlers = new Map<string, Set<(event: InputEntry) => void>>();
 
-  const emitEvent = (event: MotionEvent): void => {
+  const emitEvent = (event: InputEntry): void => {
     const set = handlers.get(event.name);
     if (set === undefined || set.size === 0) return;
     for (const handler of [...set]) handler(event);
   };
 
-  const announce = (now: number | undefined, page: Events): void => {
+  const announce = (now: number | undefined, page: Input): void => {
     const from = reached;
     reached = now;
     if (now === undefined) return;
@@ -103,7 +103,7 @@ export function play<T extends object>(
       }
     }
 
-    const serials = eventSerialsOf(page);
+    const serials = inputSerialsOf(page);
     if (serials === undefined) {
       if (!seekBack && from !== undefined && now > from && handlers.size > 0) {
         for (const event of page) {
@@ -134,8 +134,8 @@ export function play<T extends object>(
       }
     }
 
-    // Collect newly inserted events (`serial > pageWatermark`), stopping immediately on ordered tail appends.
-    const fresh: { readonly event: MotionEvent; readonly serial: number }[] = [];
+    // Collect newly inserted entries (`serial > pageWatermark`), stopping immediately on ordered tail appends.
+    const fresh: { readonly event: InputEntry; readonly serial: number }[] = [];
     for (let i = page.length - 1; i >= 0; i -= 1) {
       const serial = serials[i] ?? 0;
       if (serial <= pageWatermark) {
@@ -161,7 +161,7 @@ export function play<T extends object>(
     const nextTime = driver.now();
     const nextNow = elapsedOf(nextTime.clock);
     time = nextTime;
-    const page = driver.events?.() ?? NO_EVENTS;
+    const page = driver.events?.() ?? NO_INPUT;
     const all = resolveEvents(time);
     withStore(store, () => {
       if (Reflect.get(globalThis, "__gerakTiming") === true) {
@@ -206,7 +206,7 @@ export function play<T extends object>(
     },
     observe(signal, listener) {
       let last = withStore(store, () => signal(time, resolveEvents()));
-      const observer = (all: Events): void => {
+      const observer = (all: Input): void => {
         const next = signal(time, all);
         if (Object.is(next, last)) return;
         last = next;

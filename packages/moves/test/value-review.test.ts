@@ -6,7 +6,7 @@ import {
   type Pose2d,
   type Time,
   anticipation,
-  NO_EVENTS,
+  NO_INPUT,
 } from "@gerak/core";
 import { overshoot } from "@gerak/moves";
 
@@ -29,17 +29,14 @@ describe("values at their edges", () => {
 
   it("stops a modifier at the least a field can be", () => {
     const sharpening = (time: Time): Pose2d => ({ blur: 4 * time.progress });
-    const wound = anticipation({ share: 0.2, amount: 0.5 })(sharpening)(
-      timed(0.1, 1000),
-      NO_EVENTS,
-    );
+    const wound = anticipation({ share: 0.2, amount: 0.5 })(sharpening)(timed(0.1, 1000), NO_INPUT);
     expect(wound.blur).toBe(0);
   });
 
   it("writes out only the fields its input carries", () => {
     const sliding = (time: Time): Pose2d => ({ x: -200 * (1 - time.progress) });
     expect(
-      Object.keys(anticipation({ share: 0.2, amount: 0.15 })(sliding)(timed(0.5, 1000), NO_EVENTS)),
+      Object.keys(anticipation({ share: 0.2, amount: 0.15 })(sliding)(timed(0.5, 1000), NO_INPUT)),
     ).toEqual(["x"]);
     expect(Object.keys(overshoot({})(sliding)(timed(0.9, 1000)))).toEqual(["x"]);
   });

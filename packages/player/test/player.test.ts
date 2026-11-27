@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, eventLog, liveAt, state, type Time } from "@gerak/core";
+import { atProgress, inputLog, inputs, liveAt, state, type Input, type Time } from "@gerak/core";
 import { hop } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 
@@ -78,7 +78,7 @@ describe("play", () => {
 
 describe("a scene of events", () => {
   it("gets the driver's events beside its time, and none from a driver that keeps no log", () => {
-    const log = [{ name: "enter", at: 10, target: "card" }];
+    const log: Input = [{ kind: "trigger", name: "enter", at: 10, value: 1, target: "card" }];
     const watching = { ...manualDriver(), events: () => log };
     const seen = play((_time, events) => ({ count: events.length }), watching);
     expect(seen.values.count).toBe(1);
@@ -89,12 +89,12 @@ describe("a scene of events", () => {
 });
 
 describe("cues", () => {
-  const cues = [{ name: "land", at: 500, target: "ball" }];
+  const cues: Input = [{ kind: "trigger", name: "land", at: 500, value: 1, target: "ball" }];
 
   it("reach the scene merged with the page's events, oldest first", () => {
     const driver = {
       ...manualDriver({ durationMs: 1000 }),
-      events: () => [{ name: "enter", at: 200 }],
+      events: () => [{ kind: "trigger", name: "enter", at: 200, value: 1 }] as const,
     };
     const player = play((_time, events) => ({ names: events.map(({ name }) => name) }), driver, {
       cues,
@@ -183,7 +183,9 @@ describe("replace", () => {
 
   it("calls no cue handler, since time has not moved", () => {
     const driver = manualDriver({ durationMs: 4000 });
-    const player = play(slow, driver, { cues: [{ name: "hit", at: 500 }] });
+    const player = play(slow, driver, {
+      cues: [{ kind: "trigger", name: "hit", at: 500, value: 1 }],
+    });
     const heard: string[] = [];
     player.on("hit", (event) => heard.push(event.name));
     driver.seekMs(1000);
@@ -194,12 +196,14 @@ describe("replace", () => {
 
   it("takes new cues when given, and keeps the old ones when not", () => {
     const driver = manualDriver({ durationMs: 4000 });
-    const player = play(slow, driver, { cues: [{ name: "hit", at: 500 }] });
+    const player = play(slow, driver, {
+      cues: [{ kind: "trigger", name: "hit", at: 500, value: 1 }],
+    });
     const heard: number[] = [];
     player.on("hit", (event) => heard.push(event.at));
     player.replace(fast);
     driver.seekMs(1000);
-    player.replace(slow, [{ name: "hit", at: 1500 }]);
+    player.replace(slow, [{ kind: "trigger", name: "hit", at: 1500, value: 1 }]);
     driver.seekMs(2000);
     expect(heard).toEqual([500, 1500]);
   });
@@ -241,12 +245,13 @@ describe("step timing", () => {
 
 describe("play over a long growing log", () => {
   it("costs about the same per step with many events logged as with a few", () => {
-    const log = eventLog();
+    const ticks = inputs({ triggers: { tick: {} } });
+    const log = inputLog();
     let now = 0;
     const listeners = new Set<() => void>();
     const driver = {
       now: (): Time => liveAt(now),
-      events: () => log.events,
+      events: () => log.input,
       subscribe(listener: () => void) {
         listeners.add(listener);
         return () => listeners.delete(listener);
@@ -257,7 +262,7 @@ describe("play over a long growing log", () => {
       const started = performance.now();
       for (let index = 0; index < count; index += 1) {
         now += 1;
-        log.add({ name: "tick", at: now });
+        log.trigger(now, ticks, "tick");
         for (const listener of listeners) listener();
       }
       return performance.now() - started;
@@ -266,16 +271,17 @@ describe("play over a long growing log", () => {
     const early = Math.min(steps(500), steps(500), steps(500));
     steps(60000);
     const late = Math.min(steps(500), steps(500), steps(500));
-    expect(player.values.count).toBe(log.events.length);
+    expect(player.values.count).toBe(log.input.length);
     expect(late).toBeLessThan(early * 4);
   });
 });
 
 describe("observe", () => {
+  const taps = inputs({ triggers: { tap: {} } });
   const counter = state(0, (count, event) => (event.name === "tap" ? count + 1 : count));
   const timed = () => {
-    const log = eventLog();
-    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    const log = inputLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.input };
     return { log, driver, player: play(() => ({}), driver) };
   };
 
@@ -292,19 +298,21 @@ describe("observe", () => {
     player.observe(counter, (count) => seen.push(count));
     driver.seekMs(100);
     driver.seekMs(200);
-    log.add({ name: "tap", at: 300 });
+    log.trigger(300, taps, "tap");
     driver.seekMs(300);
     driver.seekMs(400);
     expect(seen).toEqual([0, 1]);
   });
 
   it("reads the events the scene sees, so a seek back undoes later events and cues count", () => {
-    const log = eventLog();
-    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
-    const player = play(() => ({}), driver, { cues: [{ name: "tap", at: 100 }] });
+    const log = inputLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.input };
+    const player = play(() => ({}), driver, {
+      cues: [{ kind: "trigger", name: "tap", at: 100, value: 1 }],
+    });
     const seen: number[] = [];
     player.observe(counter, (count) => seen.push(count));
-    log.add({ name: "tap", at: 500 });
+    log.trigger(500, taps, "tap");
     driver.seekMs(200);
     driver.seekMs(600);
     driver.seekMs(50);
@@ -312,14 +320,14 @@ describe("observe", () => {
   });
 
   it("runs before the targets' subscribers on each step", () => {
-    const log = eventLog();
-    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    const log = inputLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.input };
     const player = play((time: Time) => ({ box: { x: time.progress } }), driver);
     const order: string[] = [];
     player.observe(counter, () => order.push("observe"));
     player.subscribe("box", () => order.push("target"));
     order.length = 0;
-    log.add({ name: "tap", at: 100 });
+    log.trigger(100, taps, "tap");
     driver.seekMs(100);
     expect(order).toEqual(["observe", "target"]);
   });
@@ -329,7 +337,7 @@ describe("observe", () => {
     const seen: number[] = [];
     const stop = player.observe(counter, (count) => seen.push(count));
     stop();
-    log.add({ name: "tap", at: 100 });
+    log.trigger(100, taps, "tap");
     driver.seekMs(100);
     expect(seen).toEqual([0]);
   });

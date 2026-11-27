@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   elapsedOf,
-  eventLog,
-  mergeEvents,
+  inputLog,
+  inputs,
+  mergeInput,
   seeded,
   springTo,
   state,
   tally,
   trail,
-  type Events,
+  type Input,
   type Signal,
   type Time,
 } from "@gerak/core";
@@ -26,10 +27,10 @@ interface ScenePose {
 function buildScene(): Signal<ScenePose> {
   const counter = state({ count: 0, target: 0 }, (current, event) => {
     if (event.name === "step") {
-      return { count: current.count + 1, target: event.value ?? current.target };
+      return { count: current.count + 1, target: event.value };
     }
     if (event.name === "cue") {
-      return { count: current.count + 10, target: current.target + (event.value ?? 5) };
+      return { count: current.count + 10, target: current.target + event.value };
     }
     return current;
   });
@@ -41,7 +42,7 @@ function buildScene(): Signal<ScenePose> {
   });
   const integralValue = tally({ start: 0, on: { step: "value", cue: 2 } });
 
-  return (time: Time, events: Events): ScenePose => ({
+  return (time: Time, events: Input): ScenePose => ({
     count: counter(time, events).count,
     spring: springValue(time, events),
     trailed: trailedValue(time, events),
@@ -51,7 +52,7 @@ function buildScene(): Signal<ScenePose> {
   });
 }
 
-function withEvents(base: ManualDriver, events: Events): ManualDriver {
+function withEvents(base: ManualDriver, events: Input): ManualDriver {
   return {
     ...base,
     events: () => events,
@@ -76,21 +77,22 @@ function shuffled(values: readonly number[], seed: number): number[] {
 describe("timed equivalence", () => {
   it("matches across ordered seek, shuffled seek, fresh players, and direct evaluation", () => {
     const durationMs = 1000;
-    const cues: Events = [
-      { name: "cue", at: 150, value: 12 },
-      { name: "cue", at: 620, value: -4 },
+    const cues: Input = [
+      { kind: "trigger", name: "cue", at: 150, value: 12 },
+      { kind: "trigger", name: "cue", at: 620, value: -4 },
     ];
-    const log = eventLog();
-    log.add({ name: "step", at: 80, value: 10 });
-    log.add({ name: "step", at: 300, value: 25 });
-    log.add({ name: "step", at: 500, value: -8 });
-    log.add({ name: "step", at: 820, value: 16 });
-    log.add({ name: "step", at: 1100, value: 4 });
+    const steps = inputs({ values: { step: {} } });
+    const log = inputLog();
+    log.set(80, steps, "step", 10);
+    log.set(300, steps, "step", 25);
+    log.set(500, steps, "step", -8);
+    log.set(820, steps, "step", 16);
+    log.set(1100, steps, "step", 4);
 
     const frameTimes = [0, 50, 120, 200, 350, 500, 750, 900, 1000, 1200];
     const scene = buildScene();
 
-    const orderedDriver = withEvents(manualDriver({ durationMs }), log.events);
+    const orderedDriver = withEvents(manualDriver({ durationMs }), log.input);
     const orderedPlayer = play(scene, orderedDriver, { cues });
     const orderedValues = new Map<number, ScenePose>();
     for (const ms of frameTimes) {
@@ -98,7 +100,7 @@ describe("timed equivalence", () => {
       orderedValues.set(ms, orderedPlayer.values);
     }
 
-    const shuffledDriver = withEvents(manualDriver({ durationMs }), log.events);
+    const shuffledDriver = withEvents(manualDriver({ durationMs }), log.input);
     const shuffledPlayer = play(scene, shuffledDriver, { cues });
     const shuffledValues = new Map<number, ScenePose>();
     for (const ms of shuffled(frameTimes, 42)) {
@@ -106,9 +108,9 @@ describe("timed equivalence", () => {
       shuffledValues.set(ms, shuffledPlayer.values);
     }
 
-    const allEvents = mergeEvents(cues, log.events);
+    const allEvents = mergeInput(cues, log.input);
     for (const ms of frameTimes) {
-      const freshDriver = withEvents(manualDriver({ durationMs }), log.events);
+      const freshDriver = withEvents(manualDriver({ durationMs }), log.input);
       const freshPlayer = play(scene, freshDriver, { cues });
       freshDriver.seekMs(ms);
 

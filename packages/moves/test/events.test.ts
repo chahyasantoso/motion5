@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { UNTIMED, liveAt, mergeEvents, span, type Events } from "@gerak/core";
+import { UNTIMED, liveAt, mergeInput, span, type Input } from "@gerak/core";
 import { follow, react } from "@gerak/moves";
 
 const lift = follow({ start: 0, on: { enter: -8, leave: 0 }, target: "card" });
-const hover = (enter: number, leave?: number): Events => [
-  { name: "enter", at: enter, target: "card" },
-  ...(leave === undefined ? [] : [{ name: "leave", at: leave, target: "card" }]),
+const hover = (enter: number, leave?: number): Input => [
+  { kind: "trigger", name: "enter", at: enter, value: 1, target: "card" },
+  ...(leave === undefined
+    ? []
+    : [{ kind: "trigger" as const, name: "leave", at: leave, value: 1, target: "card" }]),
 ];
 
 describe("follow", () => {
@@ -21,7 +23,7 @@ describe("follow", () => {
   });
 
   it("reverses from where it is and as fast as it goes when left half way, with no jump", () => {
-    const at = (ms: number, events: Events) => lift(liveAt(ms), events);
+    const at = (ms: number, events: Input) => lift(liveAt(ms), events);
     expect(at(1100, hover(1000, 1100))).toBeCloseTo(at(1100, hover(1000)), 9);
     const speedBefore = (at(1100, hover(1000)) - at(1099, hover(1000))) / 1;
     const speedAfter = (at(1101, hover(1000, 1100)) - at(1100, hover(1000, 1100))) / 1;
@@ -30,8 +32,12 @@ describe("follow", () => {
   });
 
   it("counts only its own target's events and the names it knows", () => {
-    expect(lift(liveAt(4000), [{ name: "enter", at: 1000, target: "other" }])).toBe(0);
-    expect(lift(liveAt(4000), [{ name: "wave", at: 1000, target: "card" }])).toBe(0);
+    expect(
+      lift(liveAt(4000), [{ kind: "trigger", name: "enter", at: 1000, value: 1, target: "other" }]),
+    ).toBe(0);
+    expect(
+      lift(liveAt(4000), [{ kind: "trigger", name: "wave", at: 1000, value: 1, target: "card" }]),
+    ).toBe(0);
   });
 
   it("settles at once without a clock, and refuses a spring with no pull", () => {
@@ -42,7 +48,9 @@ describe("follow", () => {
   it("overdamped and critically damped springs settle without passing the goal", () => {
     for (const damping of [2 * Math.sqrt(170), 60]) {
       const slow = follow({ start: 0, on: { go: 10 }, damping });
-      const path = [50, 200, 600, 5000].map((ms) => slow(liveAt(ms), [{ name: "go", at: 0 }]));
+      const path = [50, 200, 600, 5000].map((ms) =>
+        slow(liveAt(ms), [{ kind: "trigger", name: "go", at: 0, value: 1 }]),
+      );
       for (const value of path) expect(value).toBeLessThanOrEqual(10 + 1e-9);
       expect(path.at(-1)).toBeCloseTo(10, 2);
     }
@@ -50,18 +58,21 @@ describe("follow", () => {
 });
 
 describe("follow on a stream of samples", () => {
-  const stream = (count: number, step = 33): Events =>
+  const stream = (count: number, step = 33): Input =>
     Array.from({ length: count }, (_, index) => ({
+      kind: "value",
       name: "mouthOpen",
       at: index * step,
       value: (Math.sin(index * 0.7) + 1) / 2,
     }));
   const fresh = () => follow({ start: 0, on: { mouthOpen: "value" } });
 
-  it("springs to each sample's own value, and skips a sample with none", () => {
+  it("springs to each sample's own value, and ignores unset streams", () => {
     const mouth = fresh();
-    expect(mouth(liveAt(4000), [{ name: "mouthOpen", at: 0, value: 0.6 }])).toBeCloseTo(0.6, 4);
-    expect(mouth(liveAt(4000), [{ name: "mouthOpen", at: 0 }])).toBe(0);
+    expect(
+      mouth(liveAt(4000), [{ kind: "value", name: "mouthOpen", at: 0, value: 0.6 }]),
+    ).toBeCloseTo(0.6, 4);
+    expect(mouth(liveAt(4000), [])).toBe(0);
     const near = mouth(liveAt(66), stream(3));
     expect(near).toBeGreaterThan(0);
     expect(near).toBeLessThan(1);
@@ -86,7 +97,10 @@ describe("follow on a stream of samples", () => {
     const kept = fresh();
     for (let ms = 0; ms < 6600; ms += 16) {
       while (log.length < 400 && (log.at(-1)?.at ?? 0) < ms)
-        log = [...log, { name: "mouthOpen", at: (log.at(-1)?.at ?? 0) + 33, value: ms % 7 }];
+        log = [
+          ...log,
+          { kind: "value", name: "mouthOpen", at: (log.at(-1)?.at ?? 0) + 33, value: ms % 7 },
+        ];
       expect(kept(liveAt(ms), log)).toBe(fresh()(liveAt(ms), log));
     }
     const other = stream(50, 20);
@@ -94,15 +108,18 @@ describe("follow on a stream of samples", () => {
   });
 
   it("starts again on a log that shares its last event but differs before it", () => {
-    const last = { name: "mouthOpen", at: 1000, value: 0 };
+    const last = { kind: "value" as const, name: "mouthOpen", at: 1000, value: 0 };
     const kept = fresh();
-    const up: Events = [{ name: "mouthOpen", at: 0, value: 5 }, last];
-    const down: Events = [{ name: "mouthOpen", at: 0, value: -5 }, last];
+    const up: Input = [{ kind: "value", name: "mouthOpen", at: 0, value: 5 }, last];
+    const down: Input = [{ kind: "value", name: "mouthOpen", at: 0, value: -5 }, last];
     kept(liveAt(1100), up);
     expect(kept(liveAt(1100), down)).toBe(fresh()(liveAt(1100), down));
     const edited = [...up];
     kept(liveAt(1100), edited);
-    const replaced = [{ name: "mouthOpen", at: 0, value: 2 }, ...edited.slice(1)];
+    const replaced = [
+      { kind: "value" as const, name: "mouthOpen", at: 0, value: 2 },
+      ...edited.slice(1),
+    ];
     expect(kept(liveAt(1100), replaced)).toBe(fresh()(liveAt(1100), replaced));
   });
 
@@ -119,7 +136,7 @@ describe("follow on a stream of samples", () => {
     const best = (follower: () => ReturnType<typeof fresh>) =>
       Math.min(...[0, 1, 2].map(() => frameCost(follower)));
     const fromStart = () => {
-      const each = (time: Parameters<ReturnType<typeof fresh>>[0], events: Events) =>
+      const each = (time: Parameters<ReturnType<typeof fresh>>[0], events: Input) =>
         fresh()(time, events);
       return each;
     };
@@ -138,7 +155,8 @@ describe("a live clock", () => {
 describe("a spring at rest", () => {
   it("stops exactly on its goal once it is that close and that slow", () => {
     const lift = follow({ start: 0, on: { enter: -8 } });
-    const at = (ms: number) => lift(liveAt(ms), [{ name: "enter", at: 0 }]);
+    const at = (ms: number) =>
+      lift(liveAt(ms), [{ kind: "trigger", name: "enter", at: 0, value: 1 }]);
     expect(at(3000)).toBe(-8);
     expect(at(3016)).toBe(-8);
     expect(at(100)).not.toBe(-8);
@@ -146,8 +164,8 @@ describe("a spring at rest", () => {
 });
 
 describe("react", () => {
-  const land = (...at: number[]): Events =>
-    at.map((ms) => ({ name: "land", at: ms, target: "ball" }));
+  const land = (...at: number[]): Input =>
+    at.map((ms) => ({ kind: "trigger", name: "land", at: ms, value: 1, target: "ball" }));
   const at = (ms: number) => ({
     progress: 0,
     clock: { kind: "timed" as const, elapsed: ms, length: 5000 },
@@ -173,8 +191,12 @@ describe("react", () => {
     const wobble = react({ on: ["land"], target: "ball", kind: "wobble", amplitude: 1 });
     const one = wobble(at(1100), land(1000));
     const other = wobble(at(1100), land(1050));
-    expect(wobble(at(1100), mergeEvents(land(1050), land(1000)))).toBeCloseTo(one + other, 9);
-    expect(wobble(at(1100), [{ name: "land", at: 1000, target: "cup" }])).toBe(0);
-    expect(wobble(at(1100), [{ name: "jump", at: 1000, target: "ball" }])).toBe(0);
+    expect(wobble(at(1100), mergeInput(land(1050), land(1000)))).toBeCloseTo(one + other, 9);
+    expect(
+      wobble(at(1100), [{ kind: "trigger", name: "land", at: 1000, value: 1, target: "cup" }]),
+    ).toBe(0);
+    expect(
+      wobble(at(1100), [{ kind: "trigger", name: "jump", at: 1000, value: 1, target: "ball" }]),
+    ).toBe(0);
   });
 });
