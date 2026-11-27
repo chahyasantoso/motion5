@@ -7,6 +7,7 @@ import {
   inputs,
   liveAt,
   pageInputs,
+  shared,
   springTo,
   transition,
   triggers,
@@ -16,6 +17,7 @@ import {
   withProbeStore,
   withStore,
   type InputChannel,
+  type InputRead,
 } from "@gerak/core";
 
 const sceneInputs = inputs({
@@ -154,5 +156,58 @@ describe("core input readers", () => {
       expect(valueAt(sceneInputs, "level", hit, "a")(liveAt(100), log.input)).toBe(0);
       expect(valueAt(sceneInputs, "level", hit, "b")(liveAt(100), log.input)).toBe(0);
     }
+  });
+
+  it("reports kind, name, and target to watchInputs for value, valueAt, triggers, and shared replay", () => {
+    const readsOf = (run: () => void): readonly InputRead[] => {
+      const seen: InputRead[] = [];
+      watchInputs((_ch, read) => {
+        if (read !== undefined) seen.push(read);
+      }, run);
+      return seen;
+    };
+
+    const log = inputLog();
+    log.trigger(100, sceneInputs, "hit", 1, "a");
+    const levelA = value(sceneInputs, "level", "a");
+    const sealed = value(sceneInputs, "sealed");
+    const hitA = triggers(sceneInputs, "hit", "a");
+    const pulse = triggers(sceneInputs, "pulse");
+    const [hit] = hitA(liveAt(100), log.input);
+    expect(hit).toBeDefined();
+
+    expect(readsOf(() => levelA(liveAt(0), log.input))).toEqual([
+      { kind: "value", name: "level", target: "a" },
+    ]);
+    expect(readsOf(() => sealed(liveAt(0), log.input))).toEqual([
+      { kind: "value", name: "sealed" },
+    ]);
+    expect(readsOf(() => springTo(sealed, (v) => v)(liveAt(0), log.input))).toEqual([
+      { kind: "value", name: "sealed" },
+    ]);
+    expect(readsOf(() => hitA(liveAt(100), log.input))).toEqual([
+      { kind: "trigger", name: "hit", target: "a" },
+    ]);
+    expect(readsOf(() => pulse(liveAt(100), log.input))).toEqual([
+      { kind: "trigger", name: "pulse" },
+    ]);
+    if (hit !== undefined) {
+      expect(
+        readsOf(() => valueAt(sceneInputs, "level", hit, "a")(liveAt(100), log.input)),
+      ).toEqual([{ kind: "value", name: "level", target: "a" }]);
+    }
+
+    const sharedSignal = shared(
+      (time, events) => levelA(time, events) + pulse(time, events).length,
+    );
+    const t = liveAt(100);
+    expect(readsOf(() => sharedSignal(t, log.input))).toEqual([
+      { kind: "value", name: "level", target: "a" },
+      { kind: "trigger", name: "pulse" },
+    ]);
+    expect(readsOf(() => sharedSignal(t, log.input))).toEqual([
+      { kind: "value", name: "level", target: "a" },
+      { kind: "trigger", name: "pulse" },
+    ]);
   });
 });

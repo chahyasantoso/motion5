@@ -2,14 +2,15 @@
 
 State from events: a fold of the event log up to a time, and values that spring or ease when the state changes. Reach for it when motion answers hover, press, click or cues.
 
-- **`notifyInputUse`** `(channel: InputChannel): void`: Tells the active `watchInputs` listener which dynamic input channel was evaluated.
+- **`notifyInputUse`** `(channel: InputChannel, read?: InputRead): void`: Tells the active `watchInputs` listener which dynamic input channel and optional read was evaluated.
 - **`rawTime`** `(time: Time): Time`: The time a `watchedTime` stands for, read without telling the watcher; any other time as it is.
 - **`stillMoving`** `(): void`: Tells the watcher that a value is still on its way with the clock, such as a spring not yet at rest.
 - **`watchClock`** `<T>(onUse: (use: ClockUse) => void, run: () => T): T`: Runs `run`, telling `onUse` each time what it works out can change with the clock alone.
 - **`watchedTime`** `(time: Time): Time`: A time that tells the watcher `maybe` when its clock or progress is read; `rawTime` reads it untold.
-- **`watchInputs`** `<T>(onInput: (channel: InputChannel) => void, run: () => T): T`: Runs `run`, telling `onInput` each time a scroll, pointer, or event state primitive is evaluated.
+- **`watchInputs`** `<T>(onInput: (channel: InputChannel, read?: InputRead) => void, run: () => T): T`: Runs `run`, telling `onInput` each time a scroll, pointer, or event state primitive is evaluated.
 - **`ClockUse`** `type ClockUse = "time" | "maybe"`: How a value can change with the clock alone: `time` while it is still on its way; `maybe` when code read the clock and nothing says whether it settles.
 - **`InputChannel`** `type InputChannel = "scroll" | "pointer" | "events"`: Which dynamic input channel a signal read during evaluation.
+- **`InputRead`** `type InputRead = { kind: "value" | "trigger"; name: string; target?: string }`: One contract input read (`value`, `valueAt`, or `triggers`) reported to `watchInputs`.
 - **`stepMetaOf`** `(steps: readonly Step<unknown>[]): StepMeta | undefined`: Internal step stream metadata (reset generation).
 - **`StepMeta`** `type StepMeta = { resetId: number }`: Step stream metadata tracking reset generation across rewinds and stream changes.
 - **`state`** `<S>(start: S, rule: (current: S, entry: InputEntry) => S, options?: StateOptions): State<S>`: The state `rule` folds the input into, from `start`, up to the time asked. Pure in time and input: it folds only new entries, and starts again when an earlier one differs or time goes back.

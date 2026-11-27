@@ -7,6 +7,8 @@ import {
   watchClock,
   watchedTime,
   watchInputs,
+  type InputChannel,
+  type InputRead,
 } from "../state/clock-watch";
 import { storeCell } from "../state/store";
 import type { Signal } from "./shapes";
@@ -26,6 +28,11 @@ function sameClock(a: Clock, b: Clock): boolean {
   }
 }
 
+interface SharedRead {
+  readonly channel: InputChannel;
+  readonly read: InputRead;
+}
+
 interface SharedCell<T> {
   readonly time: Time;
   readonly events: Input;
@@ -36,6 +43,7 @@ interface SharedCell<T> {
   readonly usedScroll: boolean;
   readonly usedPointer: boolean;
   readonly usedEvents: boolean;
+  readonly reads: readonly SharedRead[];
 }
 
 /** Caches `signal`'s last value and clock/input flags per RuntimeStore so extra readers replay all. */
@@ -57,6 +65,7 @@ export function shared<T>(signal: Signal<T>): Signal<T> {
       let usedScroll = false;
       let usedPointer = false;
       let usedEvents = false;
+      const reads = new Map<string, SharedRead>();
       const value = watchClock(
         (use) => {
           switch (use) {
@@ -72,7 +81,12 @@ export function shared<T>(signal: Signal<T>): Signal<T> {
         },
         () =>
           watchInputs(
-            (channel) => {
+            (channel, read) => {
+              if (read !== undefined) {
+                const key = `${channel}\0${read.kind}\0${read.name}\0${read.target ?? ""}`;
+                if (!reads.has(key)) reads.set(key, { channel, read });
+                return;
+              }
               switch (channel) {
                 case "scroll":
                   usedScroll = true;
@@ -100,6 +114,7 @@ export function shared<T>(signal: Signal<T>): Signal<T> {
         usedScroll,
         usedPointer,
         usedEvents,
+        reads: [...reads.values()],
       };
       lastSlot.set(last);
     }
@@ -108,6 +123,7 @@ export function shared<T>(signal: Signal<T>): Signal<T> {
     if (last.usedScroll) notifyInputUse("scroll");
     if (last.usedPointer) notifyInputUse("pointer");
     if (last.usedEvents) notifyInputUse("events");
+    for (const entry of last.reads) notifyInputUse(entry.channel, entry.read);
     return last.value;
   };
 }

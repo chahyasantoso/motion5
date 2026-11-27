@@ -4,7 +4,7 @@ import { generationOf, inputSerialsOf, sourceStreamOf, upperBoundAt } from "../e
 import type { Signal } from "../time/shapes";
 import { elapsedOf } from "../time/time";
 import { unreachable } from "../utility/unreachable";
-import { notifyInputUse, rawTime, type InputChannel } from "./clock-watch";
+import { notifyInputUse, rawTime, type InputChannel, type InputRead } from "./clock-watch";
 import { INPUT_EVENTS } from "./inputs";
 import { buildState, type State } from "./state";
 import { storeCell } from "./store";
@@ -37,6 +37,10 @@ function channelOfValue(contract: unknown, name: string): InputChannel {
   if (name === INPUT_EVENTS.scroll) return "scroll";
   if (name === INPUT_EVENTS.pointerX || name === INPUT_EVENTS.pointerY) return "pointer";
   return "events";
+}
+
+function inputRead(kind: InputRead["kind"], name: string, target: string | undefined): InputRead {
+  return target === undefined ? { kind, name } : { kind, name, target };
 }
 
 function serialAt(serials: readonly number[] | undefined, index: number): number {
@@ -74,6 +78,7 @@ export function value<
     },
     target === undefined ? {} : { target },
     channelOfValue(contract, name),
+    inputRead("value", name, target),
   );
 }
 
@@ -88,8 +93,9 @@ export function valueAt<
   trigger: Trigger,
   target?: TargetOf<V[K]> | undefined,
 ): Signal<number> {
+  const read = inputRead("value", name, target);
   return (watched, input) => {
-    notifyInputUse("events");
+    notifyInputUse("events", read);
     const now = elapsedOf(rawTime(watched).clock);
     const limitAt = now === undefined ? trigger.at : Math.min(now, trigger.at);
     const serials = inputSerialsOf(input);
@@ -126,9 +132,10 @@ export function triggers<
   target?: TargetOf<T[K]> | undefined,
 ): Signal<readonly Trigger[]> {
   const cellSlot = storeCell<TriggersCell>();
+  const read = inputRead("trigger", name, target);
 
   return (watched, input) => {
-    notifyInputUse("events");
+    notifyInputUse("events", read);
     const now = elapsedOf(rawTime(watched).clock);
     const generation = generationOf(input);
     const stream = sourceStreamOf(input);

@@ -65,6 +65,7 @@ export {
   watchInputs,
   type ClockUse,
   type InputChannel,
+  type InputRead,
 } from "./state/clock-watch";
 export { stepMetaOf, type StepMeta } from "./state/state";
 export { lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./time/lanes";

@@ -7,10 +7,17 @@ export type ClockUse = "time" | "maybe";
 /** Which dynamic input channel a signal read during evaluation. */
 export type InputChannel = "scroll" | "pointer" | "events";
 
+/** One contract input read (`value`, `valueAt`, or `triggers`) reported to `watchInputs`. */
+export interface InputRead {
+  readonly kind: "value" | "trigger";
+  readonly name: string;
+  readonly target?: string;
+}
+
 const RAW = Symbol.for("@gerak/core/raw-time");
 
 let told: ((use: ClockUse) => void) | undefined;
-let inputTold: ((channel: InputChannel) => void) | undefined;
+let inputTold: ((channel: InputChannel, read?: InputRead) => void) | undefined;
 
 /** Runs `run`, telling `onUse` each time what it works out can change with the clock alone. */
 export function watchClock<T>(onUse: (use: ClockUse) => void, run: () => T): T {
@@ -24,7 +31,10 @@ export function watchClock<T>(onUse: (use: ClockUse) => void, run: () => T): T {
 }
 
 /** Runs `run`, telling `onInput` each time a scroll, pointer, or event state primitive is evaluated. */
-export function watchInputs<T>(onInput: (channel: InputChannel) => void, run: () => T): T {
+export function watchInputs<T>(
+  onInput: (channel: InputChannel, read?: InputRead) => void,
+  run: () => T,
+): T {
   const outer = inputTold;
   inputTold = onInput;
   try {
@@ -34,9 +44,9 @@ export function watchInputs<T>(onInput: (channel: InputChannel) => void, run: ()
   }
 }
 
-/** Tells the active `watchInputs` listener which dynamic input channel was evaluated. */
-export function notifyInputUse(channel: InputChannel): void {
-  inputTold?.(channel);
+/** Tells the active `watchInputs` listener which dynamic input channel and optional read was evaluated. */
+export function notifyInputUse(channel: InputChannel, read?: InputRead): void {
+  inputTold?.(channel, read);
 }
 
 /** A time that tells the watcher `maybe` when its clock or progress is read; `rawTime` reads it untold. */

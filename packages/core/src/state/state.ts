@@ -1,4 +1,4 @@
-import { notifyInputUse, rawTime, type InputChannel } from "./clock-watch";
+import { notifyInputUse, rawTime, type InputChannel, type InputRead } from "./clock-watch";
 import { storeCell } from "./store";
 import { elapsedOf, type Time } from "../time/time";
 import type { Signal } from "../time/shapes";
@@ -77,6 +77,7 @@ export function buildState<S>(
   rule: (current: S, entry: InputEntry) => S,
   options: StateOptions = {},
   channel: InputChannel = "events",
+  read?: InputRead,
 ): State<S> {
   const { target } = options;
   const accepts = (event: InputEntry): boolean => {
@@ -87,7 +88,7 @@ export function buildState<S>(
   const cellSlot = storeCell<StateCell<S>>();
 
   const fold = (time: Time, events: Input): StateCell<S> => {
-    notifyInputUse(channel);
+    notifyInputUse(channel, read);
     const now = elapsedOf(rawTime(time).clock);
     const generation = generationOf(events);
     const stream = sourceStreamOf(events);
