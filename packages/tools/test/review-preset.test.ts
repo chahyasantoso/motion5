@@ -24,16 +24,18 @@ function layout(file: string): { root: string; scene: string } {
 describe("gerak review --events @preset", () => {
   it("reads a recorded preset of the scene file's piece", () => {
     const { root, scene } = layout("demo-scene.ts");
-    writePreset(root, "demo", "take", [{ name: "click", at: 300, target: "a" }]);
+    writePreset(root, "demo", "take", [
+      { kind: "trigger", name: "click", at: 300, value: 1, target: "a" },
+    ]);
     expect(parseSceneReviewArgs([scene, "--events", "@take"])).toMatchObject({
       kind: "ok",
-      events: [{ name: "click", at: 300, target: "a" }],
+      events: [{ kind: "trigger", name: "click", at: 300, value: 1, target: "a" }],
     });
   });
 
   it("names the piece after the file without a -scene suffix", () => {
     const { root, scene } = layout("demo.ts");
-    writePreset(root, "demo", "take", [{ name: "scroll", at: 10, value: 5 }]);
+    writePreset(root, "demo", "take", [{ kind: "value", name: "scroll", at: 10, value: 5 }]);
     expect(parseSceneReviewArgs([scene, "--events", "@take"])).toMatchObject({ kind: "ok" });
   });
 

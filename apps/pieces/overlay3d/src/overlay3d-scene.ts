@@ -7,7 +7,7 @@ import {
   orbit,
   project3d,
   span,
-  type Events,
+  type Input,
   type Lens3d,
   type Pose3d,
   type Time,
@@ -47,7 +47,8 @@ const REVEAL_FROM = 1000;
 const REVEAL_EVERY = 350;
 
 /** One sample per word, each carrying how many words should show by then. */
-export const cues: Events = CAPTION.map((_word, index) => ({
+export const cues: Input = CAPTION.map((_word, index) => ({
+  kind: "value",
   name: "words",
   at: REVEAL_FROM + index * REVEAL_EVERY,
   value: index + 1,

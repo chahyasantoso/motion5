@@ -9,7 +9,7 @@ import {
   scroll,
   state,
   transition,
-  type Events,
+  type Input,
   type Pose2d,
   type Pose3d,
   type Time,
@@ -38,7 +38,7 @@ const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
 function review(
   module: unknown,
-  options: { to?: number; events?: Events } = {},
+  options: { to?: number; events?: Input } = {},
   measured?: MeasureCache,
 ): SceneReviewResult {
   const read = readModule(module, measured);
@@ -667,7 +667,8 @@ describe("driver probing and --events in gerak review", () => {
       'cast member "cookies" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
     );
     expect(
-      review(piece, { events: [{ name: "jar-add", at: 100, value: 1 }] }, cache).findings,
+      review(piece, { events: [{ kind: "trigger", name: "jar-add", at: 100, value: 1 }] }, cache)
+        .findings,
     ).toEqual([]);
 
     expect(parseSceneReviewArgs(["s.ts", "--events", "jar-add=0@200,jar-seal=1@400"])).toEqual({
@@ -679,8 +680,8 @@ describe("driver probing and --events in gerak review", () => {
       ratio: 1.5,
       budget: 8,
       events: [
-        { name: "jar-add", at: 200, value: 0 },
-        { name: "jar-seal", at: 400, value: 1 },
+        { kind: "value", name: "jar-add", at: 200, value: 0 },
+        { kind: "value", name: "jar-seal", at: 400, value: 1 },
       ],
     });
     expect(parseSceneReviewArgs(["s.ts", "--events", "bad-event"]).kind).toBe("usage");

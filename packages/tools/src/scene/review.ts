@@ -2,15 +2,15 @@ import { readFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import {
   INPUT_EVENTS,
-  NO_EVENTS,
+  NO_INPUT,
   liveAt,
-  mergeEvents,
+  mergeInput,
   pathBounds,
   quaternionFromEuler3d,
   unreachable,
   valueField,
   withProbeStore,
-  type Events,
+  type Input,
   type Time,
 } from "@gerak/core";
 import { manualDriver, play } from "@gerak/player";
@@ -48,7 +48,7 @@ import { STEP_MS } from "../timeline/timeline";
 export interface SceneReviewRequest {
   readonly file: string;
   readonly to?: number;
-  readonly events?: Events;
+  readonly events?: Input;
   readonly measure?: boolean;
   readonly hold: number;
   /** Largest step of a position in one frame, in the scene's units. */
@@ -83,7 +83,7 @@ export function isSceneFile(argv: readonly string[]): boolean {
   return file !== undefined && /\.tsx?$/.test(file);
 }
 
-function presetEvents(file: string, name: string): Events | { readonly reason: string } {
+function presetEvents(file: string, name: string): Input | { readonly reason: string } {
   const path = resolve(file);
   const found = piecesRoot(dirname(path));
   if (found.kind === "missing") return { reason: found.message };
@@ -398,7 +398,7 @@ function evaluate(
   stage: Stage,
   input: Pick<FrameInput, "counts" | "lines" | "rest">,
   time: Time,
-  events: Events,
+  events: Input,
   at: number,
 ): EvaluatedSample {
   let out: FrameOutput;
@@ -437,7 +437,7 @@ function sampleStageFrames(
   stage: Stage,
   input: Pick<FrameInput, "counts" | "lines" | "rest">,
   ms: readonly number[],
-  events: Events = NO_EVENTS,
+  events: Input = NO_INPUT,
 ): { readonly evaluated: readonly EvaluatedSample[]; readonly costs: readonly number[] } {
   let latest: EvaluatedSample | undefined;
   const driver = manualDriver({ durationMs: stage.durationMs });
@@ -449,7 +449,7 @@ function sampleStageFrames(
       return latest.targets;
     },
     driver,
-    { cues: mergeEvents(stage.cues, events) },
+    { cues: mergeInput(stage.cues, events) },
   );
   const initialCost = performance.now() - playStart;
   const costs: number[] = [];
@@ -462,7 +462,7 @@ function sampleStageFrames(
     const start = performance.now();
     driver.seekMs(next);
     costs.push(performance.now() - start);
-    return latest ?? evaluate(stage, input, driver.now(), NO_EVENTS, next);
+    return latest ?? evaluate(stage, input, driver.now(), NO_INPUT, next);
   });
   return { evaluated, costs };
 }
@@ -576,7 +576,7 @@ function movedUnderDriver(
 ): boolean {
   return withProbeStore(() => {
     const rest = input.rest ?? NO_REST;
-    const differs = (time: Time, events: Events): boolean => {
+    const differs = (time: Time, events: Input): boolean => {
       try {
         const out = frame(stage, {
           time,
@@ -597,14 +597,17 @@ function movedUnderDriver(
           const to = item.to.at(rest);
           const probes = to > from ? [from, (from + to) / 2, to] : [from, from + 1];
           for (const y of probes) {
-            if (differs(liveAt(0), [{ name: INPUT_EVENTS.scroll, at: 0, value: y }])) return true;
+            if (differs(liveAt(0), [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: y }]))
+              return true;
           }
         }
         return false;
       case "trigger": {
         const threshold = drive.beat.when.point.at(rest);
-        if (threshold > 0 && differs(liveAt(0), NO_EVENTS)) return true;
-        const crossed: Events = [{ name: INPUT_EVENTS.scroll, at: 0, value: threshold }];
+        if (threshold > 0 && differs(liveAt(0), NO_INPUT)) return true;
+        const crossed: Input = [
+          { kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: threshold },
+        ];
         return (
           differs(liveAt(0), crossed) ||
           differs(liveAt(drive.beat.ms / 2), crossed) ||
@@ -639,19 +642,27 @@ function movedUnderDriver(
           }
         }
         for (const y of scrollProbes) {
-          if (differs(liveAt(1000), [{ name: INPUT_EVENTS.scroll, at: 0, value: y }])) return true;
+          if (
+            differs(liveAt(1000), [{ kind: "value", name: INPUT_EVENTS.scroll, at: 0, value: y }])
+          )
+            return true;
         }
         if (
           differs(liveAt(500), [
-            { name: INPUT_EVENTS.pointerX, at: 0, value: 0.9 },
-            { name: INPUT_EVENTS.pointerY, at: 0, value: 0.9 },
+            { kind: "value", name: INPUT_EVENTS.pointerX, at: 0, value: 0.9 },
+            { kind: "value", name: INPUT_EVENTS.pointerY, at: 0, value: 0.9 },
           ])
         )
           return true;
         for (const watched of stage.members) {
           if (!watched.watch) continue;
           for (const name of WATCH_PROBE_EVENTS)
-            if (differs(liveAt(500), [{ name, at: 0, target: watched.name }])) return true;
+            if (
+              differs(liveAt(500), [
+                { kind: "trigger", name, at: 0, value: 1, target: watched.name },
+              ])
+            )
+              return true;
         }
         return false;
       }
@@ -863,10 +874,10 @@ function lateCueFindings(module: SceneModule): readonly string[] {
 function timedScenePass(
   module: SceneModule,
   ms: readonly number[],
-  events: Events = NO_EVENTS,
+  events: Input = NO_INPUT,
 ): { readonly samples: Samples; readonly costs: readonly number[] } {
   const driver = manualDriver({ durationMs: module.durationMs });
-  const player = play(module.scene, driver, { cues: mergeEvents(module.cues, events) });
+  const player = play(module.scene, driver, { cues: mergeInput(module.cues, events) });
   const samples: { readonly at: number; readonly targets: Readonly<Record<string, unknown>> }[] =
     [];
   const costs: number[] = [];
@@ -883,10 +894,10 @@ function timedScenePass(
 function timedSteps(
   module: SceneModule,
   ms: readonly number[],
-  events: Events = NO_EVENTS,
+  events: Input = NO_INPUT,
 ): readonly number[] {
   const driver = manualDriver({ durationMs: module.durationMs });
-  play(module.scene, driver, { cues: mergeEvents(module.cues, events) });
+  play(module.scene, driver, { cues: mergeInput(module.cues, events) });
   return ms.map((at) => {
     const start = performance.now();
     driver.seekMs(at);
@@ -935,11 +946,11 @@ function verifyOverBudgetSeeks(
   order: readonly number[],
   seeks: readonly number[],
   budget: number,
-  events: Events,
+  events: Input,
 ): readonly number[] {
   if (!seeks.some((cost) => cost > budget)) return seeks;
   const checkDriver = manualDriver({ durationMs: module.durationMs });
-  play(module.scene, checkDriver, { cues: mergeEvents(module.cues, events) });
+  play(module.scene, checkDriver, { cues: mergeInput(module.cues, events) });
   return seeks.map((cost, index) => {
     if (cost <= budget) return cost;
     const at = order[index];
@@ -952,7 +963,7 @@ function verifyOverBudgetSeeks(
 
 function costFindingsFrom(
   module: SceneModule,
-  events: Events,
+  events: Input,
   inOrder: readonly number[],
   ms: readonly number[],
   seeks: readonly number[],
@@ -988,7 +999,7 @@ export function reviewSceneModule(
   request: Pick<SceneReviewRequest, "to" | "events"> & Limits & { readonly budget?: number },
 ): SceneReviewResult {
   const end = request.to ?? module.durationMs;
-  const extraEvents = request.events ?? NO_EVENTS;
+  const extraEvents = request.events ?? NO_INPUT;
   const budget = request.budget ?? DEFAULT_BUDGET_MS;
   const ms: number[] = [];
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);

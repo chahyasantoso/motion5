@@ -183,9 +183,9 @@ describe("sorting and captionCues", () => {
 
     expect(captionCues(items, "word")).toEqual({
       cues: [
-        { name: "word", at: 100, value: 1 },
-        { name: "word", at: 400, value: 2 },
-        { name: "word", at: 800, value: 3 },
+        { kind: "value", name: "word", at: 100, value: 1 },
+        { kind: "value", name: "word", at: 400, value: 2 },
+        { kind: "value", name: "word", at: 800, value: 3 },
       ],
       words: ["Hello", "world", "now"],
     });
@@ -200,8 +200,8 @@ describe("sorting and captionCues", () => {
 
     expect(captionCues(items, "word")).toEqual({
       cues: [
-        { name: "word", at: 100, value: 2 },
-        { name: "word", at: 800, value: 5 },
+        { kind: "value", name: "word", at: 100, value: 2 },
+        { kind: "value", name: "word", at: 800, value: 5 },
       ],
       words: ["Ship", "faster", "with", "one", "scene"],
     });

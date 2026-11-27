@@ -17,7 +17,7 @@ import {
   stillMoving,
   transition,
   unreachable,
-  type Events,
+  type Input,
   type Point3d,
   type Pose2d,
   type Pose3d,
@@ -124,7 +124,9 @@ function crumbSimulation() {
 
 const crumbSim = crumbSimulation();
 // Runs one burst on a spare world at load, so the physics engine's first-contact code is ready before a seal.
-crumbSimulation().at(liveAt(BUILDER_CRUMB_MS), [{ name: JAR_SEALED_VALUE, at: 0, value: 1 }]);
+crumbSimulation().at(liveAt(BUILDER_CRUMB_MS), [
+  { kind: "value", name: JAR_SEALED_VALUE, at: 0, value: 1 },
+]);
 
 const {
   stageCanvas,
@@ -175,7 +177,7 @@ function trackedValue(name: string): State<TrackedValue> {
 function valueJustBefore(
   tracked: State<TrackedValue>,
   time: Time,
-  events: Events,
+  events: Input,
   atMs: number,
 ): number {
   const latest = tracked(time, events);
@@ -240,7 +242,7 @@ const EMPTY_FRAME: BuilderFrame = {
   mixBounce: null,
 };
 
-const builderFrame = shared((time: Time, events: Events): BuilderFrame => {
+const builderFrame = shared((time: Time, events: Input): BuilderFrame => {
   const nowMs = elapsedOf(rawTime(time).clock) ?? 0;
   for (const slot of slotValues) slot(time, events);
 
@@ -709,13 +711,13 @@ const builderExitCookiesMotion = motion((_t: Time, context?: MotionContext): Pos
   };
 });
 
-let cachedCrumbSeal: { readonly sealId: number; readonly events: Events } | null = null;
+let cachedCrumbSeal: { readonly sealId: number; readonly events: Input } | null = null;
 
-function crumbEventsForSeal(sealId: number): Events {
+function crumbEventsForSeal(sealId: number): Input {
   if (cachedCrumbSeal === null || cachedCrumbSeal.sealId !== sealId) {
     cachedCrumbSeal = {
       sealId,
-      events: [{ name: JAR_SEALED_VALUE, at: 0, value: sealId }],
+      events: [{ kind: "value", name: JAR_SEALED_VALUE, at: 0, value: sealId }],
     };
   }
   return cachedCrumbSeal.events;

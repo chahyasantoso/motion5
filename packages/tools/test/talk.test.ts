@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { isMotionEvent, type MotionEvent } from "@gerak/core";
+import { isInputEntry, type InputEntry } from "@gerak/core";
 import { levelOf } from "../src/audio/levels";
 import { removeTemp } from "../../../test/support/temp";
 
@@ -17,18 +17,18 @@ const SCRIPT = fileURLToPath(
 );
 const TALK = fileURLToPath(new URL("../../../apps/pieces/references/talk.json", import.meta.url));
 
-function load(path: string): readonly MotionEvent[] {
+function load(path: string): readonly InputEntry[] {
   const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
   if (!Array.isArray(parsed)) throw new Error("talk.json is not a list");
-  const events: MotionEvent[] = [];
+  const events: InputEntry[] = [];
   for (const item of parsed) {
-    if (!isMotionEvent(item)) throw new Error(`not a motion event: ${JSON.stringify(item)}`);
+    if (!isInputEntry(item)) throw new Error(`not an input entry: ${JSON.stringify(item)}`);
     events.push(item);
   }
   return events;
 }
 
-const valueOf = (event: MotionEvent): number => event.value ?? Number.NaN;
+const valueOf = (event: InputEntry): number => event.value;
 
 describe("the made recording of talking", () => {
   const events = load(TALK);

@@ -1,5 +1,5 @@
 import { eventDriver } from "@gerak/dom";
-import { combine, span, type Events, type Pose2d, type Time } from "@gerak/core";
+import { combine, span, type Input, type Pose2d, type Time } from "@gerak/core";
 import { drop, follow } from "@gerak/moves";
 
 /** How long the intro runs, in ms; the tools sample this much, and the card answers the pointer after it too. */
@@ -23,7 +23,7 @@ const press = follow({
   damping: 28,
 });
 
-export const scene = (time: Time, events: Events) => {
+export const scene = (time: Time, events: Input) => {
   const y = lift(time, events);
   const raised = -y / 14;
   return {

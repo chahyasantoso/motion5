@@ -1,9 +1,9 @@
 import {
-  NO_EVENTS,
-  isMotionEvent,
-  mergeEvents,
-  type Events,
-  type MotionEvent,
+  NO_INPUT,
+  isInputEntry,
+  mergeInput,
+  type Input,
+  type InputEntry,
   type Signal,
   type Time,
   unreachable,
@@ -77,7 +77,7 @@ function readLimits(
 export interface SceneModule {
   readonly scene: Signal<object>;
   readonly durationMs: number;
-  readonly cues: Events;
+  readonly cues: Input;
   /** Review limits by target name, the first segment of a path; empty when the module gives none. */
   readonly limits: Readonly<Record<string, TargetLimits>>;
   readonly beats?: readonly Beat[];
@@ -88,8 +88,8 @@ export interface SceneModule {
 }
 
 /** `land:ball@2234,click:stage@300(640,360)` or `go@500` in time order, or why it is not one. */
-export function parseEvents(text: string): Events | { readonly reason: string } {
-  const events: MotionEvent[] = [];
+export function parseEvents(text: string): Input | { readonly reason: string } {
+  const events: InputEntry[] = [];
   for (const part of text.split(/,(?![^(]*\))/).map((piece) => piece.trim())) {
     const match =
       /^([\w-]+)(?::([\w-]+))?(?:=(-?\d+(?:\.\d+)?))?@(\d+(?:\.\d+)?)(?:\((-?[\d.]+),(-?[\d.]+)\))?$/.exec(
@@ -105,13 +105,14 @@ export function parseEvents(text: string): Events | { readonly reason: string } 
         reason: `Event "${part}" comes before the one ahead of it; list events in time order.`,
       };
     events.push({
+      kind: match[3] === undefined ? "trigger" : "value",
       name: match[1],
       at,
+      value: match[3] === undefined ? 1 : Number(match[3]),
       ...(match[2] === undefined ? {} : { target: match[2] }),
-      ...(match[3] === undefined ? {} : { value: Number(match[3]) }),
       ...(match[5] === undefined || match[6] === undefined
         ? {}
-        : { x: Number(match[5]), y: Number(match[6]) }),
+        : { point: { x: Number(match[5]), y: Number(match[6]) } }),
     });
   }
   return events;
@@ -297,13 +298,13 @@ export function readSceneModule(
     return { reason: "A piece's default export must be made with `scene(...)`." };
   }
   const cues: unknown = Reflect.get(Object(value), "cues");
-  if (cues !== undefined && !(Array.isArray(cues) && cues.every(isMotionEvent)))
+  if (cues !== undefined && !(Array.isArray(cues) && cues.every(isInputEntry)))
     return { reason: "The module's `cues` must be a list of { name, at, target } events." };
   const readLimit = readLimits(Reflect.get(Object(value), "limits"));
   if ("reason" in readLimit) return readLimit;
   const { limits } = readLimit;
   const given: unknown = Reflect.get(Object(value), "durationMs");
-  const ownCues = cues === undefined ? NO_EVENTS : mergeEvents(cues);
+  const ownCues = cues === undefined ? NO_INPUT : mergeInput(cues);
   if (typeof scene !== "function")
     return { reason: "The module exports no `scene`, a function from time to targets." };
   if (typeof given !== "number" || !Number.isFinite(given) || given <= 0)
@@ -335,10 +336,10 @@ export function sampleScene(
   request: SceneRequest,
   targets?: readonly string[],
   fields?: readonly string[],
-  events: Events = NO_EVENTS,
+  events: Input = NO_INPUT,
 ): readonly SceneSample[] {
   const driver = manualDriver({ durationMs: module.durationMs });
-  const player = play(module.scene, driver, { cues: mergeEvents(module.cues, events) });
+  const player = play(module.scene, driver, { cues: mergeInput(module.cues, events) });
   const points = (): readonly { readonly at: number; readonly progress: number }[] => {
     switch (request.kind) {
       case "time":
@@ -371,7 +372,7 @@ export function sampleScene(
 }
 
 /** Each target's first and last change over the scene's run, sampled every 16 ms. */
-export function sceneTimeline(module: SceneModule, events: Events = NO_EVENTS): TimelineResult {
+export function sceneTimeline(module: SceneModule, events: Input = NO_INPUT): TimelineResult {
   const ms: number[] = [];
   const lastEvent = Math.max(0, ...[...module.cues, ...events].map(({ at }) => at));
   const end = Math.max(module.durationMs, lastEvent > 0 ? lastEvent + SETTLE_MS : 0);
@@ -412,7 +413,7 @@ export type SampleArgs =
   | ({
       readonly kind: "watch";
       readonly file: string;
-      readonly events?: Events;
+      readonly events?: Input;
       readonly measure?: boolean;
     } & WatchRequest)
   | {
@@ -421,7 +422,7 @@ export type SampleArgs =
       readonly request: SceneRequest;
       readonly nodes?: readonly string[];
       readonly fields?: readonly string[];
-      readonly events?: Events;
+      readonly events?: Input;
       readonly measure?: boolean;
     }
   | { readonly kind: "usage"; readonly message: string };
@@ -516,7 +517,7 @@ const WATCH_MOST = 10000;
 export function watchScene(
   module: SceneModule,
   request: WatchRequest,
-  events: Events = NO_EVENTS,
+  events: Input = NO_INPUT,
 ): WatchResult {
   const segments = pathSegments(request.path) ?? [];
   const end = request.to ?? module.durationMs;

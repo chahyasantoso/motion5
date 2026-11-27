@@ -88,9 +88,9 @@ describe("scene tools and events", () => {
 
   it("parse an event list, and refuse one out of order or malformed", () => {
     expect(parseEvents("enter:card@1000,leave:card@1120,go@1500")).toEqual([
-      { name: "enter", at: 1000, target: "card" },
-      { name: "leave", at: 1120, target: "card" },
-      { name: "go", at: 1500 },
+      { kind: "trigger", name: "enter", at: 1000, value: 1, target: "card" },
+      { kind: "trigger", name: "leave", at: 1120, value: 1, target: "card" },
+      { kind: "trigger", name: "go", at: 1500, value: 1 },
     ]);
     expect(parseEvents("leave:card@1120,enter:card@1000")).toHaveProperty("reason");
     expect(parseEvents("enter card")).toHaveProperty("reason");
@@ -103,7 +103,7 @@ describe("scene tools and events", () => {
       { kind: "time", ms: [1400] },
       ["card"],
       ["y"],
-      [{ name: "enter", at: 1000, target: "card" }],
+      [{ kind: "trigger", name: "enter", at: 1000, value: 1, target: "card" }],
     );
     expect(lifted[0]?.targets.card).toSatisfy(
       (card: unknown) =>
@@ -115,9 +115,9 @@ describe("scene tools and events", () => {
 describe("samples as events", () => {
   it("parse a value before the time, with or without a target", () => {
     expect(parseEvents("mouthOpen=0.6@1234,blink:left=1@1300,go@1500")).toEqual([
-      { name: "mouthOpen", at: 1234, value: 0.6 },
-      { name: "blink", at: 1300, target: "left", value: 1 },
-      { name: "go", at: 1500 },
+      { kind: "value", name: "mouthOpen", at: 1234, value: 0.6 },
+      { kind: "value", name: "blink", at: 1300, target: "left", value: 1 },
+      { kind: "trigger", name: "go", at: 1500, value: 1 },
     ]);
     expect(parseEvents("mouthOpen=@1234")).toHaveProperty("reason");
   });
@@ -127,9 +127,9 @@ describe("samples as events", () => {
       scene: () => ({ dot: { x: 0 } }),
       durationMs: 1000,
       cues: [
-        { name: "mouthOpen", at: 900, value: 0.2 },
-        { name: "mouthOpen", at: 1100, value: 0.4 },
-        { name: "mouthOpen", at: 1200, value: 0.1 },
+        { kind: "value", name: "mouthOpen", at: 900, value: 0.2 },
+        { kind: "value", name: "mouthOpen", at: 1100, value: 0.4 },
+        { kind: "value", name: "mouthOpen", at: 1200, value: 0.1 },
       ],
     });
     expect(reviewSceneModule(late, SCENE_REVIEW).findings).toContain(
@@ -168,8 +168,15 @@ describe("a module's limits", () => {
 describe("events with a point", () => {
   it("parse a point after the time, and keep commas inside it", () => {
     expect(parseEvents("click:stage@300(640,360),go@500")).toEqual([
-      { name: "click", at: 300, target: "stage", x: 640, y: 360 },
-      { name: "go", at: 500 },
+      {
+        kind: "trigger",
+        name: "click",
+        at: 300,
+        value: 1,
+        target: "stage",
+        point: { x: 640, y: 360 },
+      },
+      { kind: "trigger", name: "go", at: 500, value: 1 },
     ]);
   });
 
@@ -180,8 +187,8 @@ describe("events with a point", () => {
       {
         length: 1000,
         cues: [
-          { name: INPUT_EVENTS.scroll, at: 200, value: 300 },
-          { name: INPUT_EVENTS.pointerX, at: 300, value: 0.75 },
+          { kind: "value", name: INPUT_EVENTS.scroll, at: 200, value: 300 },
+          { kind: "value", name: INPUT_EVENTS.pointerX, at: 300, value: 0.75 },
         ],
       },
       card.moves(

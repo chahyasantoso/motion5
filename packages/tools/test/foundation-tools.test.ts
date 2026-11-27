@@ -320,7 +320,7 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
 
     const callerStore = createStore();
     const controlStore = createStore();
-    const seed = [{ name: "go", at: 0, value: 50 }];
+    const seed = [{ kind: "value" as const, name: "go", at: 0, value: 50 }];
     withStore(callerStore, () => {
       sprung(liveAt(100), seed);
       follower(liveAt(100), seed);
@@ -361,7 +361,7 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
 
     const plainModule: SceneModule = {
       durationMs: 160, // 11 steps: [0, 16, ..., 160], soughtOrder: 3 steps [0, 64, 128]
-      cues: [{ name: "tap", at: 40, value: 50 }],
+      cues: [{ kind: "value", name: "tap", at: 40, value: 50 }],
       limits: {},
       scene: (time, events) => {
         evals += 1;
@@ -372,7 +372,7 @@ describe("Slice 5 foundation: extended pageDigest, talkPage, retired vite endpoi
 
     const callerStore = createStore();
     const controlStore = createStore();
-    const seed = [{ name: "go", at: 0, value: 50 }];
+    const seed = [{ kind: "value" as const, name: "go", at: 0, value: 50 }];
     withStore(callerStore, () => {
       sprung(liveAt(100), seed);
       follower(liveAt(100), seed);

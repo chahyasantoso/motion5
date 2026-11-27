@@ -1,5 +1,5 @@
 import { clockDriver } from "@gerak/dom";
-import { mergeEvents, seeded, type Events, type Pose2d, type Time } from "@gerak/core";
+import { mergeInput, seeded, type Input, type Pose2d, type Time } from "@gerak/core";
 import { react } from "@gerak/moves";
 import { builtinWorld, simulate } from "@gerak/physics";
 
@@ -33,8 +33,8 @@ const squash = STARTS.map(({ id }) =>
 );
 
 /** Each letter's box moves and turns around its centre; its glyph squashes from its foot inside it. */
-export const scene = (time: Time, events: Events) => {
-  const all = mergeEvents(events, sim.events(time));
+export const scene = (time: Time, events: Input) => {
+  const all = mergeInput(events, sim.events(time));
   return {
     letters: STARTS.map(({ id }): Pose2d => sim.pose(id, time)),
     glyphs: STARTS.map((_, index): Pose2d => {

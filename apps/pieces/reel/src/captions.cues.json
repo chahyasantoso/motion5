@@ -1,20 +1,24 @@
 [
   {
+    "kind": "value",
     "name": "word",
     "at": 6500,
     "value": 3
   },
   {
+    "kind": "value",
     "name": "word",
     "at": 7000,
     "value": 6
   },
   {
+    "kind": "value",
     "name": "word",
     "at": 7500,
     "value": 9
   },
   {
+    "kind": "value",
     "name": "word",
     "at": 8000,
     "value": 12

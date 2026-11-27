@@ -2,7 +2,8 @@ import {
   aim,
   ease,
   easeTo,
-  mergeEvents,
+  isInputEntry,
+  mergeInput,
   mix,
   motion,
   orbit,
@@ -231,7 +232,10 @@ const ctaScene = scene(
 );
 
 export default scene(
-  { name: "reel", cues: mergeEvents(musicCues, captionCues) },
+  {
+    name: "reel",
+    cues: mergeInput(musicCues.filter(isInputEntry), captionCues.filter(isInputEntry)),
+  },
   shot(hookScene, { name: "hook", until: beatAt(5) }),
   shot(revealScene, { name: "reveal", overlap: 400, until: beatAt(13) }),
   shot(proofScene, { name: "proof", overlap: 400, until: beatAt(19) }),

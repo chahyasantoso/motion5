@@ -1,11 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { isMotionEvent, type Events } from "@gerak/core";
+import { isInputEntry, type Input } from "@gerak/core";
 
 /** The names a recorded preset may have; Windows device names are refused. */
 export const PRESET_NAME = /^(?!(?:con|prn|aux|nul|com\d|lpt\d)$)[a-z0-9][a-z0-9-]*$/;
 
-/** Where a piece's recorded preset lives: one `Events` JSON file under the pieces folder. */
+/** Where a piece's recorded preset lives: one `Input` JSON file under the pieces folder. */
 export function presetPath(root: string, piece: string, name: string): string {
   return join(root, ".gerak", "presets", piece, `${name}.json`);
 }
@@ -19,7 +19,7 @@ export function readPreset(
   root: string,
   piece: string,
   name: string,
-): Events | { readonly reason: string } {
+): Input | { readonly reason: string } {
   if (!PRESET_NAME.test(name)) return { reason: badName(name) };
   const path = presetPath(root, piece, name);
   if (!existsSync(path))
@@ -32,14 +32,14 @@ export function readPreset(
   }
   if (!Array.isArray(parsed)) return { reason: `${path} is not a list of events.` };
   const list: readonly unknown[] = parsed;
-  const events: Events = list.filter(isMotionEvent);
+  const events: Input = list.filter(isInputEntry);
   if (events.length !== list.length)
     return { reason: `${path} holds an entry that is not an event.` };
   return events;
 }
 
 /** Writes a preset sorted by time and returns its path; throws on a bad name. */
-export function writePreset(root: string, piece: string, name: string, events: Events): string {
+export function writePreset(root: string, piece: string, name: string, events: Input): string {
   if (!PRESET_NAME.test(name)) throw new Error(badName(name));
   const path = presetPath(root, piece, name);
   mkdirSync(dirname(path), { recursive: true });

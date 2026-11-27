@@ -1,4 +1,13 @@
-import { ease, easeTo, motion, span, state, type Pose2d, type Time } from "@gerak/core";
+import {
+  ease,
+  easeTo,
+  isInputEntry,
+  motion,
+  span,
+  state,
+  type Pose2d,
+  type Time,
+} from "@gerak/core";
 import { fade, rise, unfold } from "@gerak/moves";
 import { beat, bindEach, box, scene, shot, stagger, text } from "@gerak/stage";
 import captionCues from "./captions.cues.json" with { type: "json" };
@@ -128,7 +137,7 @@ const closingShot = scene(
 );
 
 export default scene(
-  { name: "explainer", cues: captionCues },
+  { name: "explainer", cues: captionCues.filter(isInputEntry) },
   shot(titleShot, { name: "title", length: 2200 }),
   shot(demoShot, { name: "demo", overlap: 340, length: 5200 }),
   shot(closingShot, { name: "closing", overlap: 340, length: 2500 }),

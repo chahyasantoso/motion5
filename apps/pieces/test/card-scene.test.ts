@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, type Events } from "@gerak/core";
+import { liveAt, type Input } from "@gerak/core";
 import { scene } from "../card/src/card-scene";
 
-const pointer = (...steps: readonly [string, number][]): Events =>
-  steps.map(([name, at]) => ({ name, at, target: "card" }));
+const pointer = (...steps: readonly [string, number][]): Input =>
+  steps.map(([name, at]) => ({ kind: "trigger", name, at, value: 1, target: "card" }));
 
 describe("the hover card scene", () => {
   it("drops in, then rests until the pointer comes", () => {
