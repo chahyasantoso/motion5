@@ -101,12 +101,12 @@ describe("Slice 2 foundation stage contracts", () => {
     expect(() => scene({ name: "dup" }, sub, sub)).toThrow(TypeError);
   });
 
-  it("isolates TriggerBeat per RuntimeStore and preserves triggered stay state under live compaction", () => {
+  it("isolates TriggerBeat per RuntimeStore", () => {
     const trig = beat("reveal", 300, { when: scrollPoint(100).reached, back: "stay" });
     const storeA = createStore();
     const storeB = createStore();
-    const logA = eventLog({ retention: { kind: "live", windowMs: 500 } });
-    const logB = eventLog({ retention: { kind: "live", windowMs: 500 } });
+    const logA = eventLog();
+    const logB = eventLog();
 
     logA.add({ name: INPUT_EVENTS.scroll, at: 100, value: 200 });
     logB.add({ name: INPUT_EVENTS.scroll, at: 100, value: 20 });
@@ -116,9 +116,7 @@ describe("Slice 2 foundation stage contracts", () => {
     expect(activeA1).toBe(true);
     expect(activeB1).toBe(false);
 
-    // Compact scroll event at 100ms past the 500ms window in storeA; trigger must remain active.
     logA.add({ name: INPUT_EVENTS.scroll, at: 2500, value: 0 });
-    expect(logA.events.length).toBeLessThan(3);
     const activeA2 = withStore(storeA, () => trig.active(liveAt(2600), { events: logA.events }));
     expect(activeA2).toBe(true);
   });

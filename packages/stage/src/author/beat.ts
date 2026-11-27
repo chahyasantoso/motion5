@@ -286,7 +286,7 @@ interface TriggerCell {
   readonly resetId: number | undefined;
   readonly fallbackList: readonly unknown[] | undefined;
   limit: number;
-  doneLogical: number;
+  done: number;
   reached: boolean;
   started: number | undefined;
   progress: number;
@@ -301,21 +301,20 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
     const now = elapsedOf(time.clock);
     const steps = scroll.y.steps(time, events);
     const meta = stepMetaOf(steps);
-    const stepBase = meta?.base ?? 0;
 
     const cell = cellSlot.own(
       (existing) =>
         threshold !== existing.limit ||
         (meta !== undefined
           ? meta.resetId !== existing.resetId
-          : steps !== existing.fallbackList || steps.length < existing.doneLogical),
+          : steps !== existing.fallbackList || steps.length < existing.done),
       () => {
         const initial = scroll.y.start >= threshold;
         return {
           resetId: meta?.resetId,
           fallbackList: steps,
           limit: threshold,
-          doneLogical: 0,
+          done: 0,
           reached: initial,
           started: initial ? 0 : undefined,
           progress: 0,
@@ -326,10 +325,8 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
       (existing) => ({ ...existing, fallbackList: steps }),
     );
 
-    const totalSteps = stepBase + steps.length;
-    if (cell.doneLogical < stepBase) cell.doneLogical = stepBase;
-    for (; cell.doneLogical < totalSteps; cell.doneLogical += 1) {
-      const step = steps[cell.doneLogical - stepBase];
+    for (; cell.done < steps.length; cell.done += 1) {
+      const step = steps[cell.done];
       if (step === undefined) break;
       const next = step.value >= threshold;
       switch (back) {

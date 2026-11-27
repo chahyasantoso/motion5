@@ -1,5 +1,4 @@
 import {
-  baseIndexOf,
   elapsedOf,
   eventSerialsOf,
   notifyInputUse,
@@ -115,7 +114,6 @@ export function react(options: ReactOptions): (time: Time, events: Events) => nu
     if (now === undefined) return 0;
     const ordered = versionOf(events) !== undefined;
     const serials = eventSerialsOf(events);
-    const base = baseIndexOf(events) ?? 0;
     const start = ordered ? firstAfter(events, now - quietMs) : 0;
     let total = 0;
     let index = 0;
@@ -127,11 +125,7 @@ export function react(options: ReactOptions): (time: Time, events: Events) => nu
       if (!options.on.includes(event.name)) continue;
       if (options.target !== undefined && event.target !== options.target) continue;
       const seconds = (now - event.at) / 1000;
-      const seed = ordered
-        ? serials !== undefined
-          ? (serials[i] ?? base + i + 1) - 1
-          : base + i
-        : index;
+      const seed = ordered ? (serials !== undefined ? (serials[i] ?? i + 1) - 1 : i) : index;
       if (seconds >= 0 && seconds < quiet) {
         total += options.amplitude * shape(options.kind, seconds, decay, frequency, seed);
         moving = true;
