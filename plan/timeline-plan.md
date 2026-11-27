@@ -11,13 +11,13 @@ The code adds a `Timeline` port to `@gerak/core`, makes a beat a name plus the t
 browser by what the timeline declares, not by what kind it is.
 
 It runs after `plan/foundation-plan.md`, which settles who owns input: gerak reads the page's time and scroll
-position; the app sets values.
+position; the app sends values and triggers through a declared contract.
 
 Read `AGENTS.md` first. Every rule there applies.
 
 ## The model
 
-- The driver is the page's heartbeat: it says what time it is and hands over the values the app set and the scroll
+- The driver is the page's heartbeat: it says what time it is and hands over the app's values and triggers and the scroll
   position, once per frame.
 - A timeline turns that heartbeat into one beat's own time, progress 0 to 1 plus ms.
 - A beat is a name and a timeline. A motion plays `.in(beat, ease)`.
@@ -33,8 +33,8 @@ Each has one owner and a test that fails before the change.
 | # | Invariant | Owner | Test |
 | --- | --- | --- | --- |
 | T1 | Anything that takes a beat or a window takes one type, `Timeline`, read through its required methods only. | `core` | typecheck: `InWindow`, `MotionWindow` and the optional `active?` and `moving?` are gone; `packages/core/test/timeline.test.ts` |
-| T2 | A new kind of timeline needs no change to `beat`, `scene`, `.in`, `.shows` or the compositor. | `core` | a test-only timeline (progress from a value the app sets) drives a motion, shows an element and is reviewed headless |
-| T3 | A trigger starts on any condition, not only on scroll. | `stage` | `triggered` on `reached`, `ended`, `is` and `changed` each start, stay, reverse and replay as `back` says |
+| T2 | A new kind of timeline needs no change to `beat`, `scene`, `.in`, `.shows` or the compositor. | `core` | a test-only timeline (progress from an app value) drives a motion, shows an element and is reviewed headless |
+| T3 | A trigger starts on any condition, not only on scroll. | `stage` | `triggered` on `reached`, `ended`, `is` and `on` each start, stay, reverse and replay as `back` says |
 | T4 | The compositor hands a timeline to the browser only from its declared `native`, read with an exhaustive `switch`. | `dom` compositor | no `"scroll-beat"` or `"trigger-beat"` check remains in `stage` or `dom`; the compositor browser tests pass unchanged |
 | T5 | A section mixing a clock beat, a scroll beat, a trigger beat and a loop gives the same poses as before the change. | `stage` | `gerak sample` on the cookie, yuzu and reel pieces gives the same poses as on the merged foundation branch |
 
@@ -51,7 +51,7 @@ interface Timeline<I = unknown> {
   active(time: Time, input: I): boolean;
   /** Whether its time keeps changing with no new input, so the page keeps asking for frames. */
   moving(time: Time, input: I): boolean;
-  /** What it reads: nothing, the scroll position, or values the app sets. */
+  /** What it reads: nothing, the scroll position, or the app's input. */
   readonly reads: InputNeed;
   /** How many ms of past value changes it needs to compute its time now. */
   readonly lookback: number;
@@ -66,7 +66,7 @@ interface StageTimeline extends Timeline<StageInput> {
 
 - Core owns `Timeline` and `InputNeed` (`scroll` and `values`), so `motion.in` takes any timeline without core
   importing `stage`.
-- `StageInput` is `{ values, rest, viewport }`: the values the app set and the scroll position, the measured
+- `StageInput` is `{ input, rest, viewport }`: the app's values and triggers and the scroll position, the measured
   boxes, and the viewport's width and height, which `RestReader` does not carry and `view` needs.
 - A core `Span` is a `Timeline`, so core-only pieces using `span`, `chain`, `lanes` and `sequence` do not change.
   `stage` reads a `Span` as a `StageTimeline` whose `native` is `document`.
@@ -106,15 +106,15 @@ interface StageTimeline extends Timeline<StageInput> {
 
 - `view` reads measured boxes and the scroll position, so it needs no `IntersectionObserver` and renders the same
   headless.
-- A timeline is a pure function of time, the scroll position and the values the app set. It never reads outside state
+- A timeline is a pure function of time, the scroll position and the app's input. It never reads outside state
   such as a video's `currentTime`; syncing to a video is a driver's job.
 
 ### 4. Conditions start triggers
 
 - A condition says, at a time, whether it holds: `reached(point)` (scroll is past a point), `ended(beat)` (a
-  beat's progress is 1), and `is(name, value, target?)` (the app's value equals `value`, so
-  `is("hovered", 1, "cta")` is a hover). `changed(name, target?)` starts its clock again on every change of a
-  value, for a motion that plays each time, like a bounce on `pressed`.
+  beat's progress is 1), `is(contract, name, value, target?)` (an app value equals `value`, so
+  `is(listen, "hovered", 1, "cta")` is a hover), and `on(contract, trigger, target?)`, which starts its clock again
+  at every trigger of that name, for a motion that plays each time, like a cookie dropping on `jar-add`.
 - `back` keeps its three meanings for when the condition stops holding: `"reverse"`, `"stay"`, `"replay"`.
 - A condition declares what it reads, and its scroll position when it has one, so `triggered` can declare a
   `native` for the compositor.
@@ -137,7 +137,7 @@ interface StageTimeline extends Timeline<StageInput> {
 
 - T5's same-poses sample of cookie, yuzu and the reel pieces.
 - One brief, the section that mixes a clock beat, a scroll beat, a trigger beat, a hover and a loop, built by a
-  Sonnet agent on the merged foundation, on this plan's branch, and as plain HTML and JS. The branch must cost no
+  Claude Sonnet subagent on the merged foundation, on this plan's branch, and as plain HTML and JS. The branch must cost no
   more tokens than the foundation and beat the plain build.
 
 ## Slices
