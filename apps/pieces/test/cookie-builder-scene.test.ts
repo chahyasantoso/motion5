@@ -1,4 +1,12 @@
-import { createStore, inputLog, liveAt, pageInputs, withStore, type Input } from "@gerak/core";
+import {
+  createStore,
+  inputLog,
+  liveAt,
+  pageInputs,
+  unreachable,
+  withStore,
+  type Input,
+} from "@gerak/core";
 import { compileScene, formatStageError, frame, listPose3d, pose3dOf } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import {
@@ -47,6 +55,8 @@ function sendJarUpdate(log: ReturnType<typeof inputLog>, at: number, update: Jar
       case "trigger":
         log.trigger(at, cookieInputs, send.name, send.value);
         break;
+      default:
+        return unreachable(send);
     }
   }
   return update.jar;
@@ -106,13 +116,14 @@ describe("cookie builder scene contract readers", () => {
     withStore(store, () => evaluateBuilderAt(900, log.input));
 
     let jarEntryReads = 0;
+    let evaluatingScene = false;
     for (let i = 0; i < jarEntryCount; i += 1) {
       const entry = log.input[i];
       Object.defineProperty(log.input, i, {
         configurable: true,
         enumerable: true,
         get() {
-          jarEntryReads += 1;
+          if (evaluatingScene) jarEntryReads += 1;
           return entry;
         },
       });
@@ -124,7 +135,12 @@ describe("cookie builder scene contract readers", () => {
         log.set(at, pageInputs, "scroll", f * 10);
         log.set(at, pageInputs, "pointer-x", (f % 10) / 10);
         log.set(at, pageInputs, "pointer-y", ((f + 5) % 10) / 10);
-        evaluateBuilderAt(at, log.input);
+        evaluatingScene = true;
+        try {
+          evaluateBuilderAt(at, log.input);
+        } finally {
+          evaluatingScene = false;
+        }
       }
     });
 
