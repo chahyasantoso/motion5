@@ -306,8 +306,30 @@ describe("review limits per target", () => {
       scene: (time: Time) => ({ character: { custom: { blink: value(time) } } }),
     });
     expect(moved(blink((time) => Math.min(1, step(time) * 0.5)))).toEqual([]);
-    const found = moved(blink((time) => (step(time) === 2 ? 2 : 0)));
-    expect(found[0]).toBe("character.custom.blink jumps 2 at 32 ms");
+    const found = moved(blink((time) => (step(time) === 2 ? 1.8 : 0)));
+    expect(found[0]).toBe("character.custom.blink jumps 1.8 at 32 ms");
+  });
+
+  it("treats a whole-number custom field as a step rather than a ratio jump", () => {
+    const flavours = [0, 1, 2, 3, 0];
+    const found = moved({
+      durationMs: 64,
+      scene: (time: Time) => ({
+        character: { custom: { flavour: flavours[step(time)] ?? 0 } },
+      }),
+    });
+    expect(found).toEqual([]);
+  });
+
+  it("still reports a fractional custom field that jumps past the ratio limit", () => {
+    const weights = [0, 0.5, 2.5, 2.5];
+    const found = moved({
+      durationMs: 48,
+      scene: (time: Time) => ({
+        character: { custom: { weight: weights[step(time)] ?? 2.5 } },
+      }),
+    });
+    expect(found).toEqual(["character.custom.weight jumps 2 at 32 ms"]);
   });
 
   it("measures a 3D turn owner by its target's turn limit", () => {

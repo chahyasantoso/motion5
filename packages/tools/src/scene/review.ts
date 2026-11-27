@@ -175,9 +175,25 @@ function numbersOf(value: unknown, path: string, into: Map<string, number>): voi
 
 type FieldKind = "position" | "turn" | "ratio";
 
+function isCustomPath(path: string): boolean {
+  return /(^|\.)custom(\.|\[|$)/.test(path);
+}
+
 function kindOf(path: string): FieldKind {
-  if (/(^|\.)custom(\.|\[|$)/.test(path)) return "ratio";
+  if (isCustomPath(path)) return "ratio";
   return valueField(path.slice(path.lastIndexOf(".") + 1))?.judged ?? "position";
+}
+
+function fractionalCustomPaths(
+  numbers: readonly ReadonlyMap<string, number>[],
+): ReadonlySet<string> {
+  const fractional = new Set<string>();
+  for (const sample of numbers) {
+    for (const [path, value] of sample) {
+      if (isCustomPath(path) && !Number.isInteger(value)) fractional.add(path);
+    }
+  }
+  return fractional;
 }
 
 type Limits = Pick<SceneReviewRequest, "hold" | "jump" | "turn" | "ratio">;
@@ -268,6 +284,7 @@ export function reviewValues(
     for (const [name, value] of Object.entries(targets)) numbersOf(value, name, found);
     return found;
   });
+  const fractionalCustom = fractionalCustomPaths(numbers);
   numbers.forEach((now, index) => {
     const before = numbers[index - 1];
     if (before === undefined) return;
@@ -290,6 +307,7 @@ export function reviewValues(
     for (const [path, value] of now) {
       const earlier = before.get(path);
       if (earlier === undefined) continue;
+      if (isCustomPath(path) && !fractionalCustom.has(path)) continue;
       if (kindOf(path) === "turn" && turned3d.has(ownerOf(path))) continue;
       const [step, limit] = stepAndLimit(
         path,
