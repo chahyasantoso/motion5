@@ -18,10 +18,10 @@ import {
   transition,
   unreachable,
   type Events,
-  type Motion,
   type Point3d,
   type Pose2d,
   type Pose3d,
+  type State,
   type Time,
 } from "@gerak/core";
 import { simulate } from "@gerak/physics";
@@ -45,7 +45,6 @@ import {
   BUILDER_CRUMB_MS,
   BUILDER_EXIT_MS,
   BUILDER_EXIT_POOL,
-  BUILDER_MIN_SEAL,
   BUILDER_MIX_MS,
   BUILDER_SEAL_MS,
   BUILDER_SHIFT_MS,
@@ -56,15 +55,14 @@ import {
   JAR_MODEL_OFFSET_Y,
   JAR_REMOVE_EVENT,
   JAR_RESET_EVENT,
-  JAR_SEAL_EVENT,
-  JAR_UNSEAL_EVENT,
+  JAR_SEALED_VALUE,
   LENS,
   STAGE_SIZE,
   fallbackViewWidth,
   fitCookieSlot,
   fitJarSlot,
-  SPOTLIGHT_ZONES,
   isSpotlightZone,
+  jarSlotName,
   stickyRangeOf,
   type SpotlightZone,
   unprojectFallback,
@@ -88,7 +86,11 @@ function crumbSimulation() {
       dt: 1 / 60,
       checkpointMs: 500,
       spawn: (event, spawner) => {
-        if (event.name !== JAR_SEAL_EVENT || typeof event.value !== "number" || event.value <= 0) {
+        if (
+          event.name !== JAR_SEALED_VALUE ||
+          typeof event.value !== "number" ||
+          event.value <= 0
+        ) {
           return;
         }
         const sealId = Math.trunc(event.value);
@@ -122,7 +124,7 @@ function crumbSimulation() {
 
 const crumbSim = crumbSimulation();
 // Runs one burst on a spare world at load, so the physics engine's first-contact code is ready before a seal.
-crumbSimulation().at(liveAt(BUILDER_CRUMB_MS), [{ name: JAR_SEAL_EVENT, at: 0, value: 1 }]);
+crumbSimulation().at(liveAt(BUILDER_CRUMB_MS), [{ name: JAR_SEALED_VALUE, at: 0, value: 1 }]);
 
 const {
   stageCanvas,
@@ -156,243 +158,169 @@ const sealPeek = shared(
 type BuilderSlotAnimKind = "enter" | "shuffle";
 type SealTransitionKind = "none" | "sealing" | "unsealing";
 
-export interface BuilderSlotEntry {
-  readonly flavor: SpotlightZone;
+interface TrackedValue {
+  readonly current: number;
+  readonly prev: number;
+  readonly changedAt: number;
+}
+
+function trackedValue(name: string): State<TrackedValue> {
+  return state<TrackedValue>({ current: 0, prev: 0, changedAt: -Infinity }, (current, event) =>
+    event.name === name && typeof event.value === "number" && event.value !== current.current
+      ? { current: event.value, prev: current.current, changedAt: event.at }
+      : current,
+  );
+}
+
+function valueJustBefore(
+  tracked: State<TrackedValue>,
+  time: Time,
+  events: Events,
+  atMs: number,
+): number {
+  const latest = tracked(time, events);
+  for (const step of tracked.steps(time, events)) {
+    if (step.value.changedAt >= atMs) return step.value.prev;
+  }
+  return latest.current;
+}
+
+const slotValues = Array.from({ length: BUILDER_CAPACITY }, (_, i) => trackedValue(jarSlotName(i)));
+
+const jarSealed = state<number>(0, (current, event) => {
+  switch (event.name) {
+    case JAR_SEALED_VALUE:
+      return typeof event.value === "number" ? event.value : current;
+    case JAR_RESET_EVENT:
+      return 0;
+    default:
+      return current;
+  }
+});
+
+const sealKind = state<SealTransitionKind>("none", (current, event) => {
+  switch (event.name) {
+    case JAR_SEALED_VALUE:
+      if (typeof event.value !== "number") return current;
+      return event.value > 0 ? "sealing" : current === "none" ? "none" : "unsealing";
+    case JAR_RESET_EVENT:
+      return "none";
+    default:
+      return current;
+  }
+});
+
+interface SlotAnim {
   readonly animKind: BuilderSlotAnimKind;
   readonly animStartMs: number;
   readonly prevSlotIndex: number;
   readonly shiftedAtMs: number;
 }
 
-export interface BuilderExitEntry {
+interface ExitAnim {
   readonly flavor: SpotlightZone;
-  readonly poolSlot: number;
   readonly fromSlotIndex: number;
   readonly startedAtMs: number;
 }
 
-export interface BuilderState {
-  readonly slots: readonly BuilderSlotEntry[];
-  readonly exiting: readonly BuilderExitEntry[];
-  readonly nextExitPool: number;
-  readonly mixes: number;
-  readonly sealed: boolean;
-  readonly sealId: number;
-  readonly sealTransitionKind: SealTransitionKind;
+interface MixBounce {
+  readonly startedAtMs: number;
+  readonly count: number;
 }
 
-const INITIAL_BUILDER_STATE: BuilderState = {
-  slots: [],
-  exiting: [],
-  nextExitPool: 0,
-  mixes: 0,
-  sealed: false,
-  sealId: 0,
-  sealTransitionKind: "none",
+interface BuilderFrame {
+  readonly anims: readonly (SlotAnim | undefined)[];
+  readonly exiting: ReadonlyMap<number, ExitAnim>;
+  readonly mixBounce: MixBounce | null;
+}
+
+const EMPTY_FRAME: BuilderFrame = {
+  anims: [],
+  exiting: new Map(),
+  mixBounce: null,
 };
 
-function pruneExiting(
-  exiting: readonly BuilderExitEntry[],
-  atMs: number,
-  replacePool?: number,
-): BuilderExitEntry[] {
-  const kept: BuilderExitEntry[] = [];
-  for (const entry of exiting) {
-    if (entry.poolSlot === replacePool) {
-      continue;
-    }
-    if (Math.abs(atMs - entry.startedAtMs) < BUILDER_EXIT_MS + 100) {
-      kept.push(entry);
-    }
-  }
-  return kept;
-}
+const builderFrame = shared((time: Time, events: Events): BuilderFrame => {
+  const nowMs = elapsedOf(rawTime(time).clock) ?? 0;
+  for (const slot of slotValues) slot(time, events);
 
-/** A shuffled mix of `count` flavors from `seed`, never the same order as a full `previous` of that count. */
-function smartMix(
-  count: number,
-  seed: number,
-  previous: readonly SpotlightZone[],
-): SpotlightZone[] {
-  const rand = seeded(seed);
-  const pool: SpotlightZone[] = [...SPOTLIGHT_ZONES];
-  for (let i = pool.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(rand() * (i + 1));
-    const a = pool[i];
-    const b = pool[j];
-    if (a !== undefined && b !== undefined) {
-      pool[i] = b;
-      pool[j] = a;
-    }
-  }
-  const next: SpotlightZone[] = [];
-  for (let i = 0; i < count; i += 1) next.push(pool[i % pool.length] ?? 0);
-  const unchanged =
-    previous.length === count && count > 0 && next.every((zone, i) => zone === previous[i]);
-  if (unchanged) next[0] = SPOTLIGHT_ZONES[((next[0] ?? 0) + 1) % SPOTLIGHT_ZONES.length] ?? 0;
-  return next;
-}
+  const anims: (SlotAnim | undefined)[] = new Array(BUILDER_CAPACITY).fill(undefined);
+  const exiting = new Map<number, ExitAnim>();
+  let removeTimes: number[] = [];
+  let mixBounce: MixBounce | null = null;
 
-/** The jar: which flavor sits in each slot, which are leaving, and whether it is sealed. */
-export const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event) => {
-  switch (event.name) {
-    case JAR_ADD_EVENT: {
-      if (
-        current.sealed ||
-        current.slots.length >= BUILDER_CAPACITY ||
-        typeof event.value !== "number" ||
-        !isSpotlightZone(event.value)
-      ) {
-        return current;
-      }
-      const nextIndex = current.slots.length;
-      return {
-        ...current,
-        slots: [
-          ...current.slots,
-          {
-            flavor: event.value,
-            animKind: "enter",
-            animStartMs: event.at,
-            prevSlotIndex: nextIndex,
-            shiftedAtMs: event.at,
-          },
-        ],
-        exiting: pruneExiting(current.exiting, event.at),
-      };
-    }
-    case JAR_REMOVE_EVENT: {
-      const removeIndex = typeof event.value === "number" ? Math.trunc(event.value) : -1;
-      if (current.sealed || removeIndex < 0 || removeIndex >= current.slots.length) {
-        return current;
-      }
-      const poolSlot = current.nextExitPool % BUILDER_EXIT_POOL;
-      const removed = current.slots[removeIndex];
-      if (removed === undefined) return current;
-      const nextSlots: BuilderSlotEntry[] = [];
-      for (let i = 0; i < current.slots.length; i += 1) {
-        const slotEntry = current.slots[i];
-        if (!slotEntry || i === removeIndex) {
-          continue;
-        }
-        if (i > removeIndex) {
-          nextSlots.push({
-            ...slotEntry,
-            prevSlotIndex: i,
-            shiftedAtMs: event.at,
-          });
-        } else {
-          nextSlots.push(slotEntry);
-        }
-      }
-      return {
-        ...current,
-        slots: nextSlots,
-        exiting: [
-          ...pruneExiting(current.exiting, event.at, poolSlot),
-          {
-            flavor: removed.flavor,
-            poolSlot,
-            fromSlotIndex: removeIndex,
-            startedAtMs: event.at,
-          },
-        ],
-        nextExitPool: current.nextExitPool + 1,
-      };
-    }
-    case JAR_MIX_EVENT: {
-      if (current.sealed) {
-        return current;
-      }
-      const rawCount = typeof event.value === "number" ? Math.round(event.value) : BUILDER_CAPACITY;
-      const targetCount = clamp(rawCount, 1, BUILDER_CAPACITY);
-      const mixes = current.mixes + 1;
-      const flavors = smartMix(
-        targetCount,
-        mixes * 97,
-        current.slots.map((slot) => slot.flavor),
-      );
-      if (current.slots.length === 0) {
-        const nextSlots: BuilderSlotEntry[] = [];
-        for (let i = 0; i < targetCount; i += 1) {
-          nextSlots.push({
-            flavor: flavors[i] ?? 0,
-            animKind: "enter",
-            animStartMs: event.at + i * 65,
-            prevSlotIndex: i,
-            shiftedAtMs: event.at,
-          });
-        }
-        return {
-          ...current,
-          slots: nextSlots,
-          exiting: pruneExiting(current.exiting, event.at),
-          mixes,
-        };
-      }
-      const nextSlots: BuilderSlotEntry[] = [];
-      for (let i = 0; i < current.slots.length; i += 1) {
-        const existing = current.slots[i];
-        if (!existing) {
-          continue;
-        }
-        nextSlots.push({
-          flavor: flavors[i] ?? existing.flavor,
-          animKind: "shuffle",
-          animStartMs: event.at + i * 40,
-          prevSlotIndex: i,
+  for (const event of events) {
+    if (event.at > nowMs) continue;
+    switch (event.name) {
+      case JAR_RESET_EVENT:
+        anims.fill(undefined);
+        exiting.clear();
+        removeTimes = [];
+        mixBounce = null;
+        break;
+      case JAR_ADD_EVENT: {
+        if (typeof event.value !== "number") break;
+        const k = Math.trunc(event.value);
+        if (k < 0 || k >= BUILDER_CAPACITY) break;
+        anims[k] = {
+          animKind: "enter",
+          animStartMs: event.at,
+          prevSlotIndex: k,
           shiftedAtMs: event.at,
-        });
+        };
+        break;
       }
-      return {
-        ...current,
-        slots: nextSlots,
-        exiting: pruneExiting(current.exiting, event.at),
-        mixes,
-      };
-    }
-    case JAR_SEAL_EVENT: {
-      if (
-        current.sealed ||
-        current.slots.length < BUILDER_MIN_SEAL ||
-        typeof event.value !== "number"
-      ) {
-        return current;
+      case JAR_REMOVE_EVENT: {
+        if (typeof event.value !== "number") break;
+        const r = Math.trunc(event.value);
+        if (r < 0 || r >= BUILDER_CAPACITY) break;
+        removeTimes = removeTimes.filter((t) => event.at - t < BUILDER_EXIT_MS + 100);
+        const poolSlot = removeTimes.length % BUILDER_EXIT_POOL;
+        removeTimes.push(event.at);
+        const tracked = slotValues[r];
+        const rawFlavor = tracked ? valueJustBefore(tracked, time, events, event.at) - 1 : -1;
+        if (isSpotlightZone(rawFlavor)) {
+          exiting.set(poolSlot, { flavor: rawFlavor, fromSlotIndex: r, startedAtMs: event.at });
+        }
+        for (let i = r; i < BUILDER_CAPACITY - 1; i += 1) {
+          const src = anims[i + 1] ?? {
+            animKind: "enter" as const,
+            animStartMs: -BUILDER_ARC_MS,
+            prevSlotIndex: i + 1,
+            shiftedAtMs: event.at,
+          };
+          anims[i] = { ...src, prevSlotIndex: i + 1, shiftedAtMs: event.at };
+        }
+        anims[BUILDER_CAPACITY - 1] = undefined;
+        break;
       }
-      return {
-        ...current,
-        sealed: true,
-        sealId: Math.trunc(event.value),
-        sealTransitionKind: "sealing",
-      };
-    }
-    case JAR_UNSEAL_EVENT: {
-      if (!current.sealed) {
-        return current;
+      case JAR_MIX_EVENT: {
+        const rawCount =
+          typeof event.value === "number" ? Math.round(event.value) : BUILDER_CAPACITY;
+        const count = clamp(rawCount, 0, BUILDER_CAPACITY);
+        const firstSlot = slotValues[0];
+        const wasEmpty = firstSlot
+          ? valueJustBefore(firstSlot, time, events, event.at) === 0
+          : true;
+        const animKind: BuilderSlotAnimKind = wasEmpty ? "enter" : "shuffle";
+        const stagger = wasEmpty ? 65 : 40;
+        for (let k = 0; k < count; k += 1) {
+          anims[k] = {
+            animKind,
+            animStartMs: event.at + k * stagger,
+            prevSlotIndex: k,
+            shiftedAtMs: event.at,
+          };
+        }
+        mixBounce = wasEmpty ? null : { startedAtMs: event.at, count };
+        break;
       }
-      return {
-        ...current,
-        sealed: false,
-        sealTransitionKind: "unsealing",
-      };
+      default:
+        break;
     }
-    case JAR_RESET_EVENT: {
-      if (!current.sealed && current.slots.length === 0 && current.exiting.length === 0) {
-        return current;
-      }
-      return {
-        slots: [],
-        exiting: [],
-        nextExitPool: current.nextExitPool,
-        mixes: current.mixes,
-        sealed: false,
-        sealId: current.sealId,
-        sealTransitionKind: "none",
-      };
-    }
-    default:
-      return current;
   }
+
+  return { anims, exiting, mixBounce };
 });
 
 const HIDDEN_POSE: Pose3d = { scale: 0 };
@@ -405,7 +333,7 @@ const BUILDER_CRUMB_DELAY_MS = 140;
 const BUILDER_CRUMB_TOTAL_MS = BUILDER_CRUMB_DELAY_MS + BUILDER_CRUMB_MS;
 
 const sealTransition = shared(
-  transition(builderState, (b) => b.sealTransitionKind, {
+  transition(sealKind, {
     ms: (_from, to) => {
       switch (to) {
         case "none":
@@ -422,7 +350,7 @@ const sealTransition = shared(
 );
 
 const crumbBurst = shared(
-  transition(builderState, (b) => (b.sealed ? b.sealId : 0), {
+  transition(jarSealed, {
     ms: (_from, to) => (to > 0 ? BUILDER_CRUMB_TOTAL_MS : 0),
   }),
 );
@@ -443,13 +371,13 @@ function readSealTransition(context?: MotionContext): SealTransition {
   return { kind: trans.current, u: trans.progress };
 }
 
-function readMixBounce(bState: BuilderState, nowMs: number): number {
-  const first = bState.slots[0];
-  if (!first || first.animKind !== "shuffle") {
+function readMixBounce(frame: BuilderFrame, nowMs: number): number {
+  const { mixBounce } = frame;
+  if (!mixBounce) {
     return 0;
   }
-  const totalMs = BUILDER_MIX_MS + Math.max(0, bState.slots.length - 1) * 40;
-  const ageMs = nowMs - first.animStartMs;
+  const totalMs = BUILDER_MIX_MS + Math.max(0, mixBounce.count - 1) * 40;
+  const ageMs = nowMs - mixBounce.startedAtMs;
   if (ageMs < 0 || ageMs >= totalMs) {
     return 0;
   }
@@ -482,11 +410,11 @@ const builderHeadingMotion = motion((t: Time): Pose2d => {
 const builderJarRootMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
   const slot = context ? slot3d(slotBuilderJar, COOKIE_VIEW, context) : undefined;
   const fitScale = fitJarSlot(slot, 0.48, 1.08, 0.84);
-  const bState = context ? builderState(context.time, context.events) : INITIAL_BUILDER_STATE;
+  const frame = context ? builderFrame(context.time, context.events) : EMPTY_FRAME;
   const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
   const sealTrans = readSealTransition(context);
   const sealCompression = sealTrans.kind === "sealing" ? 0.035 * arch(sealTrans.u) : 0;
-  const mixBounce = readMixBounce(bState, nowMs);
+  const mixBounce = readMixBounce(frame, nowMs);
   const mixScale = 1 + 0.022 * mixBounce;
   const dx = context ? pointerDeltaX(context.time, context.events) : 0;
   const dy = context ? pointerDeltaY(context.time, context.events) : 0;
@@ -599,21 +527,33 @@ const builderJarRibbonMotion = motion((_t: Time, context?: MotionContext): Pose3
 });
 
 const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
-  const slotIndex = context?.index ?? 0;
+  if (!context) {
+    return HIDDEN_POSE;
+  }
+  const slotIndex = context.index ?? 0;
+  const slotState = slotValues[slotIndex];
+  const rawFlavor = slotState ? slotState(context.time, context.events).current - 1 : -1;
+  if (!isSpotlightZone(rawFlavor)) {
+    return HIDDEN_POSE;
+  }
+  const flavor = rawFlavor;
+
   const localX = slotIndex % 2 === 0 ? -0.025 : 0.025;
   const localZ = ((slotIndex % 3) - 1) * 0.014;
   const restTiltZ = slotIndex % 2 === 0 ? -1.8 : 1.8;
   const restTiltX = ((slotIndex % 3) - 1) * 2;
   const restYaw = slotIndex * 42;
 
-  const bState = context ? builderState(context.time, context.events) : INITIAL_BUILDER_STATE;
-  const entry = bState.slots[slotIndex];
-  if (!entry) {
-    return HIDDEN_POSE;
-  }
+  const frame = builderFrame(context.time, context.events);
+  const entry = frame.anims[slotIndex] ?? {
+    animKind: "enter" as const,
+    animStartMs: -BUILDER_ARC_MS,
+    prevSlotIndex: slotIndex,
+    shiftedAtMs: -BUILDER_SHIFT_MS,
+  };
 
-  const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
-  const jar = context ? context.read(builderJarRoot) : { scale: 0.84 };
+  const nowMs = elapsedOf(rawTime(context.time).clock) ?? 0;
+  const jar = context.read(builderJarRoot);
   const jarX = jar.x ?? 0;
   const jarY = jar.y ?? 0;
   const jarZ = jar.z ?? 0;
@@ -657,6 +597,7 @@ const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d 
           rotationX: mix(90, 12, p1),
           rotationY: mix(jarRotY - 18, jarRotY + restYaw, p1),
           scale: mix(heroScale, jarScale, p1),
+          custom: { flavor },
         };
       }
       const p2 = ease.cubicInOut((u - 0.58) / 0.42);
@@ -668,6 +609,7 @@ const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d 
         rotationX: mix(12, restTiltX, p2),
         rotationY: jarRotY + restYaw,
         scale: jarScale,
+        custom: { flavor },
       };
     }
     case "shuffle": {
@@ -681,6 +623,7 @@ const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d 
           rotationX: restTiltX,
           rotationY: jarRotY + restYaw,
           scale: jarScale,
+          custom: { flavor },
         };
       }
       const u = clamp(ageMs / BUILDER_MIX_MS, 0, 1);
@@ -698,6 +641,7 @@ const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d 
         rotationX: mix(restTiltX, 24, lift),
         rotationY: jarRotY + restYaw + 360 * ease.cubicOut(u),
         scale: jarScale * (1 + 0.06 * lift),
+        custom: { flavor },
       };
     }
     default:
@@ -711,8 +655,8 @@ const builderExitCookiesMotion = motion((_t: Time, context?: MotionContext): Pos
   }
   const poolSlot = context.index ?? 0;
 
-  const bState = builderState(context.time, context.events);
-  const exitEntry = bState.exiting.find((entry) => entry.poolSlot === poolSlot);
+  const frame = builderFrame(context.time, context.events);
+  const exitEntry = frame.exiting.get(poolSlot);
   if (!exitEntry) {
     return HIDDEN_POSE;
   }
@@ -736,6 +680,7 @@ const builderExitCookiesMotion = motion((_t: Time, context?: MotionContext): Pos
   const fromY = jarY + slotLocalY(exitEntry.fromSlotIndex) * jarScale;
   const rimY = jarY + 0.76 * jarScale;
   const restYaw = exitEntry.fromSlotIndex * 42;
+  const { flavor } = exitEntry;
 
   if (u <= 0.4) {
     const p1 = ease.cubicInOut(u / 0.4);
@@ -747,6 +692,7 @@ const builderExitCookiesMotion = motion((_t: Time, context?: MotionContext): Pos
       rotationX: mix(0, 14, p1),
       rotationY: jarRotY + restYaw,
       scale: jarScale,
+      custom: { flavor },
     };
   }
 
@@ -759,6 +705,7 @@ const builderExitCookiesMotion = motion((_t: Time, context?: MotionContext): Pos
     rotationX: mix(14, 90, p2),
     rotationY: mix(jarRotY + restYaw, jarRotY - 18, p2),
     scale: mix(jarScale, heroScale, p2),
+    custom: { flavor },
   };
 });
 
@@ -768,7 +715,7 @@ function crumbEventsForSeal(sealId: number): Events {
   if (cachedCrumbSeal === null || cachedCrumbSeal.sealId !== sealId) {
     cachedCrumbSeal = {
       sealId,
-      events: [{ name: JAR_SEAL_EVENT, at: 0, value: sealId }],
+      events: [{ name: JAR_SEALED_VALUE, at: 0, value: sealId }],
     };
   }
   return cachedCrumbSeal.events;

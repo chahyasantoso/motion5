@@ -23,12 +23,16 @@ export const BUILDER_MIX_MS = 420;
 export const BUILDER_SEAL_MS = 560;
 export const BUILDER_UNSEAL_MS = 480;
 export const BUILDER_CRUMB_MS = 2000;
+export const JAR_SLOT_PREFIX = "jar-slot-";
+export const JAR_SEALED_VALUE = "jar-sealed";
 export const JAR_ADD_EVENT = "jar-add";
 export const JAR_REMOVE_EVENT = "jar-remove";
-export const JAR_SEAL_EVENT = "jar-seal";
-export const JAR_UNSEAL_EVENT = "jar-unseal";
 export const JAR_MIX_EVENT = "jar-mix";
 export const JAR_RESET_EVENT = "jar-reset";
+
+export function jarSlotName(slotIndex: number): string {
+  return `${JAR_SLOT_PREFIX}${slotIndex}`;
+}
 
 export const SPOTLIGHT_ROLL_MS = 720;
 export const FLAVOR_SELECT_EVENT = "flavor-select";
