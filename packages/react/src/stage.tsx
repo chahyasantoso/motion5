@@ -70,16 +70,42 @@ function sameNodeEntry(
   return false;
 }
 
+/** Comparator table covering every key of `StageMountOptions` so new options fail typecheck until handled. */
+export type MountOptionComparators = {
+  readonly [K in keyof Required<StageMountOptions>]: (
+    a: StageMountOptions[K],
+    b: StageMountOptions[K],
+  ) => boolean;
+};
+
+const MOUNT_OPTION_COMPARATORS: MountOptionComparators = {
+  clock: sameClock,
+  frame: Object.is,
+  scrollTarget: Object.is,
+  frames: Object.is,
+  settleMs: Object.is,
+  now: Object.is,
+  viewport: Object.is,
+  onDriver: () => true,
+  checks: Object.is,
+  nodes: (a, b) => sameRecord(a, b, sameNodeEntry),
+  binders: sameArray,
+};
+
 function sameMountOptions(a: StageMountOptions, b: StageMountOptions): boolean {
+  if (a === b) return true;
   return (
-    sameClock(a.clock, b.clock) &&
-    a.frame === b.frame &&
-    a.scrollTarget === b.scrollTarget &&
-    a.frames === b.frames &&
-    a.settleMs === b.settleMs &&
-    a.checks === b.checks &&
-    sameArray(a.binders, b.binders) &&
-    sameRecord(a.nodes, b.nodes, sameNodeEntry)
+    MOUNT_OPTION_COMPARATORS.clock(a.clock, b.clock) &&
+    MOUNT_OPTION_COMPARATORS.frame(a.frame, b.frame) &&
+    MOUNT_OPTION_COMPARATORS.scrollTarget(a.scrollTarget, b.scrollTarget) &&
+    MOUNT_OPTION_COMPARATORS.frames(a.frames, b.frames) &&
+    MOUNT_OPTION_COMPARATORS.settleMs(a.settleMs, b.settleMs) &&
+    MOUNT_OPTION_COMPARATORS.now(a.now, b.now) &&
+    MOUNT_OPTION_COMPARATORS.viewport(a.viewport, b.viewport) &&
+    MOUNT_OPTION_COMPARATORS.onDriver(a.onDriver, b.onDriver) &&
+    MOUNT_OPTION_COMPARATORS.checks(a.checks, b.checks) &&
+    MOUNT_OPTION_COMPARATORS.nodes(a.nodes, b.nodes) &&
+    MOUNT_OPTION_COMPARATORS.binders(a.binders, b.binders)
   );
 }
 
@@ -89,26 +115,17 @@ export function useMount(
   scene: StageInput,
   options: StageMountOptions,
 ): Mounted | undefined {
-  const latest = useRef(options);
-  latest.current = options;
-  const activeOptions = useRef(options);
-  const optionVersion = useRef(0);
-  if (!sameMountOptions(activeOptions.current, options)) {
-    activeOptions.current = options;
-    optionVersion.current += 1;
-  }
   const active = useRef<
     | {
         readonly mounted: Mounted;
         readonly stage: CompiledStage;
         readonly scene: StageInput;
         readonly root: PageRoot;
-        readonly version: number;
+        readonly options: StageMountOptions;
       }
     | undefined
   >(undefined);
   const [mounted, setMounted] = useState<Mounted | undefined>(undefined);
-  const currentVersion = optionVersion.current;
 
   useEffect(() => {
     const element = ref.current;
@@ -121,16 +138,12 @@ export function useMount(
       }
       return;
     }
-    if (
-      kept !== undefined &&
-      kept.root === element &&
-      kept.scene === scene &&
-      kept.version === currentVersion
-    ) {
+    const optionsMatch = kept !== undefined && sameMountOptions(kept.options, options);
+    if (kept !== undefined && kept.root === element && kept.scene === scene && optionsMatch) {
       return;
     }
     const next = compiled(scene);
-    if (kept !== undefined && kept.root === element && kept.version === currentVersion) {
+    if (kept !== undefined && kept.root === element && optionsMatch) {
       if (kept.stage.signature === next.signature) {
         kept.mounted.replace(next);
         active.current = {
@@ -138,16 +151,15 @@ export function useMount(
           stage: next,
           scene,
           root: element,
-          version: currentVersion,
+          options,
         };
         return;
       }
     }
     kept?.mounted.dispose();
     active.current = undefined;
-    const currentOptions = latest.current;
     const resolvedOptions: MountOptions = {
-      ...currentOptions,
+      ...options,
       root: element,
     };
     const created = mount(next, resolvedOptions);
@@ -156,7 +168,7 @@ export function useMount(
       stage: next,
       scene,
       root: element,
-      version: currentVersion,
+      options,
     };
     setMounted(created);
   });
