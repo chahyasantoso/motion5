@@ -1,10 +1,5 @@
 [
   {
-    "path": "packages/dom/test/shared-clock.test.ts",
-    "phase": 5,
-    "reason": "liveClock and mounts sharing one clock do not exist yet."
-  },
-  {
     "path": "packages/core/test/inputs.types.test.ts",
     "phase": 5,
     "reason": "The typed contract does not exist yet, and eventLog, eventDriver and send are still exported."

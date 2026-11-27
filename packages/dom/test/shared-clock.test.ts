@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { elapsedOf, inputs, scroll, triggers, value, type Signal } from "@gerak/core";
 import { liveClock, mount } from "@gerak/dom";
 import { bind, box, scene } from "@gerak/stage";
@@ -96,6 +95,116 @@ describe("shared liveClock across mounts", () => {
     frames.tick(ms);
     expect(mountedB.player.values["slot-1"]).toEqual({ x: 99 });
 
+    mountedB.dispose();
+    clock.dispose();
+  });
+
+  it("delivers a set read only by a second mount after the first mount has settled", () => {
+    let ms = 0;
+    const frames = fakeFrames();
+    const view = new FakeScrollTarget();
+    const clock = liveClock({ now: () => ms, frames, settleMs: 100 });
+    const onlyB = inputs({ values: { "only-b": {} } });
+
+    let runsA = 0;
+    const pieceA = scene(
+      box("a").moves(
+        bind({
+          y: (time, input) => {
+            runsA += 1;
+            return scroll.y(time, input);
+          },
+        }),
+      ),
+    );
+    const pieceB = scene(box("b").moves(bind({ x: value(onlyB, "only-b") })));
+
+    const mountedA = mount(pieceA, {
+      root: new FakeRoot([new FakeNode("a")], view),
+      clock: { kind: "driver", driver: clock },
+    });
+    const mountedB = mount(pieceB, {
+      root: new FakeRoot([new FakeNode("b")], view),
+      clock: { kind: "driver", driver: clock },
+    });
+
+    // Advance past settleMs so both mounts and the shared clock are idle.
+    ms = 500;
+    frames.tick(ms);
+    expect(frames.pending).toBe(0);
+    const runsABefore = runsA;
+
+    ms = 1000;
+    clock.set(onlyB, "only-b", 77);
+    expect(frames.pending).toBe(1);
+    frames.tick(ms);
+
+    expect(runsA).toBe(runsABefore);
+    expect(mountedB.player.values["b"]).toEqual({ x: 77 });
+
+    mountedA.dispose();
+    mountedB.dispose();
+    clock.dispose();
+  });
+
+  it("steps each mount's player once per frame even when scroll and inputs change together", () => {
+    let ms = 0;
+    const frames = fakeFrames();
+    const view = new FakeScrollTarget();
+    const clock = liveClock({ now: () => ms, frames });
+
+    let stepsA = 0;
+    let stepsB = 0;
+    const sealed = value(jar, "jar-sealed");
+    const makeCountedPiece = (onStep: () => void) => {
+      const counted: Signal<number> = (time, input) => {
+        onStep();
+        return scroll.y(time, input) + sealed(time, input) * 90;
+      };
+      return scene(box("lid").moves(bind({ y: counted })));
+    };
+
+    const mountedA = mount(
+      makeCountedPiece(() => {
+        stepsA += 1;
+      }),
+      {
+        root: new FakeRoot([new FakeNode("lid")], view),
+        clock: { kind: "driver", driver: clock },
+      },
+    );
+    const mountedB = mount(
+      makeCountedPiece(() => {
+        stepsB += 1;
+      }),
+      {
+        root: new FakeRoot([new FakeNode("lid")], view),
+        clock: { kind: "driver", driver: clock },
+      },
+    );
+
+    expect(stepsA).toBe(1);
+    expect(stepsB).toBe(1);
+
+    ms = 100;
+    view.scrollY = 150;
+    view.fireScroll();
+    clock.set(jar, "jar-sealed", 1);
+    frames.tick(ms);
+    expect(stepsA).toBe(2);
+    expect(stepsB).toBe(2);
+    expect(mountedA.player.values["lid"]).toEqual({ y: 240 });
+    expect(mountedB.player.values["lid"]).toEqual({ y: 240 });
+
+    ms = 200;
+    view.scrollY = 300;
+    frames.tick(ms);
+    expect(stepsA).toBe(3);
+    expect(stepsB).toBe(3);
+    expect(mountedA.player.values["lid"]).toEqual({ y: 390 });
+    expect(mountedB.player.values["lid"]).toEqual({ y: 390 });
+
+    mountedA.dispose();
     mountedB.dispose();
     clock.dispose();
   });
