@@ -10,20 +10,17 @@ State from events: a fold of the event log up to a time, and values that spring 
 - **`watchInputs`** `<T>(onInput: (channel: InputChannel) => void, run: () => T): T`: Runs `run`, telling `onInput` each time a scroll, pointer, or event state primitive is evaluated.
 - **`ClockUse`** `type ClockUse = "time" | "maybe"`: How a value can change with the clock alone: `time` while it is still on its way; `maybe` when code read the clock and nothing says whether it settles.
 - **`InputChannel`** `type InputChannel = "scroll" | "pointer" | "events"`: Which dynamic input channel a signal read during evaluation.
-- **`stepMetaOf`** `(steps: readonly Step<unknown>[]): StepMeta | undefined`: Internal step stream metadata (reset generation and compacted prefix count).
-- **`StepMeta`** `type StepMeta = { resetId: number; base: number; anchorAt: number }`: Monotonic compaction metadata attached to a state step list.
+- **`stepMetaOf`** `(steps: readonly Step<unknown>[]): StepMeta | undefined`: Internal step stream metadata (reset generation).
+- **`StepMeta`** `type StepMeta = { resetId: number }`: Step stream metadata tracking reset generation across rewinds and stream changes.
 - **`state`** `<S>(start: S, rule: (current: S, event: MotionEvent) => S, options?: StateOptions): State<S>`: The state `rule` folds the events into, from `start`, up to the time asked. Pure in time and events: it folds only new events, and starts again when an earlier one differs or time goes back.
 - **`State`** `type State<S> = { (time: Time, events: Events): S; start: S; steps: (time: Time, events: Events) => readonly Step<S>[] }`: What the scene is in at a time, given its events: a signal of that, with `start` and the `steps`.
 - **`StateOptions`** `type StateOptions = { target?: string | readonly string[] }`: Settings of a `state`: `target`, the event target, or targets, whose events reach the rule.
 - **`Step`** `type Step<S> = { at: number; value: S }`: The moment a state changed, and what it became.
 - **`createStore`** `(): RuntimeStore`: Allocates a fresh store for an independent player or scene run.
-- **`restore`** `(store: RuntimeStore, snap: RuntimeSnapshot): void`: Restores `store` to the state captured in `snap`.
-- **`snapshot`** `(store: RuntimeStore): RuntimeSnapshot`: Captures every cell populated in `store` as an immutable snapshot.
 - **`storeCell`** `<T>(): StoreCell<T>`: Declares an isolated cell backed per RuntimeStore without closure mutation.
 - **`storeFor`** `(): RuntimeStore`: Returns the active RuntimeStore for this evaluation scope.
 - **`withProbeStore`** `<T>(fn: () => T): T`: Runs an off-time probe in a transient copy-on-write store without mutating caller cursors.
 - **`withStore`** `<T>(store: RuntimeStore, fn: () => T): T`: Runs `fn` with `store` bound as the active RuntimeStore.
-- **`RuntimeSnapshot`** `type RuntimeSnapshot = { kind: "runtime-snapshot" }`: Immutable point-in-time capture of a RuntimeStore.
 - **`RuntimeStore`** `type RuntimeStore = { kind: "runtime-store" }`: Per-player mutable store backing stateful core primitives.
 - **`StoreCell`** `type StoreCell<T> = { get: (store?: RuntimeStore) => T | undefined; set: (value: T, store?: RuntimeStore) => void; own: (reset: (current: T) => boolean, create: (previous: T | undefined) => T, copy: (current: T) => T, store?: RuntimeStore) => T }`: Stateful cell descriptor isolated by active RuntimeStore.
 - **`INPUT_EVENTS`** `const INPUT_EVENTS: Readonly<{ readonly scroll: "scroll"; readonly pointerX: "pointer-x"; readonly pointerY: "pointer-y"; }>`: Sample event names folded by `scroll` and `pointer`: `"scroll"`, `"pointer-x"` and `"pointer-y"`.
