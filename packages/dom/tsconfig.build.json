@@ -14,7 +14,8 @@
       "@gerak/moves": ["../moves/dist/index.d.ts"],
       "@gerak/rig": ["../rig/dist/index.d.ts"],
       "@gerak/player": ["../player/dist/index.d.ts"],
-      "@gerak/stage": ["../stage/dist/index.d.ts"]
+      "@gerak/stage": ["../stage/dist/index.d.ts"],
+      "@gerak/stage/render": ["../stage/dist/render/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
