@@ -3,7 +3,8 @@ import type { Pose3d } from "@gerak/core";
 import type { Player } from "@gerak/player";
 import { listPose3d } from "@gerak/stage";
 import type { Object3D } from "three";
-import { applyPose3d, captureRest3d, restoreRest3d } from "./pose3d";
+import { createMaterialStore } from "./materials";
+import { applyPose3dWithStore, captureRest3dWithStore, restoreRest3dWithStore } from "./pose3d";
 
 type Pose3dListValue = readonly Pose3d[] | ((index: number, count: number) => Pose3d);
 type Pose3dTargets<T> = { [K in keyof T]: T[K] extends Pose3d ? K : never }[keyof T];
@@ -42,7 +43,8 @@ export function useTarget3d<T extends object>(
   }
   useEffect(() => {
     if (player === undefined || object === null) return undefined;
-    const rest = captureRest3d(object);
+    const store = createMaterialStore({ isolate: true });
+    const rest = captureRest3dWithStore(object, undefined, store);
     const unsubscribe = player.subscribe(target, (value: unknown) => {
       let pose: Pose3d | undefined;
       if (at === undefined) {
@@ -54,12 +56,12 @@ export function useTarget3d<T extends object>(
         pose = listPose3d(value, at, count ?? at + 1);
       }
       if (pose === undefined) return;
-      applyPose3d(object, pose, rest);
+      applyPose3dWithStore(object, pose, rest, undefined, store);
       invalidate?.();
     });
     return () => {
       unsubscribe();
-      restoreRest3d(object, rest);
+      restoreRest3dWithStore(object, rest, store);
     };
   }, [player, object, target, invalidate, at, count]);
   return useCallback((next: Object3D | null) => setObject(next), []);

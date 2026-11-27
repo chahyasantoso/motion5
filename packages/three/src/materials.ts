@@ -9,18 +9,34 @@ interface CapturedSlot {
   readonly node: Object3D;
   readonly original: Material | readonly Material[];
   readonly bases: readonly MaterialBase[];
-  readonly replaced: boolean;
-  readonly materials: readonly Material[];
+  readonly isArray: boolean;
+  replaced: boolean;
+  materials: readonly Material[];
 }
 
 interface ObjectMaterialState {
   readonly slots: readonly CapturedSlot[];
-  readonly cloned: readonly Material[];
+  readonly cloned: Material[];
   applied: boolean;
 }
 
-const MATERIAL_OWNERS = new WeakMap<Material, Object3D>();
-const OBJECT_MATERIALS = new WeakMap<Object3D, ObjectMaterialState>();
+/** Per-mount material ownership and captured baseline state. */
+export interface MaterialStore {
+  readonly owners: WeakMap<Material, Object3D>;
+  readonly objects: WeakMap<Object3D, ObjectMaterialState>;
+  readonly isolate: boolean;
+}
+
+/** Creates a material capture store isolated to one mount or binder. */
+export function createMaterialStore(options?: { readonly isolate?: boolean }): MaterialStore {
+  return {
+    owners: new WeakMap(),
+    objects: new WeakMap(),
+    isolate: options?.isolate ?? false,
+  };
+}
+
+const DEFAULT_STORE = createMaterialStore();
 
 function asMaterialList(raw: unknown): readonly Material[] | undefined {
   if (raw instanceof Material) return [raw];
@@ -28,11 +44,18 @@ function asMaterialList(raw: unknown): readonly Material[] | undefined {
   return undefined;
 }
 
+function hasCurrentMaterials(node: Object3D, materials: readonly Material[]): boolean {
+  const current = asMaterialList(Reflect.get(node, "material"));
+  if (current === undefined || current.length !== materials.length) return false;
+  return current.every((mat, index) => mat === materials[index]);
+}
+
 function captureSlot(
   owner: Object3D,
   node: Object3D,
   sharedMaterials: ReadonlySet<Material> | undefined,
   clonedOut: Material[],
+  store: MaterialStore,
 ): CapturedSlot | undefined {
   const raw: unknown = Reflect.get(node, "material");
   const list = asMaterialList(raw);
@@ -41,44 +64,46 @@ function captureSlot(
   const nextMaterials: Material[] = [];
   let replaced = false;
   for (const mat of list) {
-    const claimed = MATERIAL_OWNERS.get(mat);
+    const claimed = store.owners.get(mat);
     const mustClone =
       sharedMaterials?.has(mat) === true || (claimed !== undefined && claimed !== owner);
     if (mustClone) {
       const copy = mat.clone();
-      MATERIAL_OWNERS.set(copy, owner);
+      store.owners.set(copy, owner);
       nextMaterials.push(copy);
       clonedOut.push(copy);
       replaced = true;
     } else {
-      MATERIAL_OWNERS.set(mat, owner);
+      store.owners.set(mat, owner);
       nextMaterials.push(mat);
     }
   }
+  const isArray = Array.isArray(raw);
   if (replaced) {
-    Reflect.set(node, "material", Array.isArray(raw) ? nextMaterials : nextMaterials[0]);
+    Reflect.set(node, "material", isArray ? nextMaterials : nextMaterials[0]);
   }
   const first = list[0];
   if (first === undefined) return undefined;
-  const original: Material | readonly Material[] = Array.isArray(raw) ? [...list] : first;
-  return { node, original, bases, replaced, materials: nextMaterials };
+  const original: Material | readonly Material[] = isArray ? [...list] : first;
+  return { node, original, bases, isArray, replaced, materials: nextMaterials };
 }
 
 /** Captures rest materials across `target`'s hierarchy, cloning any material shared with another owner. */
 export function captureMaterials(
   target: Object3D,
   sharedMaterials?: ReadonlySet<Material>,
+  store: MaterialStore = DEFAULT_STORE,
 ): ObjectMaterialState {
-  const existing = OBJECT_MATERIALS.get(target);
+  const existing = store.objects.get(target);
   if (existing !== undefined) return existing;
   const slots: CapturedSlot[] = [];
   const cloned: Material[] = [];
   target.traverse((node) => {
-    const slot = captureSlot(target, node, sharedMaterials, cloned);
+    const slot = captureSlot(target, node, sharedMaterials, cloned, store);
     if (slot !== undefined) slots.push(slot);
   });
   const state: ObjectMaterialState = { slots, cloned, applied: false };
-  OBJECT_MATERIALS.set(target, state);
+  store.objects.set(target, state);
   return state;
 }
 
@@ -105,9 +130,13 @@ export function findSharedMaterials(roots: Iterable<Object3D>): ReadonlySet<Mate
 }
 
 /** Scales every material under `target` by `opacity`, or restores captured baseline when omitted. */
-export function applyObjectOpacity(target: Object3D, opacity: number | undefined): void {
+export function applyObjectOpacity(
+  target: Object3D,
+  opacity: number | undefined,
+  store: MaterialStore = DEFAULT_STORE,
+): void {
   if (opacity === undefined) {
-    const existing = OBJECT_MATERIALS.get(target);
+    const existing = store.objects.get(target);
     if (existing === undefined || !existing.applied) return;
     for (const slot of existing.slots) {
       slot.materials.forEach((mat, index) => {
@@ -123,9 +152,20 @@ export function applyObjectOpacity(target: Object3D, opacity: number | undefined
     existing.applied = false;
     return;
   }
-  const state = captureMaterials(target);
+  const state = captureMaterials(target, undefined, store);
   state.applied = true;
   for (const slot of state.slots) {
+    if (store.isolate && !slot.replaced) {
+      const clonedSlot = slot.materials.map((mat) => {
+        const copy = mat.clone();
+        store.owners.set(copy, target);
+        state.cloned.push(copy);
+        return copy;
+      });
+      slot.materials = clonedSlot;
+      slot.replaced = true;
+      Reflect.set(slot.node, "material", slot.isArray ? clonedSlot : clonedSlot[0]);
+    }
     slot.materials.forEach((mat, index) => {
       const base = slot.bases[index];
       if (base === undefined) return;
@@ -139,24 +179,28 @@ export function applyObjectOpacity(target: Object3D, opacity: number | undefined
 }
 
 /** Restores captured base opacity, transparency, and original materials for `target`. */
-export function restoreMaterials(target: Object3D): void {
-  const state = OBJECT_MATERIALS.get(target);
+export function restoreMaterials(target: Object3D, store: MaterialStore = DEFAULT_STORE): void {
+  const state = store.objects.get(target);
   if (state === undefined) return;
   for (const slot of state.slots) {
-    slot.materials.forEach((mat, index) => {
-      const base = slot.bases[index];
-      if (base === undefined) return;
-      mat.opacity = base.opacity;
-      if (mat.transparent !== base.transparent) {
-        mat.transparent = base.transparent;
-        mat.needsUpdate = true;
-      }
-      if (MATERIAL_OWNERS.get(mat) === target) MATERIAL_OWNERS.delete(mat);
-    });
-    if (slot.replaced) {
+    if (state.applied || slot.replaced) {
+      slot.materials.forEach((mat, index) => {
+        const base = slot.bases[index];
+        if (base === undefined) return;
+        mat.opacity = base.opacity;
+        if (mat.transparent !== base.transparent) {
+          mat.transparent = base.transparent;
+          mat.needsUpdate = true;
+        }
+      });
+    }
+    for (const mat of slot.materials) {
+      if (store.owners.get(mat) === target) store.owners.delete(mat);
+    }
+    if (slot.replaced && hasCurrentMaterials(slot.node, slot.materials)) {
       Reflect.set(slot.node, "material", slot.original);
     }
   }
   for (const mat of state.cloned) mat.dispose();
-  OBJECT_MATERIALS.delete(target);
+  store.objects.delete(target);
 }

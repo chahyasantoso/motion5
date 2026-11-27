@@ -335,4 +335,102 @@ describe("threeBinder", () => {
       ),
     ).toThrow(TypeError);
   });
+
+  it("isolates captured material state per binder across shared materials and disposal", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 0.8, transparent: false });
+    const meshA = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    meshA.name = "a";
+    const meshB = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    meshB.name = "b";
+
+    const rootA = new Object3D();
+    rootA.add(meshA);
+    const rootB = new Object3D();
+    rootB.add(meshB);
+
+    const stageA = compileScene(
+      scene(
+        { length: 1000 },
+        object("a").moves((t) => ({ opacity: t.progress >= 0.5 ? 0.5 : 1 })),
+      ),
+    );
+    const stageB = compileScene(
+      scene(
+        { length: 1000 },
+        object("b").moves((t) => (t.progress >= 0.5 ? { opacity: 0.5 } : {})),
+      ),
+    );
+    if (!stageA.ok) throw new Error(stageA.errors.map(formatStageError).join("\n"));
+    if (!stageB.ok) throw new Error(stageB.errors.map(formatStageError).join("\n"));
+
+    const driverA = manualDriver({ durationMs: 1000 });
+    const driverB = manualDriver({ durationMs: 1000 });
+    const playerA = play((time, events) => frame(stageA.stage, { time, events }).targets, driverA);
+    const playerB = play((time, events) => frame(stageB.stage, { time, events }).targets, driverB);
+
+    const stopA = threeBinder(rootA).start(playerA, stageA.stage);
+    driverA.seekMs(500);
+    expect(meshA.material.opacity).toBeCloseTo(0.4, 9);
+
+    const stopB = threeBinder(rootB).start(playerB, stageB.stage);
+    stopA();
+
+    expect(meshA.material).toBe(sharedMat);
+    expect(sharedMat.opacity).toBeCloseTo(0.8, 9);
+    expect(sharedMat.transparent).toBe(false);
+
+    driverB.seekMs(500);
+    expect(meshB.material.opacity).toBeCloseTo(0.4, 9);
+
+    driverB.seekMs(0);
+    expect(meshB.material.opacity).toBeCloseTo(0.8, 9);
+    expect(meshB.material.transparent).toBe(false);
+
+    stopB();
+    expect(meshB.material).toBe(sharedMat);
+    expect(sharedMat.opacity).toBeCloseTo(0.8, 9);
+    expect(sharedMat.transparent).toBe(false);
+  });
+
+  it("keeps one binder's captured material state intact when another binder on the same mesh disposes", () => {
+    const sharedMat = new MeshBasicMaterial({ opacity: 0.8, transparent: false });
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), sharedMat);
+    mesh.name = "box";
+    const root = new Object3D();
+    root.add(mesh);
+
+    const stageA = compileScene(
+      scene(
+        { length: 1000 },
+        object("box").moves(() => ({})),
+      ),
+    );
+    const stageB = compileScene(
+      scene(
+        { length: 1000 },
+        object("box").moves((t) => ({ opacity: t.progress >= 0.5 ? 0.25 : 1 })),
+      ),
+    );
+    if (!stageA.ok) throw new Error(stageA.errors.map(formatStageError).join("\n"));
+    if (!stageB.ok) throw new Error(stageB.errors.map(formatStageError).join("\n"));
+
+    const driverA = manualDriver({ durationMs: 1000 });
+    const driverB = manualDriver({ durationMs: 1000 });
+    const playerA = play((time, events) => frame(stageA.stage, { time, events }).targets, driverA);
+    const playerB = play((time, events) => frame(stageB.stage, { time, events }).targets, driverB);
+
+    const stopA = threeBinder(root).start(playerA, stageA.stage);
+    const stopB = threeBinder(root).start(playerB, stageB.stage);
+
+    driverB.seekMs(500);
+    expect(mesh.material.opacity).toBeCloseTo(0.2, 9);
+
+    stopA();
+    expect(mesh.material.opacity).toBeCloseTo(0.2, 9);
+
+    stopB();
+    expect(mesh.material).toBe(sharedMat);
+    expect(sharedMat.opacity).toBeCloseTo(0.8, 9);
+    expect(sharedMat.transparent).toBe(false);
+  });
 });

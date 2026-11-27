@@ -1,6 +1,11 @@
 import type { Point3d, Pose3d } from "@gerak/core";
 import { Euler, Quaternion, type EulerOrder, type Material, type Object3D } from "three";
-import { applyObjectOpacity, captureMaterials, restoreMaterials } from "./materials";
+import {
+  applyObjectOpacity,
+  captureMaterials,
+  restoreMaterials,
+  type MaterialStore,
+} from "./materials";
 import { writeCustom, type CustomWriter } from "./pose2d";
 
 /** Three.js Euler order for core's CSS convention (`ZXY`, Rz·Rx·Ry). Core angles are degrees. */
@@ -29,9 +34,13 @@ function hasNonIdentityQuaternion(q: readonly [number, number, number, number]):
   return q[0] !== 0 || q[1] !== 0 || q[2] !== 0 || Math.abs(q[3] - 1) > 1e-12;
 }
 
-/** Captures position, rotation quaternion, scale, visibility, and material baseline of `object`. */
-export function captureRest3d(object: Object3D, sharedMaterials?: ReadonlySet<Material>): Rest3d {
-  captureMaterials(object, sharedMaterials);
+/** Captures position, rotation quaternion, scale, visibility, and material baseline into `store`. */
+export function captureRest3dWithStore(
+  object: Object3D,
+  sharedMaterials?: ReadonlySet<Material>,
+  store?: MaterialStore,
+): Rest3d {
+  captureMaterials(object, sharedMaterials, store);
   const quaternion: readonly [number, number, number, number] = Object.freeze([
     object.quaternion.x,
     object.quaternion.y,
@@ -54,8 +63,17 @@ export function captureRest3d(object: Object3D, sharedMaterials?: ReadonlySet<Ma
   });
 }
 
-/** Restores `object` to its captured `Rest3d` transform, visibility, and materials. */
-export function restoreRest3d(object: Object3D, rest: Rest3d): void {
+/** Captures position, rotation quaternion, scale, visibility, and material baseline of `object`. */
+export function captureRest3d(object: Object3D, sharedMaterials?: ReadonlySet<Material>): Rest3d {
+  return captureRest3dWithStore(object, sharedMaterials);
+}
+
+/** Restores `object` to its captured `Rest3d` transform, visibility, and materials in `store`. */
+export function restoreRest3dWithStore(
+  object: Object3D,
+  rest: Rest3d,
+  store?: MaterialStore,
+): void {
   object.position.set(rest.x, rest.y, rest.z);
   object.rotation.order = rest.order;
   object.quaternion.set(
@@ -66,7 +84,12 @@ export function restoreRest3d(object: Object3D, rest: Rest3d): void {
   );
   object.scale.set(rest.scale[0], rest.scale[1], rest.scale[2]);
   object.visible = rest.visible;
-  restoreMaterials(object);
+  restoreMaterials(object, store);
+}
+
+/** Restores `object` to its captured `Rest3d` transform, visibility, and materials. */
+export function restoreRest3d(object: Object3D, rest: Rest3d): void {
+  restoreRest3dWithStore(object, rest);
 }
 
 /** Sole degrees-to-radians owner for `ZXY`; angles reduce mod 360. */
@@ -102,13 +125,13 @@ export const WRITTEN_3D = Object.freeze([
 /** The 3D pose fields `applyPose3d` leaves alone, each with the reason; it writes every one. */
 export const UNWRITTEN_3D: Readonly<Partial<Record<keyof Pose3d, string>>> = Object.freeze({});
 
-/** Writes a `Pose3d` on an object: y up, degrees on Z-X-Y; a missing field writes its rest, and each
- * custom number goes to `custom(name, value, object)`. */
-export function applyPose3d(
+/** Writes a `Pose3d` on an object using `store` for material opacity isolation. */
+export function applyPose3dWithStore(
   object: Object3D,
   pose: Pose3d,
   rest: Point3d | Rest3d = { x: 0, y: 0, z: 0 },
   custom?: CustomWriter,
+  store?: MaterialStore,
 ): void {
   const all = pose.scale ?? 1;
   object.position.set(rest.x + (pose.x ?? 0), rest.y + (pose.y ?? 0), rest.z + (pose.z ?? 0));
@@ -132,6 +155,17 @@ export function applyPose3d(
     ry * all * (pose.scaleY ?? 1),
     rz * all * (pose.scaleZ ?? 1),
   );
-  applyObjectOpacity(object, pose.opacity);
+  applyObjectOpacity(object, pose.opacity, store);
   writeCustom(object, pose.custom, custom);
+}
+
+/** Writes a `Pose3d` on an object: y up, degrees on Z-X-Y; a missing field writes its rest, and each
+ * custom number goes to `custom(name, value, object)`. */
+export function applyPose3d(
+  object: Object3D,
+  pose: Pose3d,
+  rest: Point3d | Rest3d = { x: 0, y: 0, z: 0 },
+  custom?: CustomWriter,
+): void {
+  applyPose3dWithStore(object, pose, rest, custom);
 }

@@ -2,8 +2,13 @@ import { POSE_3D_NUMBERS, unreachable, type Pose3d } from "@gerak/core";
 import type { Player } from "@gerak/player";
 import { frameVisible, listPose3d, pose3dOf, type ObjectBounds3d, type Stage } from "@gerak/stage";
 import { Box3, Matrix4, Mesh, Object3D, Vector3 } from "three";
-import { findSharedMaterials } from "./materials";
-import { applyPose3d, captureRest3d, restoreRest3d, type Rest3d } from "./pose3d";
+import { createMaterialStore, findSharedMaterials } from "./materials";
+import {
+  applyPose3dWithStore,
+  captureRest3dWithStore,
+  restoreRest3dWithStore,
+  type Rest3d,
+} from "./pose3d";
 
 /** Where a scene's object goes: an `Object3D`, an array of `Object3D`s for a `parts: true` list, or
  * a writer `(pose, visible) => void` such as one handing bone poses to `applyBones`. */
@@ -237,6 +242,7 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
             unreachable(classified);
         }
       }
+      const materialStore = createMaterialStore({ isolate: true });
       const sharedMaterials = findSharedMaterials(extraRoots);
       const restores: (() => void)[] = [];
       const bound: {
@@ -268,8 +274,8 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
                   return unreachable(classified);
               }
               const rests: Rest3d[] = items.map((item) => {
-                const rest = captureRest3d(item, sharedMaterials);
-                restores.push(() => restoreRest3d(item, rest));
+                const rest = captureRest3dWithStore(item, sharedMaterials, materialStore);
+                restores.push(() => restoreRest3dWithStore(item, rest, materialStore));
                 return rest;
               });
               const prevPoses: (Pose3d | undefined)[] = items.map(() => undefined);
@@ -294,7 +300,7 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
                       ...pose,
                       ...(pose.custom === undefined ? {} : { custom: { ...pose.custom } }),
                     };
-                    applyPose3d(item, pose, rest);
+                    applyPose3dWithStore(item, pose, rest, undefined, materialStore);
                     dirty = true;
                   });
                   return dirty;
@@ -326,8 +332,8 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
               }
               case "node": {
                 const { node } = classified;
-                const rest = captureRest3d(node, sharedMaterials);
-                restores.push(() => restoreRest3d(node, rest));
+                const rest = captureRest3dWithStore(node, sharedMaterials, materialStore);
+                restores.push(() => restoreRest3dWithStore(node, rest, materialStore));
                 let prevPose: Pose3d | undefined;
                 let prevVisible: boolean | undefined;
                 bound.push({
@@ -345,7 +351,7 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
                         ...pose,
                         ...(pose.custom === undefined ? {} : { custom: { ...pose.custom } }),
                       };
-                      applyPose3d(node, pose, rest);
+                      applyPose3dWithStore(node, pose, rest, undefined, materialStore);
                       dirty = true;
                     }
                     return dirty;
