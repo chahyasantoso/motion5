@@ -35,17 +35,15 @@ function runPointerStream(settleMs: number | undefined, expectedWindowMs: number
   expect(keptRecentAts).toEqual(expectedRecentAts);
 
   // Entries older than twice the window stay only when latest for their name and target.
-  const latestSerialByKey = new Map<string, number>();
-  for (const entry of retained) {
-    const key = `${entry.name}\0${entry.target ?? ""}`;
-    latestSerialByKey.set(key, Math.max(latestSerialByKey.get(key) ?? -Infinity, entry.serial));
-  }
-  for (const entry of retained) {
+  const latestIndexByKey = new Map<string, number>();
+  retained.forEach((entry, index) => {
+    latestIndexByKey.set(`${entry.name}\0${entry.target ?? ""}`, index);
+  });
+  retained.forEach((entry, index) => {
     if (entry.at < ms - 2 * expectedWindowMs) {
-      const key = `${entry.name}\0${entry.target ?? ""}`;
-      expect(entry.serial).toBe(latestSerialByKey.get(key));
+      expect(index).toBe(latestIndexByKey.get(`${entry.name}\0${entry.target ?? ""}`));
     }
-  }
+  });
   expect(
     retained.some((entry) => entry.name === "pointer-x" && entry.at < ms - 2 * expectedWindowMs),
   ).toBe(false);
