@@ -1,14 +1,27 @@
 import { describe, expect, it } from "vitest";
 import {
+  createStore,
   derivedInput,
   inputLog,
   inputs,
   liveAt,
+  motion,
   triggers,
   watchClock,
   watchedTime,
+  withStore,
   type Input,
 } from "@gerak/core";
+import {
+  beat,
+  box,
+  compileScene,
+  formatStageError,
+  frame,
+  poseOf,
+  scene,
+  shot,
+} from "@gerak/stage";
 import { noise1d, react } from "../src/index";
 
 const hits = inputs({
@@ -128,6 +141,66 @@ describe("react stillMoving and stateless noise1d", () => {
     }
     log.trigger(9100, hits, "hit");
     const afterDrop = shake(liveAt(5700), derived.resolve(cues, log.input, 5700));
+    expect(afterDrop).toBe(beforeDrop);
+  });
+
+  it("keeps shake values identical inside a later shot across a live drop", () => {
+    const shake = react(triggers(hits, "hit"), {
+      kind: "shake",
+      amplitude: 10,
+      decay: 6,
+      frequency: 4,
+    });
+    const compiled = compileScene(
+      scene(
+        shot(
+          scene(
+            { name: "hook" },
+            box("h").moves(motion((t) => ({ x: t.progress })).in(beat("go", 600))),
+          ),
+        ),
+        shot(
+          scene(
+            { name: "story" },
+            box("shaker").moves(
+              motion((_t, context) =>
+                context === undefined ? {} : { x: shake(context.time, context.events) },
+              ),
+            ),
+          ),
+          { length: 10_000 },
+        ),
+      ),
+    );
+    if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
+
+    const log = inputLog({ windowMs: 4000 });
+    const store = createStore();
+    for (let ms = 700; ms <= 4500; ms += 100) {
+      log.set(ms, hits, "noise", ms);
+    }
+    log.trigger(5500, hits, "hit");
+
+    const beforeDrop = withStore(
+      store,
+      () =>
+        poseOf(frame(compiled.stage, { time: liveAt(5700), events: log.input }).targets["shaker"])
+          ?.x,
+    );
+    expect(beforeDrop).toBeDefined();
+    expect(beforeDrop).not.toBe(0);
+
+    for (let ms = 5800; ms <= 9200; ms += 100) {
+      log.set(ms, hits, "noise", ms);
+    }
+    log.trigger(9100, hits, "hit");
+
+    const afterDrop = withStore(
+      store,
+      () =>
+        poseOf(frame(compiled.stage, { time: liveAt(5700), events: log.input }).targets["shaker"])
+          ?.x,
+    );
     expect(afterDrop).toBe(beforeDrop);
   });
 });

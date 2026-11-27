@@ -318,6 +318,99 @@ export function derivedInput(): DerivedInput {
   };
 }
 
+/** Cached view shifting an input list by `fromMs` while extending in place on appends. */
+export interface ShiftedInput {
+  resolve(events: Input, fromMs: number): Input;
+}
+
+/** Creates a cached `Input` shifter for a shot start, extending in place on appends and preserving serials. */
+export function shiftedInput(): ShiftedInput {
+  const streamToken = {};
+  let prevEvents: Input | undefined;
+  let prevVersion: number | undefined;
+  let prevGeneration: number | undefined;
+  let prevFromMs: number | undefined;
+  let prevLength = 0;
+  let version = 0;
+  let generation = 0;
+  let moved: InputEntry[] = [];
+  let serials: number[] = [];
+
+  return {
+    resolve(events, fromMs) {
+      const rec = recordOf(events);
+      const sameSource =
+        events === prevEvents ||
+        (rec.sourceStream !== undefined &&
+          prevEvents !== undefined &&
+          rec.sourceStream === recordOf(prevEvents).sourceStream);
+
+      if (
+        events === prevEvents &&
+        rec.version === prevVersion &&
+        rec.generation === prevGeneration &&
+        fromMs === prevFromMs
+      ) {
+        return moved;
+      }
+
+      const canAppend =
+        sameSource &&
+        rec.sourceStream !== undefined &&
+        rec.generation === prevGeneration &&
+        fromMs === prevFromMs &&
+        events.length >= prevLength;
+
+      if (canAppend) {
+        let added = false;
+        for (let i = prevLength; i < events.length; i += 1) {
+          const entry = events[i];
+          if (entry === undefined || entry.at < fromMs) continue;
+          moved.push({ ...entry, at: entry.at - fromMs });
+          serials.push(rec.serials?.[i] ?? i + 1);
+          added = true;
+        }
+        prevEvents = events;
+        prevVersion = rec.version;
+        prevLength = events.length;
+        if (added) {
+          version += 1;
+          RECORDS.set(moved, {
+            version,
+            generation,
+            serials,
+            sourceStream: streamToken,
+          });
+        }
+        return moved;
+      }
+
+      generation += 1;
+      version += 1;
+      moved = [];
+      serials = [];
+      for (let i = 0; i < events.length; i += 1) {
+        const entry = events[i];
+        if (entry === undefined || entry.at < fromMs) continue;
+        moved.push({ ...entry, at: entry.at - fromMs });
+        serials.push(rec.serials?.[i] ?? i + 1);
+      }
+      prevEvents = events;
+      prevVersion = rec.version;
+      prevGeneration = rec.generation;
+      prevFromMs = fromMs;
+      prevLength = events.length;
+      RECORDS.set(moved, {
+        version,
+        generation,
+        serials,
+        sourceStream: streamToken,
+      });
+      return moved;
+    },
+  };
+}
+
 /** A log of input entries; when given `windowMs`, older entries drop in batches past twice the window except each name-and-target's latest. */
 export function inputLog(options?: { readonly windowMs?: number }): InputLog {
   const windowMs = options?.windowMs;

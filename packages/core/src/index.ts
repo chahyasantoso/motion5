@@ -145,10 +145,12 @@ export {
   generationOf,
   inputLog,
   inputSerialsOf,
+  shiftedInput,
   sourceStreamOf,
   versionOf,
   type DerivedInput,
   type InputLog,
+  type ShiftedInput,
 } from "./events/event-log";
 export { INPUT_EVENTS, pointer, scroll, type PointerState, type ScrollState } from "./state/inputs";
 export { triggers, value, valueAt, type Trigger } from "./state/readers";

@@ -1,4 +1,13 @@
-import { inputLog, inputs, motion, state, type Pose2d, type Time } from "@gerak/core";
+import {
+  createStore,
+  inputLog,
+  inputs,
+  motion,
+  state,
+  withStore,
+  type Pose2d,
+  type Time,
+} from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   beat,
@@ -332,5 +341,39 @@ describe("shot", () => {
   it("refuses a shot inside a shot", () => {
     const inner = scene(shot(sliding("inner", 300)));
     expect(() => scene(shot(inner, { length: 300 }))).toThrow(/shot/);
+  });
+
+  it("resumes state inside a later shot when the input log grows by one entry per step", () => {
+    let ruleCalls = 0;
+    const ticks = state(0, (count, event) => {
+      ruleCalls += 1;
+      return event.name === "tick" ? count + 1 : count;
+    });
+    const counting = scene(
+      { name: "count" },
+      box("counter").moves(
+        motion(
+          (_t: Time, context?: MotionContext): Pose2d =>
+            context === undefined ? {} : { x: ticks(context.time, context.events) },
+        ),
+      ),
+    );
+    const stage = compiled(scene(shot(sliding("hook", 600)), shot(counting, { length: 2000 })));
+    const tickInputs = inputs({ triggers: { tick: {} } });
+    const log = inputLog();
+    const store = createStore();
+
+    withStore(store, () => {
+      for (let i = 1; i <= 10; i += 1) {
+        const ms = 600 + i * 100;
+        const before = ruleCalls;
+        log.trigger(ms, tickInputs, "tick");
+        const x = poseOf(
+          frame(stage, { time: at(ms, 2600), events: log.input }).targets["counter"],
+        )?.x;
+        expect(x).toBe(i);
+        expect(ruleCalls - before).toBe(1);
+      }
+    });
   });
 });

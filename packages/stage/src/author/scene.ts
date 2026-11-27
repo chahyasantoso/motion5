@@ -8,13 +8,14 @@ import {
   combine,
   combine3d,
   elapsedOf,
-  generationOf,
   lanes,
   loop,
   mergeInput,
   mix,
   motion,
   scroll,
+  shiftedInput,
+  sourceStreamOf,
   timeAt,
   unreachable,
   watchClock,
@@ -31,6 +32,7 @@ import {
   type Point3d,
   type Pose2d,
   type Pose3d,
+  type ShiftedInput,
   type Signal,
   type Span,
   type Time,
@@ -38,7 +40,6 @@ import {
   project3d,
   rawTime,
   unproject3d,
-  versionOf,
   viewSize3d,
 } from "@gerak/core";
 import { boxInViewport } from "../render/placement";
@@ -247,14 +248,8 @@ const OBJECT_TRAVEL = new WeakMap<
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
 /** The scene time each shot time was made from. */
 const SCENE_TIMES = new WeakMap<Time, Time>();
-/** An event list moved to a shot's clock, and the version and generation it was moved from. */
-interface MovedEvents {
-  readonly version: number;
-  readonly generation: number;
-  readonly events: Input;
-}
-/** Each input list moved to a shot's clock, by shot start, and the list each moved one came from. */
-const SHOT_EVENTS = new WeakMap<Input, Map<number, MovedEvents>>();
+/** Each input stream or list shifted to a shot's clock, by shot start, and the source list each shifted one came from. */
+const SHOT_EVENTS = new WeakMap<object, Map<number, ShiftedInput>>();
 const SCENE_EVENTS = new WeakMap<Input, Input>();
 
 interface MotionBody<P = Pose2d> {
@@ -1734,21 +1729,21 @@ function shotTime(time: Time, clock: ShotClock | undefined, total: number | unde
   return local;
 }
 
-/** `events` from the shot's start on, each `at` moved back by the start, made once per list and shot start. */
+/** `events` from the shot's start on, each `at` moved back by the start, carrying a record per stream and shot start. */
 function shotEvents(events: Input, clock: ShotClock | undefined): Input {
   if (clock === undefined || clock.from === 0) return events;
-  const version = versionOf(events);
-  const generation = generationOf(events);
-  const byStart = SHOT_EVENTS.get(events);
-  const known = byStart?.get(clock.from);
-  if (known !== undefined && known.version === version && known.generation === generation)
-    return known.events;
-  const moved = events
-    .filter((event) => event.at >= clock.from)
-    .map((event) => ({ ...event, at: event.at - clock.from }));
-  const nextByStart = byStart ?? new Map<number, MovedEvents>();
-  nextByStart.set(clock.from, { version, generation, events: moved });
-  SHOT_EVENTS.set(events, nextByStart);
+  const key = sourceStreamOf(events) ?? events;
+  let byStart = SHOT_EVENTS.get(key);
+  if (byStart === undefined) {
+    byStart = new Map();
+    SHOT_EVENTS.set(key, byStart);
+  }
+  let shifter = byStart.get(clock.from);
+  if (shifter === undefined) {
+    shifter = shiftedInput();
+    byStart.set(clock.from, shifter);
+  }
+  const moved = shifter.resolve(events, clock.from);
   SCENE_EVENTS.set(moved, events);
   return moved;
 }
