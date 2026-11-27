@@ -15,10 +15,10 @@ re-renders and remounts; a reel gives the same frame at a time however that time
 Scroll stays on gerak's side: it is a position the page reads, and the timeline plan (`plan/timeline-plan.md`,
 after this one) makes it a timeline. Until then, `mount` keeps reading scroll once per frame as it does today.
 
-Out of this plan: Studio, rewind (`"window"`), checkpoints, player snapshots, `onEvent` streaming, one 3D draw per
-frame across mounts, ordering mounts that read each other's elements, and a separate input package. Accepted loss: once a mount on a handed driver stops recording the
-page's real input, the Studio canvas no longer sees real hover while it scrubs. Typecheck does not catch this, and
-Studio has no tests; its revamp rebuilds it on `set` and `listen`.
+Out of this plan: rewind (`"window"`), checkpoints, player snapshots, `onEvent` streaming, one 3D draw per frame
+across mounts, ordering mounts that read each other's elements, and a separate input package. Studio has left the
+repository (branch `studio/canvas-wip`, tag `studio-before-removal`); it returns as its own project on `set` and
+`listen`.
 
 Read `AGENTS.md` first. Every rule there applies.
 

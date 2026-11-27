@@ -11,7 +11,7 @@ The code adds a `Timeline` port to `@gerak/core`, makes a beat a name plus the t
 browser by what the timeline declares, not by what kind it is.
 
 It runs after `plan/foundation-plan.md`, which settles who owns input: gerak reads the page's time and scroll
-position; the app sets values. Studio is out.
+position; the app sets values.
 
 Read `AGENTS.md` first. Every rule there applies.
 
